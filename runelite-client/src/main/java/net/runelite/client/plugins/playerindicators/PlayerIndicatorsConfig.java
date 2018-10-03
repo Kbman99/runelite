@@ -144,6 +144,28 @@ public interface PlayerIndicatorsConfig extends Config
 
 	@ConfigItem(
 		position = 10,
+		keyName = "highlightOfflineFriends",
+		name = "Show offline friends",
+		description = "Highlight offline friends"
+	)
+	default boolean highlightOfflineFriends()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		position = 11,
+		keyName = "offlineFriendColor",
+		name = "Colorize offline friends",
+		description = "Offline friend color"
+	)
+	default Color getOfflineFriendColor()
+	{
+		return new Color(255, 165, 0);
+	}
+
+	@ConfigItem(
+		position = 12,
 		keyName = "drawPlayerTiles",
 		name = "Draw tiles under players",
 		description = "Configures whether or not tiles under highlighted players should be drawn"
@@ -154,7 +176,7 @@ public interface PlayerIndicatorsConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 11,
+		position = 13,
 		keyName = "drawOverheadPlayerNames",
 		name = "Draw names above players",
 		description = "Configures whether or not player names should be drawn above players"
@@ -165,7 +187,7 @@ public interface PlayerIndicatorsConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 12,
+		position = 14,
 		keyName = "drawMinimapNames",
 		name = "Draw names on minimap",
 		description = "Configures whether or not minimap names for players with rendered names should be drawn"
@@ -176,7 +198,7 @@ public interface PlayerIndicatorsConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 13,
+		position = 15,
 		keyName = "colorPlayerMenu",
 		name = "Colorize player menu",
 		description = "Color right click menu for players"
@@ -187,7 +209,7 @@ public interface PlayerIndicatorsConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 14,
+		position = 16,
 		keyName = "clanMenuIcons",
 		name = "Show clan ranks",
 		description = "Add clan rank to right click menu and next to player names"
@@ -195,27 +217,5 @@ public interface PlayerIndicatorsConfig extends Config
 	default boolean showClanRanks()
 	{
 		return true;
-	}
-
-	@ConfigItem(
-		position = 15,
-		keyName = "highlightOfflineFriends",
-		name = "Show offline friends",
-		description = "Display offline friends"
-	)
-	default boolean highlightOfflineFriends()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-		position = 16,
-		keyName = "offlineFriendColor",
-		name = "Colorize offline friends",
-		description = "Offline friend color"
-	)
-	default Color offlineFriendColor()
-	{
-		return new Color(255, 165, 0);
 	}
 }

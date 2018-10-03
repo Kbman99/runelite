@@ -138,7 +138,7 @@ public class PlayerIndicatorsPlugin extends Plugin
 			}
 			else if (config.highlightOfflineFriends() && (player.isFriend() || (client.isFriended(player.getName(), false))))
 			{
-				color = config.offlineFriendColor();
+				color = config.getOfflineFriendColor();
 			}
 			else if (config.drawClanMemberNames() && player.isClanMember())
 			{

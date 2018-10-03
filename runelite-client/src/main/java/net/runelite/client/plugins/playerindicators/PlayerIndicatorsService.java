@@ -76,7 +76,7 @@ public class PlayerIndicatorsService
 			}
 			else if (config.highlightOfflineFriends() && (player.isFriend() || (client.isFriended(player.getName(), false))))
 			{
-				consumer.accept(player, config.offlineFriendColor());
+				consumer.accept(player, config.getOfflineFriendColor());
 			}
 			else if (config.drawClanMemberNames() && isClanMember)
 			{
