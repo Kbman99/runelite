@@ -196,4 +196,26 @@ public interface PlayerIndicatorsConfig extends Config
 	{
 		return true;
 	}
+
+	@ConfigItem(
+		position = 15,
+		keyName = "highlightOfflineFriends",
+		name = "Show offline friends",
+		description = "Display offline friends"
+	)
+	default boolean highlightOfflineFriends()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		position = 16,
+		keyName = "offlineFriendColor",
+		name = "Colorize offline friends",
+		description = "Offline friend color"
+	)
+	default Color offlineFriendColor()
+	{
+		return new Color(255, 165, 0);
+	}
 }
