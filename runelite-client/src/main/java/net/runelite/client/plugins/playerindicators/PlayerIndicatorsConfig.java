@@ -145,8 +145,8 @@ public interface PlayerIndicatorsConfig extends Config
 	@ConfigItem(
 		position = 10,
 		keyName = "highlightOfflineFriends",
-		name = "Show offline friends",
-		description = "Highlight offline friends"
+		name = "Highlight offline friends",
+		description = "Configures whether or not offline friends should be highlighted"
 	)
 	default boolean highlightOfflineFriends()
 	{
@@ -156,8 +156,8 @@ public interface PlayerIndicatorsConfig extends Config
 	@ConfigItem(
 		position = 11,
 		keyName = "offlineFriendColor",
-		name = "Colorize offline friends",
-		description = "Offline friend color"
+		name = "Offline friend color",
+		description = "Color of offline friend names"
 	)
 	default Color getOfflineFriendColor()
 	{
