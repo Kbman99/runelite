@@ -74,13 +74,13 @@ public class PlayerIndicatorsService
 			{
 				consumer.accept(player, config.getFriendColor());
 			}
-			else if (config.highlightOfflineFriends() && (player.isFriend() || (client.isFriended(player.getName(), false))))
-			{
-				consumer.accept(player, config.getOfflineFriendColor());
-			}
 			else if (config.drawClanMemberNames() && isClanMember)
 			{
 				consumer.accept(player, config.getClanMemberColor());
+			}
+			else if (config.highlightOfflineFriends() && !player.isFriend() && client.isFriended(player.getName(), false))
+			{
+				consumer.accept(player, config.getOfflineFriendColor());
 			}
 			else if (config.highlightTeamMembers() && localPlayer.getTeam() > 0 && localPlayer.getTeam() == player.getTeam())
 			{
