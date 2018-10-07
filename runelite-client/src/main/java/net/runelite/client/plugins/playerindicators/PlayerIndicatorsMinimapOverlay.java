@@ -29,23 +29,29 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Player;
+import net.runelite.api.Client;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.OverlayPriority;
 import net.runelite.client.ui.overlay.OverlayUtil;
 
+
+@Slf4j
 @Singleton
 public class PlayerIndicatorsMinimapOverlay extends Overlay
 {
 	private final PlayerIndicatorsService playerIndicatorsService;
 	private final PlayerIndicatorsConfig config;
+	private final Client client;
 
 	@Inject
-	private PlayerIndicatorsMinimapOverlay(PlayerIndicatorsConfig config, PlayerIndicatorsService playerIndicatorsService)
+	private PlayerIndicatorsMinimapOverlay(Client client, PlayerIndicatorsConfig config, PlayerIndicatorsService playerIndicatorsService)
 	{
 		this.config = config;
+		this.client = client;
 		this.playerIndicatorsService = playerIndicatorsService;
 		setLayer(OverlayLayer.ABOVE_WIDGETS);
 		setPosition(OverlayPosition.DYNAMIC);
@@ -70,6 +76,13 @@ public class PlayerIndicatorsMinimapOverlay extends Overlay
 			if (minimapLocation != null)
 			{
 				OverlayUtil.renderTextLocation(graphics, minimapLocation, name, color);
+
+				if ((!actor.isFriend() && client.isFriended(name, false) &&
+					config.highlightOfflineFriends() && !actor.isClanMember()))
+				{
+					Color c = config.getOfflineFriendColor();
+					OverlayUtil.renderMinimapLocation(graphics, minimapLocation, c);
+				}
 			}
 		}
 	}
