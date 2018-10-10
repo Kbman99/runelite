@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Psikoi <https://github.com/psikoi>
+ * Copyright (c) 2018, Ron Young <https://github.com/raiyni>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -22,43 +22,41 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package net.runelite.client.plugins.xptracker;
+package net.runelite.client.plugins.banktags;
 
-import java.awt.Color;
-import lombok.Getter;
+import net.runelite.client.config.Config;
+import net.runelite.client.config.ConfigGroup;
+import net.runelite.client.config.ConfigItem;
 
-enum SkillColor
+@ConfigGroup("banktags")
+public interface BankTagsConfig extends Config
 {
-	ATTACK(105, 32, 7),
-	DEFENCE(98, 119, 190),
-	STRENGTH(4, 149, 90),
-	HITPOINTS(131, 126, 126),
-	RANGED(109, 144, 23),
-	PRAYER(159, 147, 35),
-	MAGIC(50, 80, 193),
-	COOKING(112, 35, 134),
-	WOODCUTTING(52, 140, 37),
-	FLETCHING(3, 141, 125),
-	FISHING(106, 132, 164),
-	FIREMAKING(189, 120, 25),
-	CRAFTING(151, 110, 77),
-	SMITHING(108, 107, 82),
-	MINING(93, 143, 167),
-	HERBLORE(7, 133, 9),
-	AGILITY(58, 60, 137),
-	THIEVING(108, 52, 87),
-	SLAYER(100, 100, 100),
-	FARMING(101, 152, 63),
-	RUNECRAFT(170, 141, 26),
-	HUNTER(92, 89, 65),
-	CONSTRUCTION(130, 116, 95);
-
-	@Getter
-	private final Color color;
-
-	SkillColor(int red, int green, int blue)
+	@ConfigItem(
+		keyName = "useTabs",
+		name = "Use Tag Tabs",
+		description = "Enable the ability to add tabs to your bank which allow fast access to tags.",
+		position = 1
+	)
+	default boolean tabs()
 	{
-		this.color = new Color(red, green, blue);
+		return true;
 	}
 
+	@ConfigItem(
+		keyName = "position",
+		name = "",
+		description = "",
+		hidden = true
+	)
+	default int position()
+	{
+		return 0;
+	}
+
+	@ConfigItem(
+		keyName = "position",
+		name = "",
+		description = ""
+	)
+	void position(int idx);
 }
