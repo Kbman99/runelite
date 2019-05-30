@@ -28,12 +28,11 @@
 
 package net.runelite.client.flexo;
 
-import java.awt.Point;
-import java.awt.Rectangle;
+import net.runelite.client.ui.ClientUI;
+
+import java.awt.*;
 import java.util.Random;
 import java.util.logging.Logger;
-import net.runelite.api.Constants;
-import net.runelite.client.ui.ClientUI;
 
 public class FlexoMouse
 {
@@ -41,8 +40,7 @@ public class FlexoMouse
 	/*
 	Should pass unstretched coords, handles all conversions here.
 	*/
-	public static Point getClickPoint(Rectangle rect)
-	{
+	public static Point getClickPoint(Rectangle rect) {
 		if (rect != null)
 		{
 			Random r = new Random();
@@ -58,8 +56,8 @@ public class FlexoMouse
 
 				if (Flexo.client.isResized())
 				{
-					wScale = (Flexo.client.getStretchedDimensions().width / (double) Flexo.client.getRealDimensions().width);
-					hScale = (Flexo.client.getStretchedDimensions().height / (double) Flexo.client.getRealDimensions().height);
+					wScale = (Flexo.client.getStretchedDimensions().width / Flexo.client.getRealDimensions().width);
+					hScale = (Flexo.client.getStretchedDimensions().height / Flexo.client.getRealDimensions().height);
 					int newX = (int) (x * wScale);
 					int newY = (int) (y * hScale);
 					if (newX > 0 && newX < ClientUI.frame.getWidth())
@@ -88,7 +86,7 @@ public class FlexoMouse
 			}
 			else if (!Flexo.client.isResized())
 			{
-				final int fixedWidth = Constants.GAME_FIXED_WIDTH;
+				int fixedWidth = 765;
 				int widthDif = ClientUI.frame.getWidth();
 
 				if (ClientUI.pluginToolbar.isVisible())
@@ -96,9 +94,7 @@ public class FlexoMouse
 					widthDif -= ClientUI.pluginToolbar.getWidth();
 				}
 				if (ClientUI.pluginPanel != null)
-				{
 					widthDif -= ClientUI.pluginPanel.getWidth();
-				}
 
 				widthDif -= fixedWidth;
 				if (x + (widthDif / 2) > 0 && x + (widthDif / 2) < ClientUI.frame.getWidth())
@@ -136,13 +132,13 @@ public class FlexoMouse
 
 			if (Flexo.client.isResized())
 			{
-				wScale = (Flexo.client.getStretchedDimensions().width / (double) Flexo.client.getRealDimensions().width);
-				hScale = (Flexo.client.getStretchedDimensions().height / (double) Flexo.client.getRealDimensions().height);
+				wScale = (Flexo.client.getStretchedDimensions().width / Flexo.client.getRealDimensions().width);
+				hScale = (Flexo.client.getStretchedDimensions().height / Flexo.client.getRealDimensions().height);
 			}
 			else
 			{
-				wScale = (Flexo.client.getStretchedDimensions().width) / (double) Flexo.fixedWidth;
-				hScale = (Flexo.client.getStretchedDimensions().height) / (double) Flexo.fixedHeight;
+				wScale = ((double) Flexo.client.getStretchedDimensions().width) / Flexo.fixedWidth;
+				hScale = ((double) Flexo.client.getStretchedDimensions().height) / Flexo.fixedHeight;
 			}
 
 			int xPadding = (int) rect.getWidth() / 5;
@@ -165,7 +161,7 @@ public class FlexoMouse
 				}
 				else
 				{
-					return new Rectangle(clickRect.x, clickRect.y, clickRect.width, (int) (clickRect.getHeight()));
+					return new Rectangle((int) (clickRect.x), (int) (clickRect.y), (int) (clickRect.width), (int) (clickRect.getHeight()));
 				}
 			}
 
@@ -198,7 +194,7 @@ public class FlexoMouse
 			{
 				int x = clickRect.x + r.nextInt(clickRect.width);
 				int y = clickRect.y + r.nextInt(clickRect.height);
-				return new Rectangle(clickRect.x, clickRect.y, clickRect.width, (int) (clickRect.getHeight()));
+				return new Rectangle((int) (clickRect.x), (int) (clickRect.y), (int) (clickRect.width), (int) (clickRect.getHeight()));
 			}
 		}
 		//Resizable, not stretched
@@ -216,7 +212,7 @@ public class FlexoMouse
 			{
 				int x = clickRect.x + r.nextInt(clickRect.width);
 				int y = clickRect.y + r.nextInt(clickRect.height);
-				return new Rectangle(clickRect.x, clickRect.y, clickRect.width, (int) (clickRect.getHeight()));
+				return new Rectangle((int) (clickRect.x), (int) (clickRect.y), (int) (clickRect.width), (int) (clickRect.getHeight()));
 			}
 		}
 

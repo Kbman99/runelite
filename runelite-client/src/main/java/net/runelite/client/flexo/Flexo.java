@@ -34,23 +34,21 @@ for mouse motion.
 
 package net.runelite.client.flexo;
 
-import com.github.joonasvali.naturalmouse.api.MouseMotionFactory;
-import java.awt.AWTException;
-import java.awt.Color;
-import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
-import java.awt.Point;
-import java.awt.Robot;
-import java.awt.Toolkit;
+import net.runelite.client.naturalmouse.api.MouseMotionFactory;
+import net.runelite.api.Client;
+import net.runelite.client.naturalmouse.api.MouseMotion;
+import net.runelite.client.ui.ClientUI;
+import sun.awt.AWTAccessor;
+import sun.awt.ComponentFactory;
+
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
 import java.awt.peer.RobotPeer;
 import java.util.Random;
 import java.util.logging.Logger;
-import net.runelite.api.Client;
-import net.runelite.api.Constants;
-import net.runelite.client.ui.ClientUI;
-import sun.awt.ComponentFactory;
 
 public class Flexo extends Robot
 {
@@ -59,12 +57,14 @@ public class Flexo extends Robot
 	public static double scale;
 	public static Client client;
 	public static ClientUI clientUI;
-	public static final int fixedWidth = Constants.GAME_FIXED_WIDTH;
-	public static final int fixedHeight = Constants.GAME_FIXED_HEIGHT;
+	public static int fixedWidth = 765;
+	public static int fixedHeight = 503;
 	public static boolean isStretched;
-	public static int minDelay = 45;
+	public static int minDelay = 150;
 	public static MouseMotionFactory currentMouseMotionFactory;
+	public static MouseMotion mouseMotion;
 	public boolean pausedIndefinitely = false;
+	private Thread holdKeyThread;
 	private RobotPeer peer;
 
 	public Flexo() throws AWTException
@@ -131,7 +131,8 @@ public class Flexo extends Robot
 		try
 		{
 			//TODO: Must be better way to determine titlebar width
-			currentMouseMotionFactory.build(ClientUI.frame.getX() + x + determineHorizontalOffset(), ClientUI.frame.getY() + y + determineVerticalOffset()).move();
+			//currentMouseMotionFactory.build(client.getCanvas(), ClientUI.frame.getX()+x+determineHorizontalOffset(), ClientUI.frame.getY()+y+determineVerticalOffset()).move();
+			currentMouseMotionFactory.build(client.getCanvas(), x, y).move();
 			this.delay(getMinDelay());
 		}
 		catch (InterruptedException e)
@@ -142,10 +143,11 @@ public class Flexo extends Robot
 
 	public synchronized void mouseMove(Point p)
 	{
+		Point p2 = p;
 		mouseMove((int) p.getX(), (int) p.getY());
 		try
 		{
-			Thread.sleep(150);
+			Thread.sleep(10);
 		}
 		catch (InterruptedException e)
 		{
@@ -178,7 +180,7 @@ public class Flexo extends Robot
 		this.delay(getMinDelay());
 	}
 
-	//TODO: Symbols are nut supported at this time
+	//TODO: Symbols are not supported at this time
 	public synchronized void typeMessage(String message)
 	{
 
@@ -212,9 +214,7 @@ public class Flexo extends Robot
 		Random random = new Random();
 		int random1 = random.nextInt(minDelay);
 		if (random1 < minDelay / 2)
-		{
 			random1 = random.nextInt(minDelay / 2) + minDelay / 2 + random.nextInt(minDelay / 2);
-		}
 		return random1;
 	}
 
@@ -223,9 +223,7 @@ public class Flexo extends Robot
 		Random random = new Random();
 		int random1 = random.nextInt(minDelay);
 		if (random1 < minDelay / 2)
-		{
 			random1 = random.nextInt(minDelay / 2) + minDelay / 2 + random.nextInt(minDelay / 2);
-		}
 		return random1;
 	}
 
@@ -291,7 +289,7 @@ public class Flexo extends Robot
 
 	public synchronized void holdKeyIndefinitely(int keycode)
 	{
-		Thread holdKeyThread = new Thread(() ->
+		holdKeyThread = new Thread(() ->
 		{
 			pausedIndefinitely = true;
 			peer.keyPress(keycode);
@@ -299,7 +297,7 @@ public class Flexo extends Robot
 			{
 				try
 				{
-					Thread.sleep(10);
+					holdKeyThread.sleep(10);
 				}
 				catch (InterruptedException e)
 				{
@@ -310,13 +308,50 @@ public class Flexo extends Robot
 			this.delay(getMinDelay());
 		});
 		holdKeyThread.start();
+	}
 
+	public synchronized void keyPressAndRelease(Component source, int keycode)
+	{
+
+		KeyEvent press = new KeyEvent(source, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, keycode, KeyEvent.CHAR_UNDEFINED, KeyEvent.KEY_LOCATION_STANDARD);
+		source.dispatchEvent(press);
+		this.delay(getMinDelay());
+
+		KeyEvent release = new KeyEvent(source, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, keycode, KeyEvent.CHAR_UNDEFINED, KeyEvent.KEY_LOCATION_STANDARD);
+		source.dispatchEvent(release);
+		this.delay(getMinDelay());
+	}
+
+	public synchronized void mouseClickAndRelease(Component source, int eventType)
+	{
+
+		if (eventType < 1 || eventType > 5)
+		{
+			Logger.getAnonymousLogger().warning("Invalid mouse button ID. please use 1-5.");
+			return;
+		}
+
+		int x = client.getMouseCanvasPosition().getX();
+		int y = client.getMouseCanvasPosition().getY();
+
+		MouseEvent press = new MouseEvent(source, MouseEvent.MOUSE_PRESSED, System.currentTimeMillis(), 0, x, y, 1, false, eventType);
+		source.dispatchEvent(press);
+		this.delay(getMinDelay());
+
+		MouseEvent release = new MouseEvent(source, MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), 0, x, y, 1, false, eventType);
+		source.dispatchEvent(release);
+		//this.delay(getMinDelay());
+
+		MouseEvent click = new MouseEvent(source, MouseEvent.MOUSE_CLICKED, System.currentTimeMillis(), 0, x, y, 1, false, eventType);
+		source.dispatchEvent(click);
+		this.delay(getMinDelay());
 	}
 
 	@Override
 	public Color getPixelColor(int x, int y)
 	{
-		return new Color(peer.getRGBPixel(x, y));
+		Color color = new Color(peer.getRGBPixel(x, y));
+		return color;
 	}
 
 	@Override
@@ -334,5 +369,4 @@ public class Flexo extends Robot
 	{
 		return clientUI.getCanvasOffset().getY();
 	}
-
 }

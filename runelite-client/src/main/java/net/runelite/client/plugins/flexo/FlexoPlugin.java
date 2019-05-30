@@ -27,19 +27,14 @@
 
 package net.runelite.client.plugins.flexo;
 
-import com.github.joonasvali.naturalmouse.api.MouseMotionFactory;
-import com.github.joonasvali.naturalmouse.support.DefaultNoiseProvider;
-import com.github.joonasvali.naturalmouse.support.DefaultOvershootManager;
-import com.github.joonasvali.naturalmouse.support.DefaultSpeedManager;
-import com.github.joonasvali.naturalmouse.support.Flow;
-import com.github.joonasvali.naturalmouse.support.SinusoidalDeviationProvider;
-import com.github.joonasvali.naturalmouse.util.FlowTemplates;
+import net.runelite.client.naturalmouse.api.MouseMotionFactory;
+import net.runelite.client.naturalmouse.support.DefaultNoiseProvider;
+import net.runelite.client.naturalmouse.support.DefaultOvershootManager;
+import net.runelite.client.naturalmouse.support.DefaultSpeedManager;
+import net.runelite.client.naturalmouse.support.Flow;
+import net.runelite.client.naturalmouse.support.SinusoidalDeviationProvider;
+import net.runelite.client.naturalmouse.util.FlowTemplates;
 import com.google.inject.Provides;
-import java.awt.AWTException;
-import java.awt.Rectangle;
-import java.util.ArrayList;
-import java.util.List;
-import javax.inject.Inject;
 import net.runelite.api.Client;
 import net.runelite.api.NPC;
 import net.runelite.api.Perspective;
@@ -47,6 +42,7 @@ import net.runelite.api.Player;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.events.BeforeRender;
 import net.runelite.api.events.ConfigChanged;
+import net.runelite.api.events.GameTick;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.flexo.Flexo;
@@ -60,6 +56,11 @@ import net.runelite.client.plugins.stretchedmode.StretchedModeConfig;
 import net.runelite.client.ui.ClientUI;
 import net.runelite.client.ui.overlay.OverlayManager;
 
+import javax.inject.Inject;
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
+
 @PluginDescriptor(
 	name = "Flexo Config",
 	description = "Customizes the flexo api",
@@ -69,6 +70,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 
 public class FlexoPlugin extends Plugin
 {
+
 	private Flexo flexo;
 
 	{
@@ -178,12 +180,11 @@ public class FlexoPlugin extends Plugin
 			}
 		}
 
-		// Could still use some improvement
+		//Could still use some improvement
 		if (getConfig(configManager).getDebugGroundItems())
 		{
 			Flexo.isStretched = client.isStretchedEnabled();
 			Flexo.scale = configManager.getConfig(StretchedModeConfig.class).scalingFactor();
-
 			if (flexo != null)
 			{
 				if (GroundItemsPlugin.getCollectedGroundItems() != null)
@@ -192,18 +193,14 @@ public class FlexoPlugin extends Plugin
 					{
 						if (gi != null)
 						{
-							LocalPoint lp = LocalPoint.fromWorld(client, gi.getLocation());
-							if (lp != null)
+							if (Perspective.getCanvasTilePoly(client, LocalPoint.fromWorld(client, gi.getLocation())) != null)
 							{
-								if (Perspective.getCanvasTilePoly(client, lp) != null)
-								{
-									Rectangle r1 = FlexoMouse.getClickArea(Perspective.getCanvasTilePoly(client, lp).getBounds());
-									Rectangle r2 = FlexoMouse.getClickArea(r1);
-									Rectangle r3 = FlexoMouse.getClickArea(r2);
-									overlay.clickAreas.add(r3);
-									java.awt.Point p = FlexoMouse.getClickPoint(r3);
-									overlay.clickPoints.add(p);
-								}
+								Rectangle r1 = FlexoMouse.getClickArea(Perspective.getCanvasTilePoly(client, LocalPoint.fromWorld(client, gi.getLocation())).getBounds());
+								Rectangle r2 = FlexoMouse.getClickArea(r1);
+								Rectangle r3 = FlexoMouse.getClickArea(r2);
+								overlay.clickAreas.add(r3);
+								java.awt.Point p = FlexoMouse.getClickPoint(r3);
+								overlay.clickPoints.add(p);
 							}
 						}
 					}
@@ -212,14 +209,20 @@ public class FlexoPlugin extends Plugin
 		}
 	}
 
+	@Subscribe
+	public void onGameTick(GameTick event)
+	{
+
+	}
+
 	private void updateMouseMotionFactory()
 	{
 		Flexo.minDelay = getConfig(configManager).minDelayAmt();
 		MouseMotionFactory factory = new MouseMotionFactory();
-		// TODO:Add Options for various flows to allow more personalization
+		//TODO:Add Options for various flows to allow more personalization
 		List<Flow> flows = new ArrayList<>();
 
-		// Always add random
+		//Always add random
 		flows.add(new Flow(FlowTemplates.random()));
 
 		if (getConfig(configManager).getVariatingFlow())
@@ -284,4 +287,7 @@ public class FlexoPlugin extends Plugin
 	{
 		overlayManager.remove(overlay);
 	}
+>>>>>>>
+	Added configurable
+	bot framework
 }
