@@ -29,7 +29,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum TargetBot
 {
-	CLICK_ITEMS("Click Items");
+	CLICK_ITEMS("Click Items"),
+	DROP_ITEMS("Drop Items");
 
 	private final String target;
 

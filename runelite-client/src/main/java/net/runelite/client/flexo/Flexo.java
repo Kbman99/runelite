@@ -273,6 +273,20 @@ public class Flexo extends Robot
 		this.delay(getMinDelay());
 	}
 
+	public synchronized void virtualKeyPress(Component source, int keycode)
+	{
+		KeyEvent press = new KeyEvent(source, KeyEvent.KEY_PRESSED, System.currentTimeMillis(),
+			0, keycode, KeyEvent.CHAR_UNDEFINED, KeyEvent.KEY_LOCATION_STANDARD);
+		source.dispatchEvent(press);
+	}
+
+	public synchronized void virtualKeyRelease(Component source, int keycode)
+	{
+		KeyEvent press = new KeyEvent(source, KeyEvent.KEY_RELEASED, System.currentTimeMillis(),
+			0, keycode, KeyEvent.CHAR_UNDEFINED, KeyEvent.KEY_LOCATION_STANDARD);
+		source.dispatchEvent(press);
+	}
+
 	public synchronized void holdKey(int keycode, int timeMS)
 	{
 		new Thread(() ->

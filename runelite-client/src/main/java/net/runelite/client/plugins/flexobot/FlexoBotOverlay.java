@@ -39,7 +39,7 @@ public class FlexoBotOverlay extends Overlay
 		if (plugin.isActive())
 		{
 			panelComponent.getChildren().clear();
-			String overlayTitle = "ToB Cheats by Ganom";
+			String overlayTitle = "Flexo bot by Kbman99";
 
 			panelComponent.getChildren().add(TitleComponent.builder()
 				.text(overlayTitle)

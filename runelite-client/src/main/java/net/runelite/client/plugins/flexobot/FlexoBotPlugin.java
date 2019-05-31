@@ -6,11 +6,11 @@ package net.runelite.client.plugins.flexobot;
 
 import com.google.inject.Provides;
 import java.util.HashMap;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import lombok.AccessLevel;
 import lombok.Getter;
 import net.runelite.api.Actor;
-import net.runelite.api.ChatMessageType;
+import net.runelite.api.VarClientInt;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.NPC;
@@ -67,25 +67,34 @@ public class FlexoBotPlugin extends Plugin
 {
 	private static Logger logger = LoggerFactory.getLogger(FlexoBotPlugin.class);
 
-	@Getter(AccessLevel.PACKAGE) private boolean tickeat;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean tickeat;
 
-	@Getter(AccessLevel.PACKAGE) private boolean Active;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean Active;
 
-	@Getter private Widget widget;
+	@Getter
+	private Widget widget;
 
-	@Inject private Client client;
+	@Inject
+	private Client client;
 
-	@Inject private ClientThread clientThread;
+	@Inject
+	private ClientThread clientThread;
 
-	@Inject private FlexoBotConfig config;
+	@Inject
+	private FlexoBotConfig config;
 
-	@Inject private OverlayManager overlayManager;
+	@Inject
+	private OverlayManager overlayManager;
 
-	@Inject private FlexoBotOverlay overlay;
+	@Inject
+	private FlexoBotOverlay overlay;
 
-	@Inject private KeyManager keyManager;
+	@Inject
+	private KeyManager keyManager;
 
-	private HashMap<String, Consumer<int[]>> botMap = new HashMap<>();
+	private HashMap<String, BiConsumer<Integer, int[]>> botMap = new HashMap<>();
 
 	private NPC man = null;
 
@@ -96,16 +105,19 @@ public class FlexoBotPlugin extends Plugin
 	private Flexo flexer;
 	private ExecutorService executorService = Executors.newFixedThreadPool(1);
 
-	@Provides FlexoBotConfig getConfig(ConfigManager configManager)
+	@Provides
+	FlexoBotConfig getConfig(ConfigManager configManager)
 	{
 		return configManager.getConfig(FlexoBotConfig.class);
 	}
 
 	private final HotkeyListener hotkeyListener = new HotkeyListener(() -> config.hotkeyUtil())
 	{
-		@Override public void hotkeyPressed()
+		@Override
+		public void hotkeyPressed()
 		{
-			if (!executorService.isTerminated() && !firstRun)
+			logger.debug("Hotkey Pressed! running: {}", running);
+			if (!executorService.isTerminated() && !firstRun && running)
 			{
 				executorService.shutdownNow();
 				running = false;
@@ -119,18 +131,25 @@ public class FlexoBotPlugin extends Plugin
 				firstRun = false;
 				int[] items = Arrays.stream(config.itemsToClick().substring(1, config.itemsToClick().length() - 1)
 					.split(",")).map(String::trim).mapToInt(Integer::parseInt).toArray();
-				botMap.get(config.target().name()).accept(items);
+				int key = KeyEvent.VK_UNDEFINED;
+				if (config.target() == TargetBot.DROP_ITEMS)
+				{
+					key = KeyEvent.VK_SHIFT;
+				}
 				running = true;
+				botMap.get(config.target().name()).accept(key, items);
 			}
 		}
 	};
 
-	@Override protected void startUp()
+	@Override
+	protected void startUp()
 	{
 		overlayManager.add(overlay);
 		keyManager.registerKeyListener(hotkeyListener);
 		Flexo.client = client;
-		botMap.put(TargetBot.CLICK_ITEMS.name(), items -> clickItem(items));
+		botMap.put(TargetBot.CLICK_ITEMS.name(), (key, items) -> clickItemMaybePressKey(key, items));
+		botMap.put(TargetBot.DROP_ITEMS.name(), (key, items) -> clickItemMaybePressKey(key, items));
 		executorService.submit(() ->
 		{
 			flexer = null;
@@ -147,7 +166,8 @@ public class FlexoBotPlugin extends Plugin
 		man = null;
 	}
 
-	@Override protected void shutDown()
+	@Override
+	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
 		keyManager.unregisterKeyListener(hotkeyListener);
@@ -155,7 +175,8 @@ public class FlexoBotPlugin extends Plugin
 		man = null;
 	}
 
-	@Subscribe public void onBeforeRender(BeforeRender r)
+	@Subscribe
+	public void onBeforeRender(BeforeRender r)
 	{
 		for (NPC npc : client.getNpcs())
 		{
@@ -167,7 +188,8 @@ public class FlexoBotPlugin extends Plugin
 		}
 	}
 
-	@Subscribe public void onChatMessage(ChatMessage event)
+	@Subscribe
+	public void onChatMessage(ChatMessage event)
 	{
 		final String msg = event.getMessage();
 //		if (event.getType() == ChatMessageType.PUBLICCHAT)
@@ -263,31 +285,40 @@ public class FlexoBotPlugin extends Plugin
 		});
 	}
 
-	private void clickItem(int... items)
+	private void clickItemMaybePressKey(int keyToPress, int... items)
 	{
-		executorService.submit(new Runnable()
+		executorService.submit(() ->
 		{
-			@Override public void run()
+			flexer.virtualKeyPress(client.getCanvas(), keyToPress);
+			while (true)
 			{
-				while (true)
+				for (WidgetItem item : getItems(items))
 				{
-					for (WidgetItem item : getItems(items))
+					if (getCurrentTab() != 3)
 					{
-						Rectangle bounds = FlexoMouse.getClickArea(item.getCanvasBounds());
-						Point cp = getClickPoint(bounds);
-						if (bounds.getX() >= 1)
-						{
-							flexer.mouseMove(cp.x, cp.y);
-							flexer.mouseClickAndRelease(client.getCanvas(), 1);
-						}
+						flexer.keyPressAndRelease(client.getCanvas(), KeyEvent.VK_F1);
 					}
-					if (getItems(items).size() != items.length || Thread.currentThread().isInterrupted() || config.kill() || !running)
+					Rectangle bounds = FlexoMouse.getClickArea(item.getCanvasBounds());
+					Point cp = getClickPoint(bounds);
+					if (bounds.getX() >= 1)
 					{
-						break;
+						flexer.mouseMove(cp.x, cp.y);
+						flexer.mouseClickAndRelease(client.getCanvas(), 1);
 					}
 				}
+				if (getItems(items).size() == 0 || Thread.currentThread().isInterrupted() || config.kill() || !running)
+				{
+					break;
+				}
 			}
+			flexer.virtualKeyRelease(client.getCanvas(), keyToPress);
+			running = false;
 		});
+	}
+
+	private void dropItems(int key, int... items)
+	{
+
 	}
 
 	private void useConsumable(int... food)
@@ -355,26 +386,24 @@ public class FlexoBotPlugin extends Plugin
 
 	private Point getClickPoint(Rectangle rect)
 	{
+		double rand = Math.random();
+		//TODO these x and y coords will always be random in the positive direction since the rand is being added.
+		// Need to modify to prevent misclicks
+		int x = (int) (rect.getX() + ((rand * rect.getWidth())) * 0.75);
+		int y = (int) (rect.getY() + (rand * rect.getHeight()) * 0.75);
+
 		if (client.isStretchedEnabled())
 		{
-			double constant = (Math.random() <= 0.5) ? -2 : 2;
-			double rand = Math.random() * constant;
-			//TODO these x and y coords will always be random in the positive direction since the rand is being added.
-			// Need to modify to prevent misclicks
-			int x = (int) (rect.getX() + (rand * 2) + rect.getWidth() / 2);
-			int y = (int) (rect.getY() + (rand * 2) + rect.getHeight() / 2);
 			double scale = 1 + ((double) 75 / 100);
 			return new Point((int) (x * scale), (int) (y * scale));
 		}
 		else
 		{
-			double constant = (Math.random() <= 0.5) ? -2 : 2;
-			double rand = Math.random() * constant;
-			//TODO these x and y coords will always be random in the positive direction since the rand is being added.
-			// Need to modify to prevent misclicks
-			int x = (int) (rect.getX() + (rand * 2) + rect.getWidth() / 2);
-			int y = (int) (rect.getY() + (rand * 2) + rect.getHeight() / 2);
 			return new Point(x, y);
 		}
+	}
+
+	private int getCurrentTab() {
+		return client.getVar(VarClientInt.PLAYER_INVENTORY_OPENED);
 	}
 }

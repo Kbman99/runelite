@@ -64,7 +64,9 @@ import java.util.List;
 @PluginDescriptor(
 	name = "Flexo Config",
 	description = "Customizes the flexo api",
-	tags = {"flexo", "null"},
+	tags = {
+		"flexo", "null"
+	},
 	type = PluginType.UTILITY
 )
 
@@ -212,7 +214,6 @@ public class FlexoPlugin extends Plugin
 	@Subscribe
 	public void onGameTick(GameTick event)
 	{
-
 	}
 
 	private void updateMouseMotionFactory()
@@ -287,7 +288,4 @@ public class FlexoPlugin extends Plugin
 	{
 		overlayManager.remove(overlay);
 	}
->>>>>>>
-	Added configurable
-	bot framework
 }

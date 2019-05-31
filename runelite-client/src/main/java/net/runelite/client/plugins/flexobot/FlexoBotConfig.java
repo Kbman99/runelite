@@ -22,6 +22,17 @@ public interface FlexoBotConfig extends Config
 
 	@ConfigItem(
 		position = 1,
+		keyName = "target",
+		name = "Target Bot",
+		description = "The bot you wish to run"
+	)
+	default TargetBot target()
+	{
+		return TargetBot.CLICK_ITEMS;
+	}
+
+	@ConfigItem(
+		position = 2,
 		keyName = "items",
 		name = "Items To Click",
 		description = "Items that will be clicked"
@@ -32,7 +43,7 @@ public interface FlexoBotConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 2,
+		position = 3,
 		keyName = "kill",
 		name = "Kill Switch",
 		description = "Overrides item clicker and will kill the current task"
@@ -40,17 +51,6 @@ public interface FlexoBotConfig extends Config
 	default boolean kill()
 	{
 		return false;
-	}
-
-	@ConfigItem(
-		position = 3,
-		keyName = "target",
-		name = "Target Bot",
-		description = "The bot you wish to run"
-	)
-	default TargetBot target()
-	{
-		return TargetBot.CLICK_ITEMS;
 	}
 
 	@ConfigItem(
