@@ -26,17 +26,36 @@ package net.runelite.client.plugins.flexobot;
 
 import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
-public enum TargetBot
+public class TargetBot
 {
-	CLICK_ITEMS("Click Items"),
-	DROP_ITEMS("Drop Items");
-
-	private final String target;
-
-	@Override
-	public String toString()
+	@RequiredArgsConstructor
+	public enum TargetClickBot
 	{
-		return target;
+		NONE("Select a bot"),
+		CLICK_ITEMS("Click Items"),
+		DROP_ITEMS("Drop Items");
+
+		private final String target;
+
+		@Override
+		public String toString()
+		{
+			return target;
+		}
+	}
+
+	@RequiredArgsConstructor
+	public enum TargetRecordBot
+	{
+		NONE("Select a bot"),
+		RECORD("Record and replay actions");
+
+		private final String target;
+
+		@Override
+		public String toString()
+		{
+			return target;
+		}
 	}
 }

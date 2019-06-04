@@ -34,19 +34,21 @@ for mouse motion.
 
 package net.runelite.client.flexo;
 
+import com.google.inject.Provides;
+import net.runelite.client.config.ConfigManager;
 import net.runelite.client.naturalmouse.api.MouseMotionFactory;
 import net.runelite.api.Client;
 import net.runelite.client.naturalmouse.api.MouseMotion;
+import net.runelite.client.plugins.flexo.FlexoConfig;
 import net.runelite.client.ui.ClientUI;
-import sun.awt.AWTAccessor;
 import sun.awt.ComponentFactory;
 
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.peer.RobotPeer;
+import javax.inject.Inject;
 import java.util.Random;
 import java.util.logging.Logger;
 
@@ -60,12 +62,22 @@ public class Flexo extends Robot
 	public static int fixedWidth = 765;
 	public static int fixedHeight = 503;
 	public static boolean isStretched;
-	public static int minDelay = 150;
+	// SET BACK TO 150
+	public static int minDelay = 75;
 	public static MouseMotionFactory currentMouseMotionFactory;
 	public static MouseMotion mouseMotion;
 	public boolean pausedIndefinitely = false;
 	private Thread holdKeyThread;
 	private RobotPeer peer;
+
+	@Inject
+	private ConfigManager configManager;
+
+	@Provides
+	FlexoConfig getConfig(ConfigManager configManager)
+	{
+		return configManager.getConfig(FlexoConfig.class);
+	}
 
 	public Flexo() throws AWTException
 	{
@@ -108,7 +120,7 @@ public class Flexo extends Robot
 		}
 	}
 
-	private void pauseMS(int delayMS)
+	public void pauseMS(int delayMS)
 	{
 		long initialMS = System.currentTimeMillis();
 		while (System.currentTimeMillis() < initialMS + delayMS)
@@ -331,8 +343,22 @@ public class Flexo extends Robot
 		source.dispatchEvent(press);
 		this.delay(getMinDelay());
 
+		if (keycode < 112 || keycode > 123)
+		{
+			KeyEvent type = new KeyEvent(source, KeyEvent.KEY_TYPED, System.currentTimeMillis(), 0, KeyEvent.VK_UNDEFINED, (char) keycode);
+			source.dispatchEvent(type);
+			this.delay(getMinDelay());
+		}
+
 		KeyEvent release = new KeyEvent(source, KeyEvent.KEY_RELEASED, System.currentTimeMillis(), 0, keycode, KeyEvent.CHAR_UNDEFINED, KeyEvent.KEY_LOCATION_STANDARD);
 		source.dispatchEvent(release);
+		this.delay(getMinDelay());
+	}
+
+	public void keyTyped(Component source, int keycode)
+	{
+		KeyEvent type = new KeyEvent(source, KeyEvent.KEY_TYPED, System.currentTimeMillis(), 0, KeyEvent.VK_UNDEFINED, (char) keycode);
+		source.dispatchEvent(type);
 		this.delay(getMinDelay());
 	}
 
@@ -372,6 +398,11 @@ public class Flexo extends Robot
 	public void delay(int ms)
 	{
 		pauseMS(ms);
+	}
+
+	public void delay(long ms)
+	{
+		pauseMS((int) ms);
 	}
 
 	public int determineHorizontalOffset()

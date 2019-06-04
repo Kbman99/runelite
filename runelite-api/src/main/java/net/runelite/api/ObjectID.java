@@ -6213,6 +6213,7 @@ public final class ObjectID
 	public static final int STAIRS_10774 = 10774;
 	public static final int STAIRS_10775 = 10775;
 	public static final int STAIRS_10776 = 10776;
+	public static final int CAMELOT_TELE_BANK_CHEST = 10777;
 	public static final int ROCK_10782 = 10782;
 	public static final int ROCK_10783 = 10783;
 	public static final int ROCK_10784 = 10784;
