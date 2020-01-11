@@ -24,90 +24,78 @@
  */
 package net.runelite.client;
 
-import java.io.IOException;
+import io.reactivex.schedulers.Schedulers;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.callback.ClientThread;
+import net.runelite.client.task.Schedule;
 
 @Singleton
 @Slf4j
 public class ClientSessionManager
 {
-	private final SessionClient sessionClient = new SessionClient();
-	private final ScheduledExecutorService executorService;
-
-	private ScheduledFuture<?> scheduledFuture;
+	private final SessionClient sessionClient;
+	private final ClientThread clientThread;
 	private UUID sessionId;
 
 
 	@Inject
-	ClientSessionManager(ScheduledExecutorService executorService)
+	ClientSessionManager(ClientThread clientThread)
 	{
-		this.executorService = executorService;
+		this.sessionClient = new SessionClient();
+		this.clientThread = clientThread;
 	}
 
-	public void start()
+	void start()
 	{
-		try
+		sessionClient.openSession()
+			.subscribeOn(Schedulers.io())
+			.observeOn(Schedulers.single())
+			.subscribe(this::setUuid, this::error);
+	}
+
+	@Schedule(period = 10, unit = ChronoUnit.MINUTES, asynchronous = true)
+	public void ping()
+	{
+		if (sessionId == null)
 		{
-			sessionId = sessionClient.open();
-			log.debug("Opened session {}", sessionId);
-		}
-		catch (IOException ex)
-		{
-			log.warn("error opening session", ex);
+			start();
+			return;
 		}
 
-		scheduledFuture = executorService.scheduleWithFixedDelay(this::ping, 1, 10, TimeUnit.MINUTES);
+		sessionClient.pingSession(sessionId)
+			.subscribeOn(Schedulers.io())
+			.observeOn(Schedulers.single())
+			.doOnError(this::error)
+			.subscribe();
 	}
 
 	public void shutdown()
 	{
 		if (sessionId != null)
 		{
-			try
-			{
-				sessionClient.delete(sessionId);
-			}
-			catch (IOException ex)
-			{
-				log.warn(null, ex);
-			}
+			sessionClient.delete(sessionId)
+				.subscribeOn(Schedulers.io())
+				.observeOn(Schedulers.single())
+				.doOnError(this::error)
+				.subscribe();
+
 			sessionId = null;
 		}
-
-		scheduledFuture.cancel(true);
 	}
 
-	private void ping()
+	private void setUuid(UUID uuid)
 	{
-		try
-		{
-			if (sessionId == null)
-			{
-				sessionId = sessionClient.open();
-				log.debug("Opened session {}", sessionId);
-				return;
-			}
-		}
-		catch (IOException ex)
-		{
-			log.warn(null, ex);
-		}
+		this.sessionId = uuid;
+		log.debug("Opened session {}.", sessionId);
+	}
 
-		try
-		{
-			sessionClient.ping(sessionId);
-		}
-		catch (IOException ex)
-		{
-			log.warn("Resetting session", ex);
-			sessionId = null;
-		}
-
+	private void error(Throwable error)
+	{
+		log.debug("Error in client session.");
+		log.trace(null, error);
 	}
 }

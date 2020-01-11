@@ -1,6 +1,9 @@
 package net.runelite.deob.updater;
 
+import com.google.common.base.Strings;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import net.runelite.asm.ClassFile;
 import net.runelite.asm.ClassGroup;
 import net.runelite.asm.Field;
@@ -10,8 +13,7 @@ import net.runelite.deob.Deob;
 import net.runelite.deob.DeobAnnotations;
 import net.runelite.deob.DeobTestProperties;
 import net.runelite.deob.util.JarUtil;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -27,6 +29,7 @@ public class AnnotationCleaner
 	@Test
 	public void checkMappings() throws Exception
 	{
+		final List<String> missing = new ArrayList<>();
 		File client = new File(properties.getRsClient());
 		ClassGroup group = JarUtil.loadJar(client);
 
@@ -36,8 +39,22 @@ public class AnnotationCleaner
 			{
 				continue;
 			}
+			final String className = c.getClassName();
 
 			log.debug("Checking {}", c.toString());
+
+			String implementingName = DeobAnnotations.getImplements(c);
+			if (!Strings.isNullOrEmpty(implementingName))
+			{
+				if (!implementingName.equals(className))
+				{
+					missing.add("Implements: " + className + " != " + implementingName);
+				}
+			}
+			else if (!Deob.isObfuscated(c.getClassName()))
+			{
+				missing.add("Implements: " + className + " == missing");
+			}
 
 			for (Field f : c.getFields())
 			{
@@ -48,28 +65,69 @@ public class AnnotationCleaner
 
 				if (exportedName == null)
 				{
-					assertTrue("Field " + fieldName + " isn't obfuscated but doesn't have @Export.", Deob.isObfuscated(fieldName) || fieldName.contains("$"));
-					continue;
+					if (!Deob.isObfuscated(fieldName) && DeobAnnotations.getObfuscatedName(an) != null)
+					{
+						missing.add("Export: (field)  " + className + '.' + fieldName + " == missing");
+					}
 				}
-
-				assertEquals("Field " + fieldName + " has " + exportedName + " in @Export", fieldName, exportedName);
+				else if (!fieldName.equals(exportedName))
+				{
+					missing.add("Export: (field)  " + className + '.' + fieldName + " != " + exportedName);
+				}
 			}
 
 			for (Method m : c.getMethods())
 			{
 				Annotations an = m.getAnnotations();
 
-				String fieldName = m.getName();
+				String methodName = m.getName();
 				String exportedName = DeobAnnotations.getExportedName(an);
 
 				if (exportedName == null)
 				{
-					assertTrue("Method " + fieldName + " isn't obfuscated but doesn't have @Export.", Deob.isObfuscated(fieldName) || fieldName.endsWith("init>") || fieldName.equals("values") || fieldName.equals("valueOf") || fieldName.startsWith("compareTo") || fieldName.equals("equals") || fieldName.equals("hashCode") || fieldName.equals("compare"));
-					continue;
+					if (!Deob.isObfuscated(methodName) && DeobAnnotations.getObfuscatedName(an) != null)
+					{
+						missing.add("Export: (method) " + className + '.' + methodName + " == missing");
+					}
 				}
-
-				assertEquals("Method " + fieldName + " has " + exportedName + " in @Export", fieldName, exportedName);
+				else if (!methodName.equals(exportedName))
+				{
+					missing.add("Export: (method) " + className + '.' + methodName + " != " + exportedName);
+				}
 			}
+		}
+
+		if (missing.isEmpty())
+		{
+			return;
+		}
+
+		log.error("{} missing annotations!", missing.size());
+		for (String s : missing)
+		{
+			log.error(s);
+		}
+
+		throw new OhNoException();
+	}
+
+	@Test
+	@Ignore
+	public void fixMappings() throws Exception
+	{
+		File client = new File(properties.getRsClient());
+
+		ClassGroup group = JarUtil.loadJar(client);
+
+		new AnnotationAdder(group).run();
+
+		JarUtil.saveJar(group, new File("C:/Users/Lucas/Desktop/niec.jar"));
+	}
+
+	private class OhNoException extends Exception
+	{
+		private OhNoException()
+		{
 		}
 	}
 }

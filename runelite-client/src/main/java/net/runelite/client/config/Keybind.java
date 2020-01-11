@@ -47,7 +47,7 @@ public class Keybind
 		.put(InputEvent.META_DOWN_MASK, KeyEvent.VK_META)
 		.build();
 
-	// Bitmask of all supported modifers
+	// Bitmask of all supported modifiers
 	private static final int KEYBOARD_MODIFIER_MASK = MODIFIER_TO_KEY_CODE.keySet().stream()
 		.reduce((a, b) -> a | b).get();
 
@@ -60,12 +60,12 @@ public class Keybind
 	private final int keyCode;
 	private final int modifiers;
 
-	protected Keybind(int keyCode, int modifiers, boolean ignoreModifiers)
+	Keybind(int keyCode, int modifiers, boolean ignoreModifiers)
 	{
 		modifiers &= KEYBOARD_MODIFIER_MASK;
 
 		// If the keybind is just modifiers we don't want the keyCode to contain the modifier too,
-		// becasue this breaks if you do the keycode backwards
+		// because this breaks if you do the keycode backwards
 		Integer mf = getModifierForKeyCode(keyCode);
 		if (mf != null)
 		{
@@ -108,7 +108,7 @@ public class Keybind
 		return matches(e, false);
 	}
 
-	protected boolean matches(KeyEvent e, boolean ignoreModifiers)
+	boolean matches(KeyEvent e, boolean ignoreModifiers)
 	{
 		if (NOT_SET.equals(this))
 		{
@@ -177,7 +177,7 @@ public class Keybind
 		return mod;
 	}
 
-	public static String getModifiersExText(int modifiers)
+	private static String getModifiersExText(int modifiers)
 	{
 		StringBuilder buf = new StringBuilder();
 		if ((modifiers & InputEvent.META_DOWN_MASK) != 0)

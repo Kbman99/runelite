@@ -30,18 +30,20 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.AccessLevel;
 import lombok.Getter;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.plugins.runepouch.config.RunePouchOverlayMode;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @PluginDescriptor(
 	name = "Rune Pouch",
 	description = "Show the contents of your rune pouch",
-	tags = {"combat", "magic", "overlay"}
+	tags = {"combat", "magic", "overlay"},
+	type = PluginType.UTILITY
 )
 @Singleton
 public class RunepouchPlugin extends Plugin
@@ -69,20 +71,22 @@ public class RunepouchPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
+
 		overlayManager.add(overlay);
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
 	}
 
+
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("runepouch"))
 		{

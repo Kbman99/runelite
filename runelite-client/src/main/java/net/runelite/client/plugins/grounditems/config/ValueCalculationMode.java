@@ -25,14 +25,15 @@
 
 package net.runelite.client.plugins.grounditems.config;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-@Getter
+@Getter(AccessLevel.PUBLIC)
 @RequiredArgsConstructor
 public enum ValueCalculationMode
 {
 	HA, // calc highlight by HA value
 	GE, // calc by GE
-	HIGHEST;
+	HIGHEST
 }

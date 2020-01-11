@@ -52,7 +52,7 @@ public interface Tile
 	 *
 	 * @return the item
 	 */
-	ItemLayer getItemLayer();
+	TileItemPile getItemLayer();
 
 	/**
 	 * Gets the object on the ground layer of the tile.
@@ -73,14 +73,14 @@ public interface Tile
 	 *
 	 * @return the paint
 	 */
-	SceneTilePaint getSceneTilePaint();
+	TilePaint getTilePaint();
 
 	/**
 	 * Gets the model of the tile in the scene.
 	 *
 	 * @return the tile model
 	 */
-	SceneTileModel getSceneTileModel();
+	TileModel getTileModel();
 
 	/**
 	 * Gets the location coordinate of the tile in the world.
@@ -130,7 +130,7 @@ public interface Tile
 	 *
 	 * @return the ground items
 	 */
-	List<Item> getGroundItems();
+	List<TileItem> getGroundItems();
 
 	/**
 	 * Return the tile under this one, if this tile is a bridge

@@ -47,7 +47,6 @@ import net.runelite.api.Player;
 import net.runelite.api.Varbits;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.VarbitChanged;
@@ -55,8 +54,10 @@ import net.runelite.client.Notifier;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.plugins.wintertodt.config.WintertodtNotifyMode;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ColorUtil;
@@ -64,7 +65,8 @@ import net.runelite.client.util.ColorUtil;
 @PluginDescriptor(
 	name = "Wintertodt",
 	description = "Show helpful information for the Wintertodt boss",
-	tags = {"minigame", "firemaking", "boss"}
+	tags = {"minigame", "firemaking", "boss"},
+	type = PluginType.MINIGAME
 )
 @Slf4j
 @Singleton
@@ -118,7 +120,7 @@ public class WintertodtPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		this.notifyCondition = config.notifyCondition();
 		this.damageNotificationColor = config.damageNotificationColor();
@@ -130,12 +132,14 @@ public class WintertodtPlugin extends Plugin
 	@Override
 	protected void shutDown() throws Exception
 	{
+		super.shutDown();
+
 		overlayManager.remove(overlay);
 		reset();
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("wintertodt"))
 		{
@@ -165,7 +169,7 @@ public class WintertodtPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick gameTick)
+	private void onGameTick(GameTick gameTick)
 	{
 		if (!isInWintertodtRegion())
 		{
@@ -190,7 +194,7 @@ public class WintertodtPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onVarbitChanged(VarbitChanged varbitChanged)
+	void onVarbitChanged(VarbitChanged varbitChanged)
 	{
 		int timerValue = client.getVar(Varbits.WINTERTODT_TIMER);
 		if (timerValue != previousTimerValue)
@@ -237,7 +241,7 @@ public class WintertodtPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onChatMessage(ChatMessage chatMessage)
+	private void onChatMessage(ChatMessage chatMessage)
 	{
 		if (!isInWintertodt)
 		{
@@ -381,7 +385,7 @@ public class WintertodtPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onAnimationChanged(final AnimationChanged event)
+	private void onAnimationChanged(final AnimationChanged event)
 	{
 		if (!isInWintertodt)
 		{
@@ -408,6 +412,7 @@ public class WintertodtPlugin extends Plugin
 			case WOODCUTTING_DRAGON:
 			case WOODCUTTING_INFERNAL:
 			case WOODCUTTING_3A_AXE:
+			case WOODCUTTING_CRYSTAL:
 				setActivity(WintertodtActivity.WOODCUTTING);
 				break;
 
@@ -430,7 +435,7 @@ public class WintertodtPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onItemContainerChanged(ItemContainerChanged event)
+	private void onItemContainerChanged(ItemContainerChanged event)
 	{
 		final ItemContainer container = event.getItemContainer();
 

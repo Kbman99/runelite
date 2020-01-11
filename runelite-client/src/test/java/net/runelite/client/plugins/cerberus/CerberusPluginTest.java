@@ -33,6 +33,7 @@ import javax.inject.Inject;
 import net.runelite.api.NPC;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.events.GameTick;
+import net.runelite.client.config.OpenOSRSConfig;
 import net.runelite.client.ui.overlay.OverlayManager;
 import static org.junit.Assert.assertEquals;
 import org.junit.Before;
@@ -41,7 +42,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CerberusPluginTest
@@ -49,6 +50,10 @@ public class CerberusPluginTest
 	@Mock
 	@Bind
 	OverlayManager overlayManager;
+
+	@Mock
+	@Bind
+	private OpenOSRSConfig openOSRSConfig;
 
 	@Inject
 	CerberusPlugin cerberusPlugin;

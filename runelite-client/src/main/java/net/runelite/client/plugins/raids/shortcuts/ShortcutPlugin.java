@@ -11,20 +11,22 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.TileObject;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameObjectDespawned;
 import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.api.events.GameTick;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @PluginDescriptor(
-	name = "Raid Shortcuts",
+	name = "Raids Shortcuts",
 	description = "Highlights Raid Shortcuts",
-	tags = {"boulder", "cox", "raids", "highlight"}
+	tags = {"boulder", "cox", "raids", "highlight"},
+	type = PluginType.PVM
 )
 @Slf4j
 @Singleton
@@ -57,6 +59,7 @@ public class ShortcutPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
+
 		this.highlightShortcuts = config.highlightShortcuts();
 		overlayManager.add(overlay);
 	}
@@ -68,7 +71,7 @@ public class ShortcutPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameObjectSpawned(GameObjectSpawned event)
+	private void onGameObjectSpawned(GameObjectSpawned event)
 	{
 		WorldPoint worldPoint = WorldPoint.fromLocalInstance(client, event.getGameObject().getLocalLocation());
 		if (worldPoint == null)
@@ -82,19 +85,19 @@ public class ShortcutPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameObjectDespawned(GameObjectDespawned event)
+	private void onGameObjectDespawned(GameObjectDespawned event)
 	{
 		shortcut.remove(event.getGameObject());
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick tick)
+	private void onGameTick(GameTick tick)
 	{
 		shortcut.removeIf(object -> object.getCanvasLocation() == null);
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("shortcut"))
 		{

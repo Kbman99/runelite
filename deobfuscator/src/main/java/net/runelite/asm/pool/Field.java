@@ -25,9 +25,8 @@
 
 package net.runelite.asm.pool;
 
-import net.runelite.asm.Type;
-
 import java.util.Objects;
+import net.runelite.asm.Type;
 
 public class Field
 {
@@ -45,7 +44,7 @@ public class Field
 	@Override
 	public String toString()
 	{
-		return "Field{" + "clazz=" + clazz + ", name=" + name + ", type=" + type + '}';
+		return clazz.getName() + '.' + name + " " + type;
 	}
 
 	@Override

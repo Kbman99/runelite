@@ -24,10 +24,15 @@
  */
 package net.runelite.mixins;
 
+import net.runelite.api.MenuEntry;
+import net.runelite.api.events.WidgetPressed;
+import net.runelite.api.mixins.FieldHook;
 import net.runelite.api.mixins.Inject;
 import net.runelite.api.mixins.Mixin;
+import net.runelite.api.mixins.Shadow;
 import net.runelite.rs.api.RSClient;
 import net.runelite.rs.api.RSFont;
+import net.runelite.rs.api.RSMenuAction;
 
 @Mixin(RSClient.class)
 public abstract class MenuMixin implements RSClient
@@ -39,6 +44,12 @@ public abstract class MenuMixin implements RSClient
 	private static final int MENU_TEXT_2010 = 0xC6B895;
 	private static final int MENU_HEADER_GRADIENT_TOP_2010 = 0x322E22;
 	private static final int MENU_HEADER_GRADIENT_BOTTOM_2010 = 0x090A04;
+
+	@Shadow("client")
+	private static RSClient client;
+
+	@Shadow("tempMenuAction")
+	private static RSMenuAction tempMenuAction;
 
 	@Inject
 	@Override
@@ -112,44 +123,55 @@ public abstract class MenuMixin implements RSClient
 
 	@Inject
 	@Override
-	public void sortMenuEntries()
+	public MenuEntry getLeftClickMenuEntry()
 	{
-		int count = getMenuOptionCount() - 1;
-		int[] menuOpcodes = getMenuTypes();
-		String[] menuTargetNames = getMenuTargets();
-		String[] menuActions = getMenuOptions();
-		int[] menuArguments0 = getMenuIdentifiers();
-		int[] menuArguments1 = getMenuActionParams0();
-		int[] menuArguments2 = getMenuActionParams1();
-		boolean[] menuShiftClick = getMenuForceLeftClick();
+		final int i = getMenuOptionCount() - 1;
+		return new MenuEntry(
+			getMenuOptions()[i],
+			getMenuTargets()[i],
+			getMenuIdentifiers()[i],
+			getMenuOpcodes()[i],
+			getMenuArguments1()[i],
+			getMenuArguments2()[i],
+			getMenuForceLeftClick()[i]
+		);
+	}
 
-		int tmp;
-		for (int i = 0; i < count; ++i)
+	@Inject
+	@Override
+	public void setLeftClickMenuEntry(final MenuEntry entry)
+	{
+		final int i = getMenuOptionCount() - 1;
+		getMenuOptions()[i] = entry.getOption();
+		getMenuTargets()[i] = entry.getTarget();
+		getMenuIdentifiers()[i] = entry.getIdentifier();
+		getMenuOpcodes()[i] = entry.getOpcode();
+		getMenuArguments1()[i] = entry.getParam0();
+		getMenuArguments2()[i] = entry.getParam1();
+		getMenuForceLeftClick()[i] = entry.isForceLeftClick();
+	}
+
+	@Inject
+	@FieldHook("tempMenuAction")
+	public static void onTempMenuActionChanged(int idx)
+	{
+		if (tempMenuAction != null)
 		{
-			if (menuOpcodes[i] < 1000 && menuOpcodes[i + 1] > 1000)
-			{
-				String var3 = menuTargetNames[i];
-				menuTargetNames[i] = menuTargetNames[i + 1];
-				menuTargetNames[i + 1] = var3;
-				String var4 = menuActions[i];
-				menuActions[i] = menuActions[i + 1];
-				menuActions[i + 1] = var4;
-				tmp = menuOpcodes[i];
-				menuOpcodes[i] = menuOpcodes[i + 1];
-				menuOpcodes[i + 1] = tmp;
-				tmp = menuArguments1[i];
-				menuArguments1[i] = menuArguments1[i + 1];
-				menuArguments1[i + 1] = tmp;
-				tmp = menuArguments2[i];
-				menuArguments2[i] = menuArguments2[i + 1];
-				menuArguments2[i + 1] = tmp;
-				tmp = menuArguments0[i];
-				menuArguments0[i] = menuArguments0[i + 1];
-				menuArguments0[i + 1] = tmp;
-				boolean var6 = menuShiftClick[i];
-				menuShiftClick[i] = menuShiftClick[i + 1];
-				menuShiftClick[i + 1] = var6;
-			}
+			client.getCallbacks().post(WidgetPressed.class, WidgetPressed.INSTANCE);
 		}
+	}
+
+	@Inject
+	@Override
+	public void setTempMenuEntry(MenuEntry entry)
+	{
+		if (entry == null || tempMenuAction == null)
+			return;
+
+		tempMenuAction.setOption(entry.getOption());
+		tempMenuAction.setOpcode(entry.getOpcode());
+		tempMenuAction.setIdentifier(entry.getIdentifier());
+		tempMenuAction.setParam0(entry.getParam0());
+		tempMenuAction.setParam1(entry.getParam1());
 	}
 }

@@ -34,7 +34,6 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import net.runelite.api.Client;
-import net.runelite.api.Constants;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.api.widgets.WidgetItem;
@@ -47,10 +46,14 @@ import net.runelite.client.ui.overlay.OverlayPosition;
 class InventoryGridOverlay extends Overlay
 {
 	private static final int INVENTORY_SIZE = 28;
+	private static final int DISTANCE_TO_ACTIVATE_HOVER = 5;
 
 	private final InventoryGridPlugin plugin;
 	private final Client client;
 	private final ItemManager itemManager;
+
+	private Point initialMousePoint;
+	private boolean hoverActive = false;
 
 	@Inject
 	private InventoryGridOverlay(final InventoryGridPlugin plugin, final Client client, final ItemManager itemManager)
@@ -69,32 +72,43 @@ class InventoryGridOverlay extends Overlay
 		final Widget if1DraggingWidget = client.getIf1DraggedWidget();
 		final Widget inventoryWidget = client.getWidget(WidgetInfo.INVENTORY);
 
-		if (if1DraggingWidget == null || if1DraggingWidget != inventoryWidget
-			|| client.getItemPressedDuration() < plugin.getDragDelay() / Constants.CLIENT_TICK_LENGTH)
+
+		if (if1DraggingWidget == null || if1DraggingWidget != inventoryWidget)
 		{
+			initialMousePoint = null;
+			hoverActive = false;
 			return null;
 		}
 
 		final net.runelite.api.Point mouse = client.getMouseCanvasPosition();
 		final Point mousePoint = new Point(mouse.getX(), mouse.getY());
+		final int if1DraggedItemIndex = client.getIf1DraggedItemIndex();
+		final WidgetItem draggedItem = inventoryWidget.getWidgetItem(if1DraggedItemIndex);
+		final Rectangle initialBounds = draggedItem.getCanvasBounds();
+
+		if (initialMousePoint == null)
+		{
+			initialMousePoint = mousePoint;
+		}
+
+		if (draggedItem.getId() == -1 || !hoverActive && initialMousePoint.distance(mousePoint) < DISTANCE_TO_ACTIVATE_HOVER)
+		{
+			return null;
+		}
+
+		hoverActive = true;
 
 		for (int i = 0; i < INVENTORY_SIZE; ++i)
 		{
-			WidgetItem widgetItem = inventoryWidget.getWidgetItem(i);
+			WidgetItem targetWidgetItem = inventoryWidget.getWidgetItem(i);
 
-			final Rectangle bounds = widgetItem.getCanvasBounds();
+			final Rectangle bounds = targetWidgetItem.getCanvasBounds();
 			boolean inBounds = bounds.contains(mousePoint);
 
 			if (plugin.isShowItem() && inBounds)
 			{
-				final WidgetItem draggedItem = inventoryWidget.getWidgetItem(client.getIf1DraggedItemIndex());
-				final BufferedImage draggedItemImage = itemManager.getImage(draggedItem.getId());
-				final int x = (int) bounds.getX();
-				final int y = (int) bounds.getY();
-
-				graphics.setComposite(AlphaComposite.SrcOver.derive(0.3f));
-				graphics.drawImage(draggedItemImage, x, y, null);
-				graphics.setComposite(AlphaComposite.SrcOver);
+				drawItem(graphics, bounds, draggedItem);
+				drawItem(graphics, initialBounds, targetWidgetItem);
 			}
 
 			if (plugin.isShowHighlight() && inBounds)
@@ -110,5 +124,21 @@ class InventoryGridOverlay extends Overlay
 		}
 
 		return null;
+	}
+
+	private void drawItem(Graphics2D graphics, Rectangle bounds, WidgetItem item)
+	{
+		if (item.getId() == -1)
+		{
+			return;
+		}
+
+		final BufferedImage draggedItemImage = itemManager.getImage(item.getId(), item.getQuantity(), false);
+		final int x = (int) bounds.getX();
+		final int y = (int) bounds.getY();
+
+		graphics.setComposite(AlphaComposite.SrcOver.derive(0.3f));
+		graphics.drawImage(draggedItemImage, x, y, null);
+		graphics.setComposite(AlphaComposite.SrcOver);
 	}
 }

@@ -25,18 +25,32 @@
 package net.runelite.client.config;
 
 import java.awt.Dimension;
-import java.awt.Font;
 import net.runelite.api.Constants;
-import net.runelite.client.ui.FontManager;
+import net.runelite.client.Notifier;
+import net.runelite.client.ui.ContainableFrame;
 
-@ConfigGroup("runelite")
+@ConfigGroup(RuneLiteConfig.GROUP_NAME)
 public interface RuneLiteConfig extends Config
 {
+	String GROUP_NAME = "runelite";
+
+	@ConfigTitleSection(
+		keyName = "uiTitle",
+		name = "User interface",
+		description = "",
+		position = 1
+	)
+	default Title uiTitle()
+	{
+		return new Title();
+	}
+
 	@ConfigItem(
-			keyName = "gameSize",
-			name = "Game size",
-			description = "The game will resize to this resolution upon starting the client",
-			position = 10
+		keyName = "gameSize",
+		name = "Game size",
+		description = "The game will resize to this resolution upon starting the client",
+		position = 2,
+		titleSection = "uiTitle"
 	)
 	default Dimension gameSize()
 	{
@@ -44,10 +58,11 @@ public interface RuneLiteConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "automaticResizeType",
-			name = "Resize type",
-			description = "Choose how the window should resize when opening and closing panels",
-			position = 11
+		keyName = "automaticResizeType",
+		name = "Resize type",
+		description = "Choose how the window should resize when opening and closing panels",
+		position = 3,
+		titleSection = "uiTitle"
 	)
 	default ExpandResizeType automaticResizeType()
 	{
@@ -55,10 +70,11 @@ public interface RuneLiteConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "lockWindowSize",
-			name = "Lock window size",
-			description = "Determines if the window resizing is allowed or not",
-			position = 12
+		keyName = "lockWindowSize",
+		name = "Lock window size",
+		description = "Determines if the window resizing is allowed or not",
+		position = 4,
+		titleSection = "uiTitle"
 	)
 	default boolean lockWindowSize()
 	{
@@ -66,44 +82,25 @@ public interface RuneLiteConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "enablePlugins",
-			name = "Enable loading of external plugins",
-			description = "Enable loading of external plugins",
-			position = 10
+		keyName = "containInScreen2",
+		name = "Contain in screen",
+		description = "Makes the client stay contained in the screen when attempted to move out of it.<br>Note: 'Always' only works if custom chrome is enabled.",
+		position = 5,
+		titleSection = "uiTitle"
 	)
-	default boolean enablePlugins()
+	default ContainableFrame.Mode containInScreen()
 	{
-		return false;
+		return ContainableFrame.Mode.RESIZING;
 	}
 
-	@ConfigItem(
-			keyName = "containInScreen",
-			name = "Contain in screen",
-			description = "Makes the client stay contained in the screen when attempted to move out of it.<br>Note: Only works if custom chrome is enabled.",
-			position = 13
-	)
-	default boolean containInScreen()
-	{
-		return false;
-	}
 
 	@ConfigItem(
-			keyName = "rememberScreenBounds",
-			name = "Remember client position",
-			description = "Save the position and size of the client after exiting",
-			position = 14
-	)
-	default boolean rememberScreenBounds()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-			keyName = "uiEnableCustomChrome",
-			name = "Enable custom window chrome",
-			description = "Use Runelite's custom window title and borders.",
-			warning = "Please restart your client after changing this setting",
-			position = 15
+		keyName = "uiEnableCustomChrome",
+		name = "Enable custom window chrome",
+		description = "Use Runelite's custom window title and borders.",
+		warning = "Please restart your client after changing this setting",
+		position = 6,
+		titleSection = "uiTitle"
 	)
 	default boolean enableCustomChrome()
 	{
@@ -111,10 +108,46 @@ public interface RuneLiteConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "gameAlwaysOnTop",
-			name = "Enable client always on top",
-			description = "The game will always be on the top of the screen",
-			position = 16
+		keyName = "usernameInTitle",
+		name = "Show display name in title",
+		description = "Toggles displaying of local player's display name in client title",
+		position = 7,
+		titleSection = "uiTitle"
+	)
+	default boolean usernameInTitle()
+	{
+		return true;
+	}
+
+	@ConfigTitleSection(
+		keyName = "miscTitle",
+		name = "Miscellaneous",
+		description = "",
+		position = 8
+	)
+	default Title miscTitle()
+	{
+		return new Title();
+	}
+
+	@ConfigItem(
+		keyName = "rememberScreenBounds",
+		name = "Remember client position",
+		description = "Save the position and size of the client after exiting",
+		position = 9,
+		titleSection = "miscTitle"
+	)
+	default boolean rememberScreenBounds()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "gameAlwaysOnTop",
+		name = "Enable client always on top",
+		description = "The game will always be on the top of the screen",
+		position = 10,
+		titleSection = "miscTitle"
 	)
 	default boolean gameAlwaysOnTop()
 	{
@@ -122,32 +155,47 @@ public interface RuneLiteConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "warningOnExit",
-			name = "Display warning on exit",
-			description = "Toggles a warning popup when trying to exit the client",
-			position = 17
+		keyName = "warningOnExit",
+		name = "Display warning on exit",
+		description = "Toggles a warning popup when trying to exit the client",
+		position = 11,
+		titleSection = "miscTitle"
 	)
 	default WarningOnExit warningOnExit()
 	{
 		return WarningOnExit.LOGGED_IN;
 	}
 
+	@Range(max = 100, min = 0)
 	@ConfigItem(
-			keyName = "usernameInTitle",
-			name = "Show display name in title",
-			description = "Toggles displaying of local player's display name in client title",
-			position = 18
+		keyName = "volume",
+		name = "Runelite Volume",
+		description = "Sets the volume of custom Runelite sounds (not the client sounds)",
+		position = 12,
+		titleSection = "miscTitle"
 	)
-	default boolean usernameInTitle()
+	default int volume()
 	{
-		return true;
+		return 100;
+	}
+
+	@ConfigTitleSection(
+		keyName = "notificationsTitle",
+		name = "Notifications",
+		description = "",
+		position = 13
+	)
+	default Title notificationsTitle()
+	{
+		return new Title();
 	}
 
 	@ConfigItem(
-			keyName = "notificationTray",
-			name = "Enable tray notifications",
-			description = "Enables tray notifications",
-			position = 20
+		keyName = "notificationTray",
+		name = "Enable tray notifications",
+		description = "Enables tray notifications",
+		position = 14,
+		titleSection = "notificationsTitle"
 	)
 	default boolean enableTrayNotifications()
 	{
@@ -155,10 +203,11 @@ public interface RuneLiteConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "notificationRequestFocus",
-			name = "Request focus on notification",
-			description = "Toggles window focus request",
-			position = 21
+		keyName = "notificationRequestFocus",
+		name = "Request focus on notification",
+		description = "Toggles window focus request",
+		position = 15,
+		titleSection = "notificationsTitle"
 	)
 	default boolean requestFocusOnNotification()
 	{
@@ -166,21 +215,23 @@ public interface RuneLiteConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "notificationSound",
-			name = "Enable sound on notifications",
-			description = "Enables the playing of a beep sound when notifications are displayed",
-			position = 22
+		keyName = "notificationSound",
+		name = "Notification sound",
+		description = "Enables the playing of a beep sound when notifications are displayed",
+		position = 16,
+		titleSection = "notificationsTitle"
 	)
-	default boolean enableNotificationSound()
+	default Notifier.NativeCustomOff notificationSound()
 	{
-		return true;
+		return Notifier.NativeCustomOff.NATIVE;
 	}
 
 	@ConfigItem(
-			keyName = "notificationGameMessage",
-			name = "Enable game message notifications",
-			description = "Puts a notification message in the chatbox",
-			position = 23
+		keyName = "notificationGameMessage",
+		name = "Enable game message notifications",
+		description = "Puts a notification message in the chatbox",
+		position = 17,
+		titleSection = "notificationsTitle"
 	)
 	default boolean enableGameMessageNotification()
 	{
@@ -188,10 +239,11 @@ public interface RuneLiteConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "notificationFlash",
-			name = "Enable flash notification",
-			description = "Flashes the game frame as a notification",
-			position = 24
+		keyName = "notificationFlash",
+		name = "Enable flash notification",
+		description = "Flashes the game frame as a notification",
+		position = 18,
+		titleSection = "notificationsTitle"
 	)
 	default FlashNotification flashNotification()
 	{
@@ -199,32 +251,34 @@ public interface RuneLiteConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "notificationFocused",
-			name = "Send notifications when focused",
-			description = "Toggles all notifications for when the client is focused",
-			position = 25
+		keyName = "notificationFocused",
+		name = "Send notifications when focused",
+		description = "Toggles all notifications for when the client is focused",
+		position = 19,
+		titleSection = "notificationsTitle"
 	)
 	default boolean sendNotificationsWhenFocused()
 	{
 		return false;
 	}
 
-	@ConfigItem(
-		keyName = "clientFont",
+	@ConfigTitleSection(
+		keyName = "fontTitle",
 		name = "Font",
-		description = "Configure what font is used for the client and runelite added overlays",
-		position = 29
+		description = "",
+		position = 20
 	)
-	default Font clientFont()
+	default Title fontTitle()
 	{
-		return FontManager.getRunescapeFont();
+		return new Title();
 	}
 
 	@ConfigItem(
-			keyName = "fontType",
-			name = "Dynamic Overlay Font",
-			description = "Configures what font type is used for in-game overlays such as player name, ground items, etc.",
-			position = 30
+		keyName = "fontType",
+		name = "Dynamic Overlay Font",
+		description = "Configures what font type is used for in-game overlays such as player name, ground items, etc.",
+		position = 21,
+		titleSection = "fontTitle"
 	)
 	default FontType fontType()
 	{
@@ -232,10 +286,11 @@ public interface RuneLiteConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "tooltipFontType",
-			name = "Tooltip Font",
-			description = "Configures what font type is used for in-game tooltips such as food stats, NPC names, etc.",
-			position = 31
+		keyName = "tooltipFontType",
+		name = "Tooltip Font",
+		description = "Configures what font type is used for in-game tooltips such as food stats, NPC names, etc.",
+		position = 22,
+		titleSection = "fontTitle"
 	)
 	default FontType tooltipFontType()
 	{
@@ -243,21 +298,34 @@ public interface RuneLiteConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "interfaceFontType",
-			name = "Interface Overlay Font",
-			description = "Configures what font type is used for in-game interface overlays such as panels, opponent info, clue scrolls etc.",
-			position = 32
+		keyName = "interfaceFontType",
+		name = "Interface Overlay Font",
+		description = "Configures what font type is used for in-game interface overlays such as panels, opponent info, clue scrolls etc.",
+		position = 23,
+		titleSection = "fontTitle"
 	)
 	default FontType interfaceFontType()
 	{
 		return FontType.REGULAR;
 	}
 
+	@ConfigTitleSection(
+		keyName = "overlayTitle",
+		name = "Overlays",
+		description = "",
+		position = 24
+	)
+	default Title overlayTitle()
+	{
+		return new Title();
+	}
+
 	@ConfigItem(
-			keyName = "menuEntryShift",
-			name = "Require Shift for overlay menu",
-			description = "Overlay right-click menu will require shift to be added",
-			position = 33
+		keyName = "menuEntryShift",
+		name = "Require Shift for overlay menu",
+		description = "Overlay right-click menu will require shift to be added",
+		position = 25,
+		titleSection = "overlayTitle"
 	)
 	default boolean menuEntryShift()
 	{
@@ -265,10 +333,11 @@ public interface RuneLiteConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "infoBoxVertical",
-			name = "Display infoboxes vertically",
-			description = "Toggles the infoboxes to display vertically",
-			position = 40
+		keyName = "infoBoxVertical",
+		name = "Display infoboxes vertically",
+		description = "Toggles the infoboxes to display vertically",
+		position = 26,
+		titleSection = "infoboxTitle"
 	)
 	default boolean infoBoxVertical()
 	{
@@ -276,10 +345,11 @@ public interface RuneLiteConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "infoBoxWrap",
-			name = "Infobox wrap count",
-			description = "Configures the amount of infoboxes shown before wrapping",
-			position = 41
+		keyName = "infoBoxWrap",
+		name = "Infobox wrap count",
+		description = "Configures the amount of infoboxes shown before wrapping",
+		position = 27,
+		titleSection = "infoboxTitle"
 	)
 	default int infoBoxWrap()
 	{
@@ -287,26 +357,15 @@ public interface RuneLiteConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "infoBoxSize",
-			name = "Infobox size (px)",
-			description = "Configures the size of each infobox in pixels",
-			position = 42
+		keyName = "infoBoxSize",
+		name = "Infobox size (px)",
+		description = "Configures the size of each infobox in pixels",
+		position = 28,
+		titleSection = "infoboxTitle"
 	)
 	default int infoBoxSize()
 	{
 		return 35;
-	}
-
-	@Range( max = 100, min = 0 )
-	@ConfigItem(
-			keyName = "volume",
-			name = "Runelite Volume",
-			description = "Sets the volume of custom Runelite sounds (not the client sounds)",
-			position = 43
-	)
-	default int volume()
-	{
-		return 100;
 	}
 
 }

@@ -28,8 +28,8 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Polygon;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
@@ -105,7 +105,7 @@ public class ArrowWorldOverlay extends Overlay
 				else if (arrowPoint.types.contains(ArrowType.OBJECT))
 				{
 
-					ArrayList<GameObject> objects = ArrowUtil.getObjects(client, arrowPoint.getObjectIDs());
+					List<GameObject> objects = ArrowUtil.getObjects(client, arrowPoint.getObjectIDs());
 					if (objects.isEmpty() && fallBackPoint != null)
 					{
 						renderWorldArrow(graphics, arrowPoint, fallBackPoint);
@@ -113,13 +113,13 @@ public class ArrowWorldOverlay extends Overlay
 					}
 					for (GameObject object : objects)
 					{
-						if (object.getRenderable().getModel() == null)
+						if (object.getEntity().getModel() == null)
 						{
 							renderWorldArrow(graphics, arrowPoint, object.getLocalLocation(), 0);
 						}
 						else
 						{
-							renderWorldArrow(graphics, arrowPoint, object.getLocalLocation(), object.getRenderable().getModel().getModelHeight() + Z_OFFSET);
+							renderWorldArrow(graphics, arrowPoint, object.getLocalLocation(), object.getEntity().getModel().getModelHeight() + Z_OFFSET);
 						}
 					}
 				}

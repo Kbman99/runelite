@@ -38,21 +38,25 @@ import net.runelite.api.InventoryID;
 import net.runelite.api.Item;
 import net.runelite.api.ItemContainer;
 import net.runelite.api.Prayer;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.SpriteManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
+import net.runelite.http.api.item.ItemStats;
 
 @PluginDescriptor(
 	name = "Prayer",
 	description = "Show various information related to prayer",
-	tags = {"combat", "flicking", "overlay"}
+	tags = {"combat", "flicking", "overlay"},
+	type = PluginType.UTILITY
 )
 @Singleton
 public class PrayerPlugin extends Plugin
@@ -88,6 +92,9 @@ public class PrayerPlugin extends Plugin
 	@Inject
 	private PrayerConfig config;
 
+	@Inject
+	private ItemManager itemManager;
+
 	@Getter(AccessLevel.PACKAGE)
 	private PrayerFlickLocation prayerFlickLocation;
 	@Getter(AccessLevel.PACKAGE)
@@ -115,6 +122,7 @@ public class PrayerPlugin extends Plugin
 	protected void startUp()
 	{
 		updateConfig();
+
 		overlayManager.add(flickOverlay);
 		overlayManager.add(doseOverlay);
 		overlayManager.add(barOverlay);
@@ -147,13 +155,13 @@ public class PrayerPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onItemContainerChanged(final ItemContainerChanged event)
+	private void onItemContainerChanged(final ItemContainerChanged event)
 	{
 		final ItemContainer container = event.getItemContainer();
 		final ItemContainer inventory = client.getItemContainer(InventoryID.INVENTORY);
 		final ItemContainer equipment = client.getItemContainer(InventoryID.EQUIPMENT);
 
-		if (container == inventory || container == equipment)
+		if (container != null && (container.equals(inventory) || container.equals(equipment)))
 		{
 			doseOverlay.setHasHolyWrench(false);
 			doseOverlay.setHasPrayerRestore(false);
@@ -173,7 +181,7 @@ public class PrayerPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick tick)
+	private void onGameTick(GameTick tick)
 	{
 		prayersActive = isAnyPrayerActive();
 
@@ -266,8 +274,11 @@ public class PrayerPlugin extends Plugin
 				}
 			}
 
-			int bonus = PrayerItems.getItemPrayerBonus(item.getId());
-			total += bonus;
+			ItemStats is = itemManager.getItemStats(item.getId(), false);
+			if (is != null && is.getEquipment() != null)
+			{
+				total += is.getEquipment().getPrayer();
+			}
 		}
 
 		if (hasSanfew || hasSuperRestore || hasPrayerPotion)

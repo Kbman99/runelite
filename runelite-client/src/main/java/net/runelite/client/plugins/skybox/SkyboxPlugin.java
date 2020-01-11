@@ -36,12 +36,14 @@ import net.runelite.api.events.GameStateChanged;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 
 @PluginDescriptor(
 	name = "Skybox",
 	description = "Draws an oldschool styled skybox",
 	enabledByDefault = false,
-	tags = {"sky"}
+	tags = {"sky"},
+	type = PluginType.MISCELLANEOUS
 )
 @Singleton
 public class SkyboxPlugin extends Plugin
@@ -54,6 +56,7 @@ public class SkyboxPlugin extends Plugin
 	@Override
 	public void startUp() throws IOException
 	{
+
 		skybox = new Skybox(SkyboxPlugin.class.getResourceAsStream("skybox.txt"), "skybox.txt");
 	}
 
@@ -80,7 +83,7 @@ public class SkyboxPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onBeforeRender(BeforeRender r)
+	private void onBeforeRender(BeforeRender r)
 	{
 		if (skybox == null || client.getGameState() != GameState.LOGGED_IN)
 		{
@@ -125,7 +128,7 @@ public class SkyboxPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged)
+	private void onGameStateChanged(GameStateChanged gameStateChanged)
 	{
 		if (gameStateChanged.getGameState() == GameState.LOGIN_SCREEN)
 		{

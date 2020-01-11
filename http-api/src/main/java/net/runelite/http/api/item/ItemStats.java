@@ -24,9 +24,13 @@
  */
 package net.runelite.http.api.item;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Value;
 
 @Value
+@AllArgsConstructor
+@Builder(builderClassName = "Builder")
 public class ItemStats
 {
 	private boolean quest;
@@ -50,9 +54,9 @@ public class ItemStats
 		{
 			final ItemEquipmentStats equipment = this.equipment != null
 				? this.equipment
-				: new ItemEquipmentStats.ItemEquipmentStatsBuilder().build();
+				: new ItemEquipmentStats.Builder().build();
 
-			newEquipment = new ItemEquipmentStats.ItemEquipmentStatsBuilder()
+			newEquipment = new ItemEquipmentStats.Builder()
 				.slot(equipment.getSlot())
 				.astab(equipment.getAstab() - other.equipment.getAstab())
 				.aslash(equipment.getAslash() - other.equipment.getAslash())

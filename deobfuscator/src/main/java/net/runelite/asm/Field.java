@@ -26,15 +26,14 @@ package net.runelite.asm;
 
 import net.runelite.asm.attributes.Annotations;
 import net.runelite.asm.attributes.annotation.Annotation;
-import org.objectweb.asm.AnnotationVisitor;
+import net.runelite.deob.DeobAnnotations;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Opcodes;
-
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PROTECTED;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
-public class Field
+public class Field implements Annotated, Named
 {
 	public static final int ACCESS_MODIFIERS = ACC_PUBLIC | ACC_PRIVATE | ACC_PROTECTED;
 
@@ -52,15 +51,14 @@ public class Field
 		this.name = name;
 		this.type = type;
 
-		annotations = new Annotations();
+		this.annotations = new Annotations();
 	}
 
 	public void accept(FieldVisitor visitor)
 	{
 		for (Annotation annotation : annotations.getAnnotations())
 		{
-			AnnotationVisitor av = visitor.visitAnnotation(annotation.getType().toString(), true);
-			annotation.accept(av);
+			annotation.accept(visitor.visitAnnotation(annotation.getType().toString(), true));
 		}
 
 		visitor.visitEnd();
@@ -129,6 +127,17 @@ public class Field
 	public void setType(Type type)
 	{
 		this.type = type;
+	}
+
+	public Type getObfuscatedType()
+	{
+		Type type = DeobAnnotations.getObfuscatedType(this);
+		if (type == null)
+		{
+			type = getType();
+		}
+
+		return type;
 	}
 
 	public Object getValue()

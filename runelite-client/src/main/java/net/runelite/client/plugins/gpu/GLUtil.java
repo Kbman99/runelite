@@ -199,6 +199,7 @@ class GLUtil
 		else
 		{
 			String err = glGetShaderInfoLog(gl, shader);
+			log.info(String.valueOf(program));
 			throw new ShaderException(err);
 		}
 	}

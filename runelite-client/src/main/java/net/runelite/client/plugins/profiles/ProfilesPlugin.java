@@ -26,11 +26,16 @@ package net.runelite.client.plugins.profiles;
 
 import com.google.inject.Provides;
 import java.awt.image.BufferedImage;
+import java.util.concurrent.ScheduledExecutorService;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import net.runelite.api.events.ConfigChanged;
+import lombok.AccessLevel;
+import lombok.Getter;
+import net.runelite.api.GameState;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginType;
@@ -42,7 +47,7 @@ import net.runelite.client.util.ImageUtil;
 	name = "Account Switcher",
 	description = "Allow for a allows you to easily switch between multiple OSRS Accounts",
 	tags = {"profile", "account", "login", "log in", "pklite"},
-	type = PluginType.UTILITY,
+	type = PluginType.MISCELLANEOUS,
 	enabledByDefault = false
 )
 @Singleton
@@ -51,8 +56,22 @@ public class ProfilesPlugin extends Plugin
 	@Inject
 	private ClientToolbar clientToolbar;
 
+	@Inject
+	private ProfilesConfig config;
+
+	@Inject
+	private ScheduledExecutorService executorService;
+
 	private ProfilesPanel panel;
 	private NavigationButton navButton;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean switchToPanel;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean streamerMode;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean displayEmailAddress;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean rememberPassword;
 
 
 	@Provides
@@ -62,9 +81,12 @@ public class ProfilesPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
+		updateConfig();
+
 		panel = injector.getInstance(ProfilesPanel.class);
+		panel.init();
 
 		final BufferedImage icon = ImageUtil.getResourceStreamFromClass(getClass(), "profiles_icon.png");
 
@@ -73,6 +95,7 @@ public class ProfilesPlugin extends Plugin
 			.icon(icon)
 			.priority(8)
 			.panel(panel)
+			.onReady(() -> executorService.submit(() -> OpenPanel(true)))
 			.build();
 
 		clientToolbar.addNavigation(navButton);
@@ -85,17 +108,56 @@ public class ProfilesPlugin extends Plugin
 	}
 
 	@Subscribe
-	private void onConfigChanged(ConfigChanged event) throws Exception
+	private void onGameStateChanged(GameStateChanged event)
 	{
-		if (event.getGroup().equals("profiles"))
+		if (!this.switchToPanel)
 		{
-			if (event.getKey().equals("rememberPassword"))
+			return;
+		}
+		if (event.getGameState().equals(GameState.LOGIN_SCREEN))
+		{
+			if (!navButton.isSelected())
 			{
-				panel = injector.getInstance(ProfilesPanel.class);
-				this.shutDown();
-				this.startUp();
+				OpenPanel(true);
 			}
 		}
+	}
+
+	@Subscribe
+	private void onConfigChanged(ConfigChanged event) throws Exception
+	{
+		if (event.getGroup().equals("profiles") && event.getKey().equals("rememberPassword"))
+		{
+			panel = injector.getInstance(ProfilesPanel.class);
+			this.shutDown();
+			this.startUp();
+			updateConfig();
+		}
+		if (event.getGroup().equals("profiles") && !event.getKey().equals("rememberPassword"))
+		{
+			updateConfig();
+			panel = injector.getInstance(ProfilesPanel.class);
+			panel.redrawProfiles();
+		}
+	}
+
+	private void OpenPanel(boolean openPanel)
+	{
+		if (openPanel && this.switchToPanel)
+		{
+			// If we haven't seen the latest feed item,
+			// open the feed panel.
+			navButton.getOnSelect().run();
+		}
+	}
+
+
+	private void updateConfig()
+	{
+		this.switchToPanel = config.switchPanel();
+		this.rememberPassword  = config.rememberPassword();
+		this.streamerMode = config.streamerMode();
+		this.displayEmailAddress = config.displayEmailAddress();
 	}
 
 }

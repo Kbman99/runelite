@@ -37,7 +37,8 @@ import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.HitsplatApplied;
-import net.runelite.api.events.LocalPlayerDeath;
+import net.runelite.api.events.PlayerDeath;
+import net.runelite.api.events.PlayerDeath;
 import net.runelite.api.events.SpotAnimationChanged;
 import net.runelite.api.events.InteractingChanged;
 import net.runelite.api.events.OverheadTextChanged;
@@ -188,7 +189,7 @@ public abstract class RSActorMixin implements RSActor
 	{
 		AnimationChanged animationChange = new AnimationChanged();
 		animationChange.setActor(this);
-		client.getCallbacks().post(animationChange);
+		client.getCallbacks().post(AnimationChanged.class, animationChange);
 	}
 
 	@FieldHook("spotAnimation")
@@ -197,7 +198,7 @@ public abstract class RSActorMixin implements RSActor
 	{
 		SpotAnimationChanged spotAnimationChanged = new SpotAnimationChanged();
 		spotAnimationChanged.setActor(this);
-		client.getCallbacks().post(spotAnimationChanged);
+		client.getCallbacks().post(SpotAnimationChanged.class, spotAnimationChanged);
 	}
 
 	@FieldHook("targetIndex")
@@ -205,7 +206,7 @@ public abstract class RSActorMixin implements RSActor
 	public void interactingChanged(int idx)
 	{
 		InteractingChanged interactingChanged = new InteractingChanged(this, getInteracting());
-		client.getCallbacks().post(interactingChanged);
+		client.getCallbacks().post(InteractingChanged.class, interactingChanged);
 	}
 
 	@FieldHook("overheadText")
@@ -216,7 +217,7 @@ public abstract class RSActorMixin implements RSActor
 		if (overheadText != null)
 		{
 			OverheadTextChanged overheadTextChanged = new OverheadTextChanged(this, overheadText);
-			client.getCallbacks().post(overheadTextChanged);
+			client.getCallbacks().post(OverheadTextChanged.class, overheadTextChanged);
 		}
 	}
 
@@ -247,12 +248,10 @@ public abstract class RSActorMixin implements RSActor
 	{
 		if (healthRatio == 0)
 		{
-			if (this == client.getLocalPlayer())
+			if (this instanceof Player)
 			{
-				client.getLogger().debug("You died!");
-
-				LocalPlayerDeath event = LocalPlayerDeath.INSTANCE;
-				client.getCallbacks().post(event);
+				final PlayerDeath event = new PlayerDeath((Player) this);
+				client.getCallbacks().post(PlayerDeath.class, event);
 			}
 			else if (this instanceof RSNPC)
 			{
@@ -281,6 +280,6 @@ public abstract class RSActorMixin implements RSActor
 		final HitsplatApplied event = new HitsplatApplied();
 		event.setActor(this);
 		event.setHitsplat(hitsplat);
-		client.getCallbacks().post(event);
+		client.getCallbacks().post(HitsplatApplied.class, event);
 	}
 }

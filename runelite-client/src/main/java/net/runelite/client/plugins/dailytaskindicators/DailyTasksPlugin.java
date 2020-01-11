@@ -26,11 +26,9 @@
 
 package net.runelite.client.plugins.dailytaskindicators;
 
-import javax.inject.Singleton;
-import net.runelite.api.events.ConfigChanged;
-import net.runelite.api.vars.AccountType;
 import com.google.inject.Provides;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -39,18 +37,22 @@ import net.runelite.api.VarPlayer;
 import net.runelite.api.Varbits;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.vars.AccountType;
 import net.runelite.client.chat.ChatColorType;
 import net.runelite.client.chat.ChatMessageBuilder;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 
 @PluginDescriptor(
 	name = "Daily Task Indicator",
-	description = "Show chat notifications for daily tasks upon login"
+	description = "Show chat notifications for daily tasks upon login",
+	type = PluginType.UTILITY
 )
 @Singleton
 public class DailyTasksPlugin extends Plugin
@@ -114,7 +116,7 @@ public class DailyTasksPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		if (event.getGameState() == GameState.LOGGING_IN)
 		{
@@ -123,7 +125,7 @@ public class DailyTasksPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick event)
+	private void onGameTick(GameTick event)
 	{
 		long currentTime = System.currentTimeMillis();
 		boolean dailyReset = !loggingIn && currentTime - lastReset > ONE_DAY;
@@ -245,8 +247,9 @@ public class DailyTasksPlugin extends Plugin
 
 	private void checkArrows(boolean dailyReset)
 	{
-		if ((client.getVar(Varbits.DIARY_WESTERN_EASY) == 1)
-			&& (dailyReset || client.getVar(Varbits.DAILY_ARROWS_STATE) == 0))
+		if (client.getVar(Varbits.DIARY_WESTERN_EASY) == 1
+			&& (client.getVar(Varbits.DAILY_ARROWS_STATE) == 0
+			|| dailyReset))
 		{
 			sendChatMessage(ARROWS_MESSAGE);
 		}
@@ -298,7 +301,7 @@ public class DailyTasksPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged configChanged)
+	private void onConfigChanged(ConfigChanged configChanged)
 	{
 		if (configChanged.getGroup().equals("dailytaskindicators"))
 		{

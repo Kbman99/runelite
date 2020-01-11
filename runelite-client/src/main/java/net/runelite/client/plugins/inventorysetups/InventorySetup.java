@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2018-2019, Ethan <https://github.com/Wea1thRS/>
- * Copyright (c) 2018, https://runelitepl.us
+ * Copyright (c) 2018, https://openosrs.com
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,15 +25,16 @@
  */
 package net.runelite.client.plugins.inventorysetups;
 
-import java.util.ArrayList;
+import java.util.List;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @AllArgsConstructor
 public class InventorySetup
 {
-	@Getter
-	private ArrayList<InventorySetupItem> inventory;
-	@Getter
-	private ArrayList<InventorySetupItem> equipment;
+	@Getter(AccessLevel.PUBLIC)
+	private List<InventorySetupItem> inventory;
+	@Getter(AccessLevel.PUBLIC)
+	private List<InventorySetupItem> equipment;
 }

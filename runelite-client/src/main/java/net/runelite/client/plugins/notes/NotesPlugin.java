@@ -33,6 +33,7 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.SessionOpen;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
@@ -41,7 +42,8 @@ import net.runelite.client.util.ImageUtil;
 	name = "Notes",
 	description = "Enable the Notes panel",
 	tags = {"panel"},
-	loadWhenOutdated = true
+	loadWhenOutdated = true,
+	type = PluginType.MISCELLANEOUS
 )
 @Singleton
 public class NotesPlugin extends Plugin
@@ -51,6 +53,9 @@ public class NotesPlugin extends Plugin
 
 	@Inject
 	private NotesConfig config;
+
+	@Inject
+	private NotesManager notesManager;
 
 	private NotesPanel panel;
 	private NavigationButton navButton;
@@ -62,8 +67,9 @@ public class NotesPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
+
 		panel = injector.getInstance(NotesPanel.class);
 		panel.init(config);
 
@@ -77,6 +83,9 @@ public class NotesPlugin extends Plugin
 			.build();
 
 		clientToolbar.addNavigation(navButton);
+
+		notesManager.loadNotes();
+		panel.rebuild();
 	}
 
 	@Override
@@ -86,10 +95,9 @@ public class NotesPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onSessionOpen(SessionOpen event)
+	private void onSessionOpen(SessionOpen event)
 	{
-		// update notes
-		String data = config.notesData();
-		panel.setNotes(data);
+		notesManager.loadNotes();
+		panel.rebuild();
 	}
 }

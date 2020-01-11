@@ -1,3 +1,4 @@
+import java.applet.Applet;
 import net.runelite.mapping.Export;
 import net.runelite.mapping.ObfuscatedGetter;
 import net.runelite.mapping.ObfuscatedName;
@@ -5,326 +6,252 @@ import net.runelite.mapping.ObfuscatedSignature;
 
 @ObfuscatedName("w")
 public class class3 implements Enumerated {
-   @ObfuscatedName("qs")
-   @ObfuscatedGetter(
-      intValue = 1608439891
-   )
-   static int field1146;
-   @ObfuscatedName("m")
-   @ObfuscatedSignature(
-      signature = "Lw;"
-   )
-   static final class3 field20;
-   @ObfuscatedName("f")
-   @ObfuscatedSignature(
-      signature = "Lw;"
-   )
-   static final class3 field14;
-   @ObfuscatedName("q")
-   @ObfuscatedSignature(
-      signature = "Lw;"
-   )
-   static final class3 field15;
-   @ObfuscatedName("w")
-   @ObfuscatedGetter(
-      intValue = -1621503295
-   )
-   final int field13;
-   @ObfuscatedName("o")
-   @ObfuscatedGetter(
-      intValue = -393250053
-   )
-   public final int field1147;
-   @ObfuscatedName("u")
-   public final Class field18;
-   @ObfuscatedName("g")
-   @ObfuscatedSignature(
-      signature = "Lm;"
-   )
-   public final class0 field19;
+	@ObfuscatedName("f")
+	@ObfuscatedSignature(
+		signature = "Lw;"
+	)
+	public static final class3 field19;
+	@ObfuscatedName("i")
+	@ObfuscatedSignature(
+		signature = "Lw;"
+	)
+	public static final class3 field10;
+	@ObfuscatedName("y")
+	@ObfuscatedSignature(
+		signature = "Lw;"
+	)
+	public static final class3 field9;
+	@ObfuscatedName("dc")
+	@ObfuscatedSignature(
+		signature = "Lif;"
+	)
+	@Export("archive8")
+	static Archive archive8;
+	@ObfuscatedName("fg")
+	@ObfuscatedSignature(
+		signature = "Lko;"
+	)
+	@Export("fontPlain11")
+	static Font fontPlain11;
+	@ObfuscatedName("gz")
+	@ObfuscatedGetter(
+		intValue = 1624533233
+	)
+	static int field7;
+	@ObfuscatedName("w")
+	@ObfuscatedGetter(
+		intValue = 55070651
+	)
+	final int field15;
+	@ObfuscatedName("p")
+	@ObfuscatedGetter(
+		intValue = -1265968075
+	)
+	public final int field11;
+	@ObfuscatedName("b")
+	public final Class field12;
+	@ObfuscatedName("e")
+	@ObfuscatedSignature(
+		signature = "Lf;"
+	)
+	final class0 field13;
 
-   @ObfuscatedSignature(
-      signature = "(IILjava/lang/Class;Lm;)V"
-   )
-   class3(int var1, int var2, Class var3, class0 var4) {
-      this.field13 = var1;
-      this.field1147 = var2;
-      this.field18 = var3;
-      this.field19 = var4;
-   }
+	static {
+		field19 = new class3(1, 0, Integer.class, new class1());
+		field10 = new class3(2, 1, Long.class, new class2());
+		field9 = new class3(0, 2, String.class, new class4());
+	}
 
-   @ObfuscatedName("f")
-   @ObfuscatedSignature(
-      signature = "(B)I",
-      garbageValue = "83"
-   )
-   @Export("rsOrdinal")
-   public int rsOrdinal() {
-      return this.field1147;
-   }
+	@ObfuscatedSignature(
+		signature = "(IILjava/lang/Class;Lf;)V"
+	)
+	class3(int var1, int var2, Class var3, class0 var4) {
+		this.field15 = var1;
+		this.field11 = var2;
+		this.field12 = var3;
+		this.field13 = var4;
+	}
 
-   @ObfuscatedName("q")
-   @ObfuscatedSignature(
-      signature = "(Lgr;I)Ljava/lang/Object;",
-      garbageValue = "1915331486"
-   )
-   public Object method31(Buffer var1) {
-      return this.field19.vmethod46(var1);
-   }
+	@ObfuscatedName("i")
+	@ObfuscatedSignature(
+		signature = "(B)I",
+		garbageValue = "-57"
+	)
+	@Export("rsOrdinal")
+	public int rsOrdinal() {
+		return this.field11;
+	}
 
-   @ObfuscatedName("m")
-   @ObfuscatedSignature(
-      signature = "(B)[Lw;",
-      garbageValue = "23"
-   )
-   public static class3[] method34() {
-      return new class3[]{field15, field20, field14};
-   }
+	@ObfuscatedName("y")
+	@ObfuscatedSignature(
+		signature = "(Lkq;I)Ljava/lang/Object;",
+		garbageValue = "868872918"
+	)
+	public Object method38(Buffer var1) {
+		return this.field13.vmethod60(var1);
+	}
 
-   @ObfuscatedName("f")
-   @ObfuscatedSignature(
-      signature = "(I)I",
-      garbageValue = "772942762"
-   )
-   static int method36() {
-      return 11;
-   }
+	@ObfuscatedName("f")
+	@ObfuscatedSignature(
+		signature = "(Ljava/lang/CharSequence;B)I",
+		garbageValue = "-26"
+	)
+	public static int method35(CharSequence var0) {
+		int var1 = var0.length();
+		int var2 = 0;
 
-   @ObfuscatedName("q")
-   @ObfuscatedSignature(
-      signature = "(I)V",
-      garbageValue = "729662922"
-   )
-   public static void method41() {
-      while (true) {
-         NodeDeque var0 = IndexStoreActionHandler.IndexStoreActionHandler_requestQueue;
-         IndexStoreAction var1;
-         synchronized(IndexStoreActionHandler.IndexStoreActionHandler_requestQueue) {
-            var1 = (IndexStoreAction)IndexStoreActionHandler.IndexStoreActionHandler_responseQueue.removeLast();
-         }
+		for (int var3 = 0; var3 < var1; ++var3) {
+			char var4 = var0.charAt(var3);
+			if (var4 <= 127) {
+				++var2;
+			} else if (var4 <= 2047) {
+				var2 += 2;
+			} else {
+				var2 += 3;
+			}
+		}
 
-         if (var1 == null) {
-            return;
-         }
+		return var2;
+	}
 
-         var1.indexCache.load(var1.indexStore, (int)var1.key, var1.data, false);
-      }
-   }
+	@ObfuscatedName("f")
+	@ObfuscatedSignature(
+		signature = "(Ljava/lang/Object;Lkq;I)V",
+		garbageValue = "911012912"
+	)
+	public static void method36(Object var0, Buffer var1) {
+		Class var3 = var0.getClass();
+		class3[] var5 = new class3[]{field19, field9, field10};
+		class3[] var6 = var5;
+		int var7 = 0;
 
-   @ObfuscatedName("o")
-   @ObfuscatedSignature(
-      signature = "(IIIZIZI)V",
-      garbageValue = "653716649"
-   )
-   static void method42(int var0, int var1, int var2, boolean var3, int var4, boolean var5) {
-      if (var0 < var1) {
-         int var6 = (var0 + var1) / 2;
-         int var7 = var0;
-         World var8 = ItemContainer.worlds[var6];
-         ItemContainer.worlds[var6] = ItemContainer.worlds[var1];
-         ItemContainer.worlds[var1] = var8;
+		class3 var4;
+		while (true) {
+			if (var7 >= var6.length) {
+				var4 = null;
+				break;
+			}
 
-         for (int var9 = var0; var9 < var1; ++var9) {
-            World var10 = ItemContainer.worlds[var9];
-            int var11 = WorldMapLabel.compareWorlds(var10, var8, var2, var3);
-            int var12;
-            if (var11 != 0) {
-               if (var3) {
-                  var12 = -var11;
-               } else {
-                  var12 = var11;
-               }
-            } else if (var4 == -1) {
-               var12 = 0;
-            } else {
-               int var13 = WorldMapLabel.compareWorlds(var10, var8, var4, var5);
-               if (var5) {
-                  var12 = -var13;
-               } else {
-                  var12 = var13;
-               }
-            }
+			class3 var8 = var6[var7];
+			if (var3 == var8.field12) {
+				var4 = var8;
+				break;
+			}
 
-            if (var12 <= 0) {
-               World var14 = ItemContainer.worlds[var9];
-               ItemContainer.worlds[var9] = ItemContainer.worlds[var7];
-               ItemContainer.worlds[var7++] = var14;
-            }
-         }
+			++var7;
+		}
 
-         ItemContainer.worlds[var1] = ItemContainer.worlds[var7];
-         ItemContainer.worlds[var7] = var8;
-         method42(var0, var7 - 1, var2, var3, var4, var5);
-         method42(var7 + 1, var1, var2, var3, var4, var5);
-      }
+		if (var4 == null) {
+			throw new IllegalArgumentException();
+		} else {
+			class0 var2 = var4.field13;
+			var2.vmethod53(var0, var1);
+		}
+	}
 
-   }
+	@ObfuscatedName("f")
+	@ObfuscatedSignature(
+		signature = "(Ljava/applet/Applet;Ljava/lang/String;I)V",
+		garbageValue = "1416761199"
+	)
+	public static void method39(Applet var0, String var1) {
+		class50.applet = var0;
+		if (var1 != null) {
+			class50.field410 = var1;
+		}
 
-   @ObfuscatedName("hq")
-   @ObfuscatedSignature(
-      signature = "(ZLhx;B)V",
-      garbageValue = "1"
-   )
-   @Export("updateNpcs")
-   static final void updateNpcs(boolean var0, PacketBuffer var1) {
-      Client.field211 = 0;
-      Client.field173 = 0;
-      PacketBuffer var2 = Client.packetWriter.packetBuffer;
-      var2.importIndex();
-      int var3 = var2.readBits(8);
-      int var4;
-      if (var3 < Client.npcCount) {
-         for (var4 = var3; var4 < Client.npcCount; ++var4) {
-            Client.field212[++Client.field211 - 1] = Client.npcIndices[var4];
-         }
-      }
+	}
 
-      if (var3 > Client.npcCount) {
-         throw new RuntimeException("");
-      } else {
-         Client.npcCount = 0;
+	@ObfuscatedName("gf")
+	@ObfuscatedSignature(
+		signature = "(Lbv;I)V",
+		garbageValue = "-6957395"
+	)
+	static final void method48(Actor var0) {
+		if (var0.field968 != 0) {
+			if (var0.targetIndex != -1) {
+				Object var1 = null;
+				if (var0.targetIndex < 32768) {
+					var1 = Client.npcs[var0.targetIndex];
+				} else if (var0.targetIndex >= 32768) {
+					var1 = Client.players[var0.targetIndex - 32768];
+				}
 
-         int var5;
-         int var6;
-         int var7;
-         int var8;
-         for (var4 = 0; var4 < var3; ++var4) {
-            var5 = Client.npcIndices[var4];
-            NPC var9 = Client.npcs[var5];
-            var6 = var2.readBits(1);
-            if (var6 == 0) {
-               Client.npcIndices[++Client.npcCount - 1] = var5;
-               var9.npcCycle = Client.cycle;
-            } else {
-               var7 = var2.readBits(2);
-               if (var7 == 0) {
-                  Client.npcIndices[++Client.npcCount - 1] = var5;
-                  var9.npcCycle = Client.cycle;
-                  Client.field174[++Client.field173 - 1] = var5;
-               } else {
-                  int var10;
-                  if (var7 == 1) {
-                     Client.npcIndices[++Client.npcCount - 1] = var5;
-                     var9.npcCycle = Client.cycle;
-                     var8 = var2.readBits(3);
-                     var9.method227(var8, (byte)1);
-                     var10 = var2.readBits(1);
-                     if (var10 == 1) {
-                        Client.field174[++Client.field173 - 1] = var5;
-                     }
-                  } else if (var7 == 2) {
-                     Client.npcIndices[++Client.npcCount - 1] = var5;
-                     var9.npcCycle = Client.cycle;
-                     var8 = var2.readBits(3);
-                     var9.method227(var8, (byte)2);
-                     var10 = var2.readBits(3);
-                     var9.method227(var10, (byte)2);
-                     int var11 = var2.readBits(1);
-                     if (var11 == 1) {
-                        Client.field174[++Client.field173 - 1] = var5;
-                     }
-                  } else if (var7 == 3) {
-                     Client.field212[++Client.field211 - 1] = var5;
-                  }
-               }
-            }
-         }
+				if (var1 != null) {
+					int var2 = var0.x - ((Actor)var1).x;
+					int var3 = var0.y - ((Actor)var1).y;
+					if (var2 != 0 || var3 != 0) {
+						var0.orientation = (int)(Math.atan2((double)var2, (double)var3) * 325.949D) & 2047;
+					}
+				} else if (var0.false0) {
+					var0.targetIndex = -1;
+					var0.false0 = false;
+				}
+			}
 
-         int var13;
-         while (var1.bitsRemaining(Client.packetWriter.serverPacket0Length) >= 27) {
-            var13 = var1.readBits(15);
-            if (var13 == 32767) {
-               break;
-            }
+			if (var0.field960 != -1 && (var0.pathLength == 0 || var0.field980 > 0)) {
+				var0.orientation = var0.field960;
+				var0.field960 = -1;
+			}
 
-            boolean var14 = false;
-            if (Client.npcs[var13] == null) {
-               Client.npcs[var13] = new NPC();
-               var14 = true;
-            }
+			int var4 = var0.orientation - var0.rotation & 2047;
+			if (var4 == 0 && var0.false0) {
+				var0.targetIndex = -1;
+				var0.false0 = false;
+			}
 
-            NPC var15 = Client.npcs[var13];
-            Client.npcIndices[++Client.npcCount - 1] = var13;
-            var15.npcCycle = Client.cycle;
-            if (var0) {
-               var5 = var1.readBits(8);
-               if (var5 > 127) {
-                  var5 -= 256;
-               }
-            } else {
-               var5 = var1.readBits(5);
-               if (var5 > 15) {
-                  var5 -= 32;
-               }
-            }
+			if (var4 != 0) {
+				++var0.field974;
+				boolean var6;
+				if (var4 > 1024) {
+					var0.rotation -= var0.field968;
+					var6 = true;
+					if (var4 < var0.field968 || var4 > 2048 - var0.field968) {
+						var0.rotation = var0.orientation;
+						var6 = false;
+					}
 
-            int var12 = var1.readBits(1);
-            var6 = Client.field213[var1.readBits(3)];
-            if (var14) {
-               var15.orientation = var15.field9 = var6;
-            }
+					if (var0.readySequence == var0.movementSequence && (var0.field974 > 25 || var6)) {
+						if (var0.turnLeftSequence != -1) {
+							var0.movementSequence = var0.turnLeftSequence;
+						} else {
+							var0.movementSequence = var0.walkSequence;
+						}
+					}
+				} else {
+					var0.rotation += var0.field968;
+					var6 = true;
+					if (var4 < var0.field968 || var4 > 2048 - var0.field968) {
+						var0.rotation = var0.orientation;
+						var6 = false;
+					}
 
-            var7 = var1.readBits(1);
-            if (var7 == 1) {
-               Client.field174[++Client.field173 - 1] = var13;
-            }
+					if (var0.readySequence == var0.movementSequence && (var0.field974 > 25 || var6)) {
+						if (var0.turnRightSequence != -1) {
+							var0.movementSequence = var0.turnRightSequence;
+						} else {
+							var0.movementSequence = var0.walkSequence;
+						}
+					}
+				}
 
-            if (var0) {
-               var8 = var1.readBits(8);
-               if (var8 > 127) {
-                  var8 -= 256;
-               }
-            } else {
-               var8 = var1.readBits(5);
-               if (var8 > 15) {
-                  var8 -= 32;
-               }
-            }
+				var0.rotation &= 2047;
+			} else {
+				var0.field974 = 0;
+			}
 
-            var15.definition = ObjectDefinition.getNpcDefinition(var1.readBits(14));
-            var15.size = var15.definition.size;
-            var15.field23 = var15.definition.field639;
-            if (var15.field23 == 0) {
-               var15.field9 = 0;
-            }
+		}
+	}
 
-            var15.walkSequence = var15.definition.walkSequence;
-            var15.walkTurnSequence = var15.definition.walkTurnSequence;
-            var15.walkTurnLeftSequence = var15.definition.walkTurnLeftSequence;
-            var15.walkTurnRightSequence = var15.definition.walkTurnRightSequence;
-            var15.idleSequence = var15.definition.idleSequence;
-            var15.turnLeftSequence = var15.definition.turnLeftSequence;
-            var15.turnRightSequence = var15.definition.turnRightSequence;
-            var15.method228(Canvas.localPlayer.pathX[0] + var5, Canvas.localPlayer.pathY[0] + var8, var12 == 1);
-         }
-
-         var1.exportIndex();
-         WorldComparator.method67(var1);
-
-         for (var13 = 0; var13 < Client.field211; ++var13) {
-            var3 = Client.field212[var13];
-            if (Client.npcs[var3].npcCycle != Client.cycle) {
-               Client.npcs[var3].definition = null;
-               Client.npcs[var3] = null;
-            }
-         }
-
-         if (var1.index != Client.packetWriter.serverPacket0Length) {
-            throw new RuntimeException(var1.index + "," + Client.packetWriter.serverPacket0Length);
-         } else {
-            for (var13 = 0; var13 < Client.npcCount; ++var13) {
-               if (Client.npcs[Client.npcIndices[var13]] == null) {
-                  throw new RuntimeException(var13 + "," + Client.npcCount);
-               }
-            }
-
-         }
-      }
-   }
-
-   static {
-      field20 = new class3(2, 0, Integer.class, new class1());
-      field14 = new class3(0, 1, Long.class, new class2());
-      field15 = new class3(1, 2, String.class, new class4());
-   }
+	@ObfuscatedName("kw")
+	@ObfuscatedSignature(
+		signature = "(I)V",
+		garbageValue = "1387375929"
+	)
+	@Export("Clan_leaveChat")
+	static final void Clan_leaveChat() {
+		PacketBufferNode var0 = class2.getPacketBufferNode(ClientPacket.field2259, Client.packetWriter.isaacCipher);
+		var0.packetBuffer.writeByte(0);
+		Client.packetWriter.addNode(var0);
+	}
 }

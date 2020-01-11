@@ -24,28 +24,29 @@
  */
 package net.runelite.client.plugins.statusbars;
 
-import javax.inject.Inject;
-
 import com.google.common.collect.Maps;
 import com.google.inject.Provides;
-import javax.inject.Singleton;
-import lombok.Getter;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import lombok.AccessLevel;
+import lombok.Getter;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
 import net.runelite.api.NPC;
 import net.runelite.api.NPCDefinition;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDependency;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.plugins.itemstats.ItemStatPlugin;
 import net.runelite.client.plugins.statusbars.config.BarMode;
 import net.runelite.client.plugins.statusbars.renderer.BarRenderer;
@@ -55,13 +56,11 @@ import net.runelite.client.plugins.statusbars.renderer.PrayerRenderer;
 import net.runelite.client.plugins.statusbars.renderer.SpecialAttackRenderer;
 import net.runelite.client.ui.overlay.OverlayManager;
 
-
-import java.util.Map;
-
 @PluginDescriptor(
 	name = "Status Bars",
 	description = "Draws status bars next to players inventory showing currentValue and restore amounts",
-	enabledByDefault = false
+	enabledByDefault = false,
+	type = PluginType.UTILITY
 )
 @Singleton
 @PluginDependency(ItemStatPlugin.class)
@@ -85,7 +84,7 @@ public class StatusBarsPlugin extends Plugin
 	@Inject
 	private SpecialAttackRenderer specialAttackRenderer;
 
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private final Map<BarMode, BarRenderer> barRenderers = Maps.newEnumMap(BarMode.class);
 
 	@Inject
@@ -111,7 +110,7 @@ public class StatusBarsPlugin extends Plugin
 	private int hideStatusBarDelay;
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 
@@ -129,7 +128,7 @@ public class StatusBarsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick gameTick)
+	private void onGameTick(GameTick gameTick)
 	{
 		if (!this.toggleRestorationBars)
 		{
@@ -158,17 +157,15 @@ public class StatusBarsPlugin extends Plugin
 				overlayManager.add(overlay);
 			}
 		}
-		else if (lastCombatAction != null)
+		else if (lastCombatAction == null
+			|| (lastCombatAction != null && Duration.between(getLastCombatAction(), Instant.now()).getSeconds() > combatTimeout))
 		{
-			if (Duration.between(getLastCombatAction(), Instant.now()).getSeconds() > combatTimeout)
-			{
-				overlayManager.remove(overlay);
-			}
+			overlayManager.remove(overlay);
 		}
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
 		barRenderers.clear();
@@ -181,7 +178,7 @@ public class StatusBarsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!"statusbars".equals(event.getGroup()))
 		{

@@ -28,7 +28,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import net.runelite.api.Client;
-import static net.runelite.api.MenuAction.RUNELITE_OVERLAY_CONFIG;
+import static net.runelite.api.MenuOpcode.RUNELITE_OVERLAY_CONFIG;
 import net.runelite.api.NPC;
 import net.runelite.client.plugins.theatre.TheatrePlugin;
 import net.runelite.client.plugins.theatre.TheatreRoom;
@@ -50,7 +50,7 @@ class NyloOverlay extends Overlay
 	private final TheatrePlugin plugin;
 	private final PanelComponent panelComponent = new PanelComponent();
 
-	private NyloHandler nylohandler;
+	private final NyloHandler nylohandler;
 
 	NyloOverlay(final Client client, final TheatrePlugin plugin, final NyloHandler nylohandler)
 	{

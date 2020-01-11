@@ -25,19 +25,30 @@
 package net.runelite.client.plugins.customcursor;
 
 import com.google.inject.Provides;
+import java.io.IOException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import net.runelite.api.events.ConfigChanged;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.FloatControl;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.ClientUI;
 
+@Slf4j
 @PluginDescriptor(
 	name = "Custom Cursor",
 	description = "Replaces your mouse cursor image",
-	enabledByDefault = false
+	enabledByDefault = false,
+	type = PluginType.MISCELLANEOUS
 )
 @Singleton
 public class CustomCursorPlugin extends Plugin
@@ -47,6 +58,9 @@ public class CustomCursorPlugin extends Plugin
 
 	@Inject
 	private CustomCursorConfig config;
+
+	private Clip skillSpecsRage;
+	private int volume = 35;
 
 	@Provides
 	CustomCursorConfig provideConfig(ConfigManager configManager)
@@ -58,6 +72,20 @@ public class CustomCursorPlugin extends Plugin
 	protected void startUp()
 	{
 		updateCursor();
+
+		try (AudioInputStream ais = AudioSystem.getAudioInputStream(this.getClass().getResourceAsStream("specs-rage.wav")))
+		{
+			skillSpecsRage = AudioSystem.getClip();
+			skillSpecsRage.open(ais);
+			FloatControl gain = (FloatControl) skillSpecsRage.getControl(FloatControl.Type.MASTER_GAIN);
+			float gainVal = (((float) volume) * 40f / 100f) - 35f;
+			gain.setValue(gainVal);
+		}
+		catch (UnsupportedAudioFileException | IOException | LineUnavailableException e)
+		{
+			log.warn("Error opening audiostream from specs-rage.wav", e);
+			skillSpecsRage = null;
+		}
 	}
 
 	@Override
@@ -67,17 +95,37 @@ public class CustomCursorPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (event.getGroup().equals("customcursor") && event.getKey().equals("cursorStyle"))
 		{
 			updateCursor();
+		}
+
+		if (event.getGroup().equals("metronome") && event.getKey().equals("volume"))
+		{
+			this.volume = Integer.parseInt(event.getNewValue());
 		}
 	}
 
 	private void updateCursor()
 	{
 		CustomCursor selectedCursor = config.selectedCursor();
+
+		if (selectedCursor == CustomCursor.SKILL_SPECS)
+		{
+			if (skillSpecsRage != null)
+			{
+				if (skillSpecsRage.isRunning())
+				{
+					skillSpecsRage.stop();
+				}
+
+				skillSpecsRage.setFramePosition(0);
+				skillSpecsRage.start();
+			}
+		}
+
 		clientUI.setCursor(selectedCursor.getCursorImage(), selectedCursor.toString());
 	}
 }

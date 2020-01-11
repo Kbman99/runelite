@@ -30,6 +30,7 @@ import net.runelite.mapping.Import;
 public interface RSActor extends RSEntity, Actor
 {
 	@Import("targetIndex")
+	@Override
 	int getRSInteracting();
 
 	// Overhead text
@@ -100,7 +101,7 @@ public interface RSActor extends RSEntity, Actor
 
 	// Idle animation
 
-	@Import("idleSequence")
+	@Import("readySequence")
 	@Override
 	void setIdlePoseAnimation(int animation);
 
@@ -126,6 +127,10 @@ public interface RSActor extends RSEntity, Actor
 	@Import("orientation")
 	@Override
 	int getOrientation();
+
+	@Import("rotation")
+	@Override
+	int getCurrentOrientation();
 
 	// Health stuff
 

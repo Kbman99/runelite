@@ -47,37 +47,39 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import static net.runelite.api.Constants.CHUNK_SIZE;
 import net.runelite.api.GameState;
-import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
+import net.runelite.api.MenuOpcode;
 import net.runelite.api.Tile;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.FocusChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.MenuOptionClicked;
+import net.runelite.api.util.Text;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ColorUtil;
-import net.runelite.client.util.Text;
 
 @Slf4j
 @PluginDescriptor(
 	name = "Ground Markers",
 	description = "Enable marking of tiles using the Shift key",
-	tags = {"overlay", "tiles"}
+	tags = {"overlay", "tiles"},
+	type = PluginType.UTILITY
 )
 @Singleton
 public class GroundMarkerPlugin extends Plugin
 {
 	private static final String CONFIG_GROUP = "groundMarker";
 	private static final String MARK = "Mark tile";
-	private static final Pattern GROUP_MATCHER = Pattern.compile(".*ark tile \\(Group (\\d)\\)");
+	private static final Pattern GROUP_MATCHER = Pattern.compile(".*ark tile \\(Group (\\d{1,2})\\)");
 	private static final String UNMARK = "Unmark tile";
 	private static final String WALK_HERE = "Walk here";
 	private static final String REGION_PREFIX = "region_";
@@ -141,6 +143,7 @@ public class GroundMarkerPlugin extends Plugin
 	{
 	}
 
+	private GroundMarkerConfig.amount amount;
 	@Getter(AccessLevel.PACKAGE)
 	private Color markerColor;
 	@Getter(AccessLevel.PACKAGE)
@@ -150,9 +153,27 @@ public class GroundMarkerPlugin extends Plugin
 	@Getter(AccessLevel.PACKAGE)
 	private Color markerColor4;
 	@Getter(AccessLevel.PACKAGE)
+	private Color markerColor5;
+	@Getter(AccessLevel.PACKAGE)
+	private Color markerColor6;
+	@Getter(AccessLevel.PACKAGE)
+	private Color markerColor7;
+	@Getter(AccessLevel.PACKAGE)
+	private Color markerColor8;
+	@Getter(AccessLevel.PACKAGE)
+	private Color markerColor9;
+	@Getter(AccessLevel.PACKAGE)
+	private Color markerColor10;
+	@Getter(AccessLevel.PACKAGE)
+	private Color markerColor11;
+	@Getter(AccessLevel.PACKAGE)
+	private Color markerColor12;
+	@Getter(AccessLevel.PACKAGE)
 	private boolean showMinimap;
 	@Getter(AccessLevel.PACKAGE)
 	private int minimapOverlayOpacity;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean thinMarkers;
 
 	@Provides
 	GroundMarkerConfig provideConfig(ConfigManager configManager)
@@ -187,6 +208,7 @@ public class GroundMarkerPlugin extends Plugin
 	 * @param points
 	 * @return
 	 */
+	@SuppressWarnings("unchecked")
 	private Collection<GroundMarkerWorldPoint> translateToWorld(Collection<GroundMarkerPoint> points)
 	{
 		if (points.isEmpty())
@@ -238,7 +260,7 @@ public class GroundMarkerPlugin extends Plugin
 	/**
 	 * Rotate the chunk containing the given point to rotation 0
 	 *
-	 * @param point point
+	 * @param point    point
 	 * @param rotation rotation
 	 * @return world point
 	 */
@@ -250,7 +272,7 @@ public class GroundMarkerPlugin extends Plugin
 	/**
 	 * Rotate the coordinates in the chunk according to chunk rotation
 	 *
-	 * @param point point
+	 * @param point    point
 	 * @param rotation rotation
 	 * @return world point
 	 */
@@ -273,7 +295,7 @@ public class GroundMarkerPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged)
+	private void onGameStateChanged(GameStateChanged gameStateChanged)
 	{
 		if (gameStateChanged.getGameState() != GameState.LOGGED_IN)
 		{
@@ -285,7 +307,7 @@ public class GroundMarkerPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onFocusChanged(FocusChanged focusChanged)
+	private void onFocusChanged(FocusChanged focusChanged)
 	{
 		if (!focusChanged.isFocused())
 		{
@@ -294,13 +316,21 @@ public class GroundMarkerPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onMenuEntryAdded(MenuEntryAdded event)
+	private void onMenuEntryAdded(MenuEntryAdded event)
 	{
 		if (hotKeyPressed && event.getOption().equals(WALK_HERE))
 		{
+			final Tile selectedSceneTile = client.getSelectedSceneTile();
+
+			if (selectedSceneTile == null)
+			{
+				return;
+			}
+
 			MenuEntry[] menuEntries = client.getMenuEntries();
+
 			int lastIndex = menuEntries.length;
-			menuEntries = Arrays.copyOf(menuEntries, lastIndex + 4);
+			menuEntries = Arrays.copyOf(menuEntries, lastIndex + this.amount.toInt());
 
 			final Tile tile = client.getSelectedSceneTile();
 			if (tile == null)
@@ -308,9 +338,13 @@ public class GroundMarkerPlugin extends Plugin
 				return;
 			}
 			final WorldPoint loc = WorldPoint.fromLocalInstance(client, tile.getLocalLocation());
+			if (loc == null)
+			{
+				return;
+			}
 			final int regionId = loc.getRegionID();
 
-			for (int i = 4; i > 0; i--)
+			for (int i = this.amount.toInt(); i > 0; i--)
 			{
 				MenuEntry menuEntry = menuEntries[lastIndex] = new MenuEntry();
 
@@ -319,7 +353,7 @@ public class GroundMarkerPlugin extends Plugin
 				final String option = (stream.isPresent() && stream.get().getGroup() == i) ? UNMARK : MARK;
 				menuEntry.setOption(ColorUtil.prependColorTag(Text.removeTags(option + (i == 1 ? "" : " (Group " + i + ")")), getColor(i)));
 				menuEntry.setTarget(event.getTarget());
-				menuEntry.setType(MenuAction.CANCEL.getId());
+				menuEntry.setOpcode(MenuOpcode.RUNELITE.getId());
 
 				lastIndex++;
 			}
@@ -329,7 +363,7 @@ public class GroundMarkerPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onMenuOptionClicked(MenuOptionClicked event)
+	private void onMenuOptionClicked(MenuOptionClicked event)
 	{
 		if (!event.getOption().contains(MARK) && !event.getOption().contains(UNMARK))
 		{
@@ -381,6 +415,11 @@ public class GroundMarkerPlugin extends Plugin
 
 		WorldPoint worldPoint = WorldPoint.fromLocalInstance(client, localPoint);
 
+		if (worldPoint == null)
+		{
+			return;
+		}
+
 		int regionId = worldPoint.getRegionID();
 		GroundMarkerPoint point = new GroundMarkerPoint(regionId, worldPoint.getRegionX(), worldPoint.getRegionY(), client.getPlane(), group);
 		log.debug("Updating point: {} - {}", point, worldPoint);
@@ -419,13 +458,37 @@ public class GroundMarkerPlugin extends Plugin
 				break;
 			case 4:
 				color = this.markerColor4;
+				break;
+			case 5:
+				color = this.markerColor5;
+				break;
+			case 6:
+				color = this.markerColor6;
+				break;
+			case 7:
+				color = this.markerColor7;
+				break;
+			case 8:
+				color = this.markerColor8;
+				break;
+			case 9:
+				color = this.markerColor9;
+				break;
+			case 10:
+				color = this.markerColor10;
+				break;
+			case 11:
+				color = this.markerColor11;
+				break;
+			case 12:
+				color = this.markerColor12;
 		}
 
 		return color;
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (event.getGroup().equals("groundMarker"))
 		{
@@ -435,11 +498,21 @@ public class GroundMarkerPlugin extends Plugin
 
 	private void updateConfig()
 	{
+		this.amount = config.getAmount();
 		this.markerColor = config.markerColor();
 		this.markerColor2 = config.markerColor2();
 		this.markerColor3 = config.markerColor3();
 		this.markerColor4 = config.markerColor4();
+		this.markerColor5 = config.markerColor5();
+		this.markerColor6 = config.markerColor6();
+		this.markerColor7 = config.markerColor7();
+		this.markerColor8 = config.markerColor8();
+		this.markerColor9 = config.markerColor9();
+		this.markerColor10 = config.markerColor10();
+		this.markerColor11 = config.markerColor11();
+		this.markerColor12 = config.markerColor12();
 		this.showMinimap = config.showMinimap();
 		this.minimapOverlayOpacity = config.minimapOverlayOpacity();
+		this.thinMarkers = config.thinMarkers();
 	}
 }

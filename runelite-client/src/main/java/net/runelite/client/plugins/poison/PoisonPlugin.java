@@ -41,13 +41,13 @@ import javax.inject.Singleton;
 import lombok.Getter;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
+import static net.runelite.api.Constants.GAME_TICK_LENGTH;
 import net.runelite.api.GameState;
 import net.runelite.api.Hitsplat;
 import net.runelite.api.NPC;
 import net.runelite.api.Player;
 import net.runelite.api.SpriteID;
 import net.runelite.api.VarPlayer;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.NpcDespawned;
@@ -56,9 +56,11 @@ import net.runelite.api.events.VarbitChanged;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.SpriteManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
@@ -68,16 +70,17 @@ import net.runelite.client.util.ImageUtil;
 @PluginDescriptor(
 	name = "Poison",
 	description = "Tracks current damage values for Poison and Venom",
-	tags = {"combat", "poison", "venom", "heart", "hp"}
+	tags = {"combat", "poison", "venom", "heart", "hp"},
+	type = PluginType.UTILITY
 )
 @Singleton
 public class PoisonPlugin extends Plugin
 {
-	private static final int POISON_TICK_MILLIS = 18000;
+	static final int POISON_TICK_TICKS = 30;
 	static final int VENOM_THRESHOLD = 1000000;
 	private static final int VENOM_UTILITY = 999997;
 	private static final int VENOM_MAXIMUM_DAMAGE = 20;
-	static final int POISON_TICK_TICKS = 30;
+	private static final int POISON_TICK_MILLIS = POISON_TICK_TICKS * GAME_TICK_LENGTH;
 
 	private static final BufferedImage HEART_DISEASE;
 	private static final BufferedImage HEART_POISON;
@@ -141,7 +144,7 @@ public class PoisonPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 
@@ -160,7 +163,7 @@ public class PoisonPlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(poisonOverlay);
 
@@ -181,7 +184,7 @@ public class PoisonPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onVarbitChanged(VarbitChanged event)
+	private void onVarbitChanged(VarbitChanged event)
 	{
 		final int poisonValue = client.getVar(VarPlayer.POISON);
 		if (poisonValue != lastValue)
@@ -316,7 +319,7 @@ public class PoisonPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals(PoisonConfig.GROUP))
 		{
@@ -488,7 +491,7 @@ public class PoisonPlugin extends Plugin
 		}
 
 		// Only update sprites when the heart icon actually changes
-		if (newHeart != heart)
+		if (newHeart != null && !newHeart.equals(heart))
 		{
 			heart = newHeart;
 			client.getWidgetSpriteCache().reset();
@@ -515,5 +518,6 @@ public class PoisonPlugin extends Plugin
 		this.showForPlayers = config.showForPlayers();
 		this.showForNpcs = config.showForNpcs();
 		this.fontSize = config.fontSize();
+		actorOverlay.setDisplayTicks(config.ticks());
 	}
 }

@@ -30,7 +30,9 @@ import java.awt.Graphics2D;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.runelite.api.Client;
-import static net.runelite.api.MenuAction.RUNELITE_OVERLAY_CONFIG;
+import net.runelite.api.GraphicID;
+import static net.runelite.api.MenuOpcode.RUNELITE_OVERLAY;
+import static net.runelite.api.MenuOpcode.RUNELITE_OVERLAY_CONFIG;
 import net.runelite.api.Skill;
 import net.runelite.client.plugins.xptracker.XpTrackerService;
 import net.runelite.client.ui.overlay.Overlay;
@@ -46,6 +48,7 @@ import net.runelite.client.ui.overlay.components.table.TableComponent;
 class FishingOverlay extends Overlay
 {
 	private static final String FISHING_SPOT = "Fishing spot";
+	static final String FISHING_RESET = "Reset";
 
 	private final Client client;
 	private final FishingPlugin plugin;
@@ -62,6 +65,7 @@ class FishingOverlay extends Overlay
 		this.plugin = plugin;
 		this.xpTrackerService = xpTrackerService;
 		getMenuEntries().add(new OverlayMenuEntry(RUNELITE_OVERLAY_CONFIG, OPTION_CONFIGURE, "Fishing overlay"));
+		getMenuEntries().add(new OverlayMenuEntry(RUNELITE_OVERLAY, FISHING_RESET, "Fishing overlay"));
 	}
 
 	@Override
@@ -73,8 +77,9 @@ class FishingOverlay extends Overlay
 		}
 
 		panelComponent.getChildren().clear();
-		if (client.getLocalPlayer().getInteracting() != null && client.getLocalPlayer().getInteracting().getName()
-			.contains(FISHING_SPOT))
+		if (client.getLocalPlayer().getInteracting() != null
+			&& client.getLocalPlayer().getInteracting().getName().contains(FISHING_SPOT)
+			&& client.getLocalPlayer().getInteracting().getSpotAnimation() != GraphicID.FLYING_FISH)
 		{
 			panelComponent.getChildren().add(TitleComponent.builder()
 				.text("Fishing")

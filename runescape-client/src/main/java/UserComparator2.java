@@ -4,33 +4,32 @@ import net.runelite.mapping.Implements;
 import net.runelite.mapping.ObfuscatedName;
 import net.runelite.mapping.ObfuscatedSignature;
 
-@ObfuscatedName("li")
+@ObfuscatedName("lv")
 @Implements("UserComparator2")
 public class UserComparator2 implements Comparator {
-   @ObfuscatedName("m")
-   final boolean field933;
+	@ObfuscatedName("f")
+	@Export("reversed")
+	final boolean reversed;
 
-   public UserComparator2(boolean var1) {
-      this.field933 = var1;
-   }
+	public UserComparator2(boolean var1) {
+		this.reversed = var1;
+	}
 
-   @ObfuscatedName("m")
-   @ObfuscatedSignature(
-      signature = "(Ljs;Ljs;I)I",
-      garbageValue = "-2069683911"
-   )
-   int method342(User var1, User var2) {
-      return this.field933 ? var1.username().compareTo0(var2.username()) : var2.username().compareTo0(var1.username());
-   }
+	@ObfuscatedName("f")
+	@ObfuscatedSignature(
+		signature = "(Ljy;Ljy;I)I",
+		garbageValue = "870914586"
+	)
+	@Export("compare_bridged")
+	int compare_bridged(User var1, User var2) {
+		return this.reversed ? var1.getUsername().compareToTyped(var2.getUsername()) : var2.getUsername().compareToTyped(var1.getUsername());
+	}
 
-   @ObfuscatedName("equals")
-   public boolean method343(Object var1) {
-      return super.equals(var1);
-   }
+	public boolean equals(Object var1) {
+		return super.equals(var1);
+	}
 
-   @Export("compare")
-   @ObfuscatedName("compare")
-   public int compare(Object var1, Object var2) {
-      return this.method342((User)var1, (User)var2);
-   }
+	public int compare(Object var1, Object var2) {
+		return this.compare_bridged((User)var1, (User)var2);
+	}
 }

@@ -41,6 +41,7 @@ import net.runelite.api.NPC;
 import net.runelite.api.Perspective;
 import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
@@ -81,9 +82,11 @@ class FishingSpotOverlay extends Overlay
 			return null;
 		}
 
+		FishingSpot previousSpot = null;
+		WorldPoint previousLocation = null;
 		for (NPC npc : plugin.getFishingSpots())
 		{
-			FishingSpot spot = FishingSpot.getSPOTS().get(npc.getId());
+			FishingSpot spot = FishingSpot.findSpot(npc.getId());
 
 			if (spot == null)
 			{
@@ -95,7 +98,25 @@ class FishingSpotOverlay extends Overlay
 				continue;
 			}
 
-			Color color = npc.getSpotAnimation() == GraphicID.FLYING_FISH ? Color.RED : Color.CYAN;
+			// This relies on the sort order to keep identical npcs on the same tile adjacent to each other
+			if (previousSpot == spot && previousLocation.equals(npc.getWorldLocation()))
+			{
+				continue;
+			}
+
+			Color color;
+			if (npc.getSpotAnimation() == GraphicID.FLYING_FISH)
+			{
+				color = plugin.getMinnowsOverlayColor();
+			}
+			else if (spot == FishingSpot.COMMON_TENCH && npc.getWorldLocation().distanceTo2D(client.getLocalPlayer().getWorldLocation()) <= ONE_TICK_AERIAL_FISHING)
+			{
+				color = plugin.getAerialOverlayColor();
+			}
+			else
+			{
+				color = plugin.getOverlayColor();
+			}
 
 			if (spot == FishingSpot.MINNOW && plugin.isShowMinnowOverlay())
 			{
@@ -127,12 +148,6 @@ class FishingSpotOverlay extends Overlay
 			{
 				Polygon poly = npc.getCanvasTilePoly();
 
-				if (spot == FishingSpot.COMMON_TENCH
-					&& npc.getWorldLocation().distanceTo2D(client.getLocalPlayer().getWorldLocation()) <= ONE_TICK_AERIAL_FISHING)
-				{
-					color = Color.GREEN;
-				}
-
 				if (poly != null)
 				{
 					OverlayUtil.renderPolygon(graphics, poly, color.darker());
@@ -146,7 +161,7 @@ class FishingSpotOverlay extends Overlay
 				if (spot == FishingSpot.COMMON_TENCH
 					&& npc.getWorldLocation().distanceTo2D(client.getLocalPlayer().getWorldLocation()) <= ONE_TICK_AERIAL_FISHING)
 				{
-					fishImage = ImageUtil.outlineImage(itemManager.getImage(spot.getFishSpriteId()), Color.GREEN);
+					fishImage = ImageUtil.outlineImage(itemManager.getImage(spot.getFishSpriteId()), color);
 				}
 
 				if (fishImage != null)
@@ -164,17 +179,14 @@ class FishingSpotOverlay extends Overlay
 				String text = spot.getName();
 				Point textLocation = npc.getCanvasTextLocation(graphics, text, npc.getLogicalHeight() + 40);
 
-				if (spot == FishingSpot.COMMON_TENCH
-					&& npc.getWorldLocation().distanceTo2D(client.getLocalPlayer().getWorldLocation()) <= ONE_TICK_AERIAL_FISHING)
-				{
-					color = Color.GREEN;
-				}
-
 				if (textLocation != null)
 				{
 					OverlayUtil.renderTextLocation(graphics, textLocation, text, color.darker());
 				}
 			}
+
+			previousSpot = spot;
+			previousLocation = npc.getWorldLocation();
 		}
 
 		return null;

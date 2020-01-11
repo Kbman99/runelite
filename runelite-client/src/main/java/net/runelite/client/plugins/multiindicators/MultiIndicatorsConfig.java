@@ -74,7 +74,7 @@ public interface MultiIndicatorsConfig extends Config
 	)
 	default boolean showWildernessLevelLines()
 	{
-		return true;
+		return false;
 	}
 
 	@ConfigItem(
@@ -119,6 +119,17 @@ public interface MultiIndicatorsConfig extends Config
 	default Color wildernessLevelLinesColor()
 	{
 		return Color.WHITE;
+	}
+
+	@ConfigItem(
+		keyName = "thinnerLines",
+		name = "Thin lines",
+		description = "Render multi lines, safe zone lines, and wildy level lines as 1 pixel wide instead of 2",
+		position = 9
+	)
+	default boolean thinnerLines()
+	{
+		return false;
 	}
 
 }

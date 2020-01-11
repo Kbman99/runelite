@@ -30,13 +30,13 @@ import net.runelite.asm.attributes.Annotations;
 import net.runelite.asm.attributes.annotation.Annotation;
 import net.runelite.asm.pool.Class;
 import net.runelite.asm.signature.Signature;
-import org.objectweb.asm.AnnotationVisitor;
+import static net.runelite.deob.DeobAnnotations.*;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-public class ClassFile
+public class ClassFile implements Annotated, Named
 {
 	private ClassGroup group;
 
@@ -94,15 +94,14 @@ public class ClassFile
 
 	public void accept(ClassVisitor visitor)
 	{
-		String[] ints = interfaces.getInterfaces().stream().map(i -> i.getName()).toArray(String[]::new);
+		String[] ints = interfaces.getInterfaces().stream().map(Class::getName).toArray(String[]::new);
 
 		visitor.visit(version, access, name.getName(), null, super_class.getName(), ints);
 		visitor.visitSource(source, null);
 
-		for (Annotation annotation : annotations.getAnnotations())
+		for (Annotation annotation : annotations)
 		{
-			AnnotationVisitor av = visitor.visitAnnotation(annotation.getType().toString(), true);
-			annotation.accept(av);
+			annotation.accept(visitor.visitAnnotation(annotation.getType().toString(), true));
 		}
 
 		for (Field field : fields)
@@ -113,7 +112,7 @@ public class ClassFile
 
 		for (Method method : methods)
 		{
-			String[] exceptions = method.getExceptions().getExceptions().stream().map(cl -> cl.getName()).toArray(String[]::new);
+			String[] exceptions = method.getExceptions().getExceptions().stream().map(Class::getName).toArray(String[]::new);
 			if (exceptions.length == 0)
 			{
 				exceptions = null;
@@ -294,11 +293,51 @@ public class ClassFile
 		return null;
 	}
 
+	public Method findStaticMethod(String name, Signature type)
+	{
+		for (Method m : methods)
+		{
+			if (m.isStatic() &&
+				m.getName().equals(name) &&
+				m.getDescriptor().equals(type))
+			{
+				return m;
+			}
+		}
+		return null;
+	}
+
+	public Method findObfStaticMethod(String name, Signature type)
+	{
+		for (Method m : methods)
+		{
+			if (m.isStatic() &&
+				name.equals(getObfuscatedName(m.getAnnotations())) &&
+				type.equals(getObfuscatedSignature(m)))
+			{
+				return m;
+			}
+		}
+		return findMethodDeepStatic(name, type);
+	}
+
 	public Method findMethod(String name)
 	{
 		for (Method m : methods)
 		{
 			if (m.getName().equals(name))
+			{
+				return m;
+			}
+		}
+		return null;
+	}
+
+	public Method findStaticMethod(String name)
+	{
+		for (Method m : methods)
+		{
+			if (m.isStatic() && m.getName().equals(name))
 			{
 				return m;
 			}
@@ -325,8 +364,8 @@ public class ClassFile
 
 	public Method findMethodDeepStatic(String name, Signature type)
 	{
-		Method m = findMethod(name, type);
-		if (m != null && m.isStatic())
+		Method m = findStaticMethod(name, type);
+		if (m != null)
 		{
 			return m;
 		}

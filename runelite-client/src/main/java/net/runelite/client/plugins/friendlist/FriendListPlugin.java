@@ -35,10 +35,12 @@ import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 
 @PluginDescriptor(
 	name = "Friend List",
-	description = "Add extra information to the friend and ignore lists"
+	description = "Add extra information to the friend and ignore lists",
+	type = PluginType.MISCELLANEOUS
 )
 @Singleton
 public class FriendListPlugin extends Plugin
@@ -61,7 +63,7 @@ public class FriendListPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick tick)
+	private void onGameTick(GameTick tick)
 	{
 		final int world = client.getWorld();
 		final boolean isMember = client.getVar(VarPlayer.MEMBERSHIP_DAYS) > 0;

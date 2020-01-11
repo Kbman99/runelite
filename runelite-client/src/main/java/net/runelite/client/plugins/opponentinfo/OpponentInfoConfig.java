@@ -24,6 +24,7 @@
  */
 package net.runelite.client.plugins.opponentinfo;
 
+import java.awt.Color;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
@@ -62,5 +63,51 @@ public interface OpponentInfoConfig extends Config
 	default boolean showOpponentsOpponent()
 	{
 		return true;
+	}
+
+	@ConfigItem(
+		keyName = "showAttackersMenu",
+		name = "Show attackers in menu",
+		description = "Marks attackers' names in menus with a *<br>",
+		position = 3,
+		warning = "NOTE: This'll also mark people who are following you/interacting with you in any other way. Don't blindly trust this in pvp!"
+	)
+	default boolean showAttackersMenu()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "showAttackingMenu",
+		name = "Green main target",
+		description = "Display main target's name colored in menus (Players and NPCs)",
+		position = 4,
+		warning = "NOTE: This'll also show green when following/interacting in any other way. Don't blindly trust this in pvp!"
+	)
+	default boolean showAttackingMenu()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "attackingColor",
+		name = "Target color",
+		description = "The color your target will be highlighted with",
+		position = 5
+	)
+	default Color attackingColor()
+	{
+		return Color.GREEN;
+	}
+
+	@ConfigItem(
+		keyName = "showHitpointsMenu",
+		name = "Show NPC hp in menu",
+		description = "Show NPC hp in menu. Useful when barraging",
+		position = 6
+	)
+	default boolean showHitpointsMenu()
+	{
+		return false;
 	}
 }

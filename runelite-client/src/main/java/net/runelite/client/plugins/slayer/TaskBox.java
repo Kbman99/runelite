@@ -19,7 +19,7 @@ import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.components.ProgressBar;
-import net.runelite.client.util.StackFormatter;
+import net.runelite.client.util.QuantityFormatter;
 
 @Singleton
 class TaskBox extends JPanel
@@ -277,8 +277,8 @@ class TaskBox extends JPanel
 			return Long.MAX_VALUE;
 		}
 		double timePerKill = ((double) taskData.getElapsedTime()) / ((double) killsInElapsedTime);
-		double remainingTime = timePerKill * taskData.getAmount();
-		return (long) remainingTime;
+
+		return (long) timePerKill * taskData.getAmount();
 	}
 
 	private static String htmlLabel(long timeMillis)
@@ -301,7 +301,7 @@ class TaskBox extends JPanel
 
 	private static String htmlLabel(int value)
 	{
-		String valueStr = StackFormatter.quantityToRSDecimalStack(value);
+		String valueStr = QuantityFormatter.quantityToRSDecimalStack(value);
 		return String.format(HTML_LABEL_TEMPLATE, valueStr);
 	}
 }

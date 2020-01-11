@@ -42,12 +42,14 @@ import net.runelite.api.events.GameStateChanged;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @PluginDescriptor(
 	name = "Tears Of Guthix",
 	description = "Show timers for the Tears Of Guthix streams",
-	tags = {"minigame", "overlay", "skilling", "timers", "tog"}
+	tags = {"minigame", "overlay", "skilling", "timers", "tog"},
+	type = PluginType.MINIGAME
 )
 @Singleton
 public class TearsOfGuthixPlugin extends Plugin
@@ -75,6 +77,7 @@ public class TearsOfGuthixPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
+
 		overlayManager.add(overlay);
 		overlayManager.add(experienceOverlay);
 	}
@@ -89,7 +92,7 @@ public class TearsOfGuthixPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		switch (event.getGameState())
 		{
@@ -99,7 +102,7 @@ public class TearsOfGuthixPlugin extends Plugin
 				streams.clear();
 		}
 
-		if (event.getGameState() == GameState.LOGGED_IN)
+		if (event.getGameState() == GameState.LOGGED_IN && client.getLocalPlayer() != null)
 		{
 			if (client.getLocalPlayer().getWorldLocation().getRegionID() == TOG_REGION)
 			{
@@ -121,22 +124,20 @@ public class TearsOfGuthixPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onDecorativeObjectSpawned(DecorativeObjectSpawned event)
+	private void onDecorativeObjectSpawned(DecorativeObjectSpawned event)
 	{
 		DecorativeObject object = event.getDecorativeObject();
 
-		if (object.getId() == ObjectID.BLUE_TEARS ||
-			object.getId() == ObjectID.BLUE_TEARS_6665)
+		if ((object.getId() == ObjectID.BLUE_TEARS ||
+			object.getId() == ObjectID.BLUE_TEARS_6665) &&
+			client.getLocalPlayer().getWorldLocation().getRegionID() == TOG_REGION)
 		{
-			if (client.getLocalPlayer().getWorldLocation().getRegionID() == TOG_REGION)
-			{
-				streams.put(event.getDecorativeObject(), Instant.now());
-			}
+			streams.put(event.getDecorativeObject(), Instant.now());
 		}
 	}
 
 	@Subscribe
-	public void onDecorativeObjectDespawned(DecorativeObjectDespawned event)
+	private void onDecorativeObjectDespawned(DecorativeObjectDespawned event)
 	{
 		if (streams.isEmpty())
 		{

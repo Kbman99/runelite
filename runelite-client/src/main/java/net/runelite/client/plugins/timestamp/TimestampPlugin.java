@@ -34,23 +34,26 @@ import java.time.ZonedDateTime;
 import java.util.Date;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import lombok.AccessLevel;
 import lombok.Getter;
 import net.runelite.api.Client;
 import net.runelite.api.MessageNode;
 import net.runelite.api.Varbits;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.util.ColorUtil;
 
 @PluginDescriptor(
 	name = "Chat Timestamps",
 	description = "Add timestamps to chat messages",
 	tags = {"timestamp"},
-	enabledByDefault = false
+	enabledByDefault = false,
+	type = PluginType.UTILITY
 )
 @Singleton
 public class TimestampPlugin extends Plugin
@@ -61,7 +64,7 @@ public class TimestampPlugin extends Plugin
 	@Inject
 	private TimestampConfig config;
 
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private SimpleDateFormat formatter;
 
 	@Provides
@@ -71,19 +74,20 @@ public class TimestampPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
+
 		updateFormatter();
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		formatter = null;
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	void onConfigChanged(ConfigChanged event)
 	{
 		if (event.getGroup().equals("timestamp") && event.getKey().equals("format"))
 		{
@@ -92,7 +96,7 @@ public class TimestampPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onScriptCallbackEvent(ScriptCallbackEvent event)
+	private void onScriptCallbackEvent(ScriptCallbackEvent event)
 	{
 		if (!event.getEventName().equals("addTimestamp"))
 		{

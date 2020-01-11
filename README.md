@@ -1,33 +1,42 @@
-![](https://i.imgur.com/OVRdQBz.png)
+![](https://i.imgur.com/0D5106S.png)
 
 
 
-# RuneLitePlus 
-[![forthebadge](https://forthebadge.com/images/badges/built-by-developers.svg)](https://forthebadge.com)
+# OpenOSRS  
 
-[![Build Status](https://travis-ci.org/runelite-extended/runelite.svg?branch=master)](https://travis-ci.org/runelite-extended/runelite) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com) [![HitCount](http://hits.dwyl.io/runelite-extended/runelite.svg)](http://hits.dwyl.io/runelite-extended/runelite) [![saythanks](https://img.shields.io/badge/say-thanks-32cd32.svg)](https://www.patreon.com/RuneLitePlus)
+[![Build Status](https://github.com/open-osrs/runelite/workflows/OpenOSRS%20-%20CI%20(push)/badge.svg)](https://github.com/open-osrs/runelite/actions?query=workflow%3A%22OpenOSRS+-+CI+%28push%29%22)
+[![HitCount](http://hits.dwyl.io/open-osrs/runelite.svg)](http://hits.dwyl.io/open-osrs/runelite)  
+[OpenOSRS](https://openosrs.com)  is an extended version of [RuneLite](https://github.com/runelite/runelite) that provides more functionality and less restrictions while staying fully open-source. We are not affiliated with RuneLite.
 
-[RuneLitePlus](https://runelitepl.us)  is a extended version of [RuneLite](https://github.com/runelite/runelite) that provides more functionality and less restrictions while staying more open-source.
+## Discord  
 
+[![Discord](https://img.shields.io/discord/373382904769675265.svg)](https://discord.gg/HN5gf3m)
 
-
-## Discord
-![[Discord]](https://discordapp.com/api/guilds/373382904769675265/widget.png?style=banner2)
-
-## Project Layout
+## Project Layout  
 
 - [cache](cache/src/main/java/net/runelite/cache) - Libraries used for reading/writing cache files, as well as the data in it
-- [http-api](http-api/src/main/java/net/runelite/http/api) - API for runelite and runeliteplus
-- [http-service](http-service/src/main/java/net/runelite/http/service) - Service for https://api.runelitepl.us
+- [deobfuscator](deobfuscator/src/main/java/net/runelite/deob) - Can decompile and cleanup gamepacks as well as map updates to newer revs
+- [http-api](http-api/src/main/java/net/runelite/http/api) - API for runelite and OpenOSRS
+- [http-service](http-service/src/main/java/net/runelite/http/service) - Service for https://api.runelite.net
+- [http-service-plus](http-service-plus/src/main/java/net/runelite/http/service) - Service for https://api.openosrs.com
+- [injector-plugin](injector-plugin/src/main/java/net/runelite/injector) - Tool for implementing our modifications to the gamepack
 - [runelite-api](runelite-api/src/main/java/net/runelite/api) - RuneLite API, interfaces for accessing the client
-- [runelite-mixins](runelite-mixins/src/main/java/net/runelite) - Mixins which are injected into the vanilla client's classes
+- [runelite-mixins](runelite-mixins/src/main/java/net/runelite) - Classes containing the Objects to be injected using the injector-plugin
 - [runescape-api](runescape-api/src/main/java/net/runelite) - Mappings correspond to these interfaces, runelite-api is a subset of this
 - [runelite-client](runelite-client/src/main/java/net/runelite/client) - Game client with plugins
 
-## License
+## Building  
 
-RuneLitePlus is licensed under the BSD 2-clause license. See the license header in the respective file to be sure.
+We have migrated the project to Gradle. Information on how to setup and build the project can be found at https://github.com/open-osrs/runelite/wiki/Building-with-IntelliJ-IDEA
 
-## Contribute and Develop
+## License  
 
-We've set up a separate document for our [contribution guidelines](https://github.com/runelite-extended/runelite/blob/master/.github/CONTRIBUTING.md).
+OpenOSRS is licensed under the BSD 2-clause license. See the license header in the respective file to be sure.
+
+## Contribute and Develop  
+
+We've set up a separate document for our [contribution guidelines](https://github.com/open-osrs/runelite/blob/master/.github/CONTRIBUTING.md).
+
+## Supported By  
+
+OpenOSRS uses profiling tools provided by [![YourKit](https://www.yourkit.com/images/yklogo.png)](https://www.yourkit.com/java/profiler/)

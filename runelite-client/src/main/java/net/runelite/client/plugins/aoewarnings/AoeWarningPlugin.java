@@ -26,15 +26,13 @@
  */
 package net.runelite.client.plugins.aoewarnings;
 
-
 import com.google.inject.Provides;
 import java.awt.Color;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.AccessLevel;
@@ -44,22 +42,20 @@ import net.runelite.api.Client;
 import net.runelite.api.GameObject;
 import net.runelite.api.GameState;
 import net.runelite.api.GraphicID;
-import net.runelite.api.GraphicsObject;
 import net.runelite.api.NullObjectID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.Projectile;
-import net.runelite.api.Tile;
-import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameObjectDespawned;
 import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ProjectileMoved;
+import net.runelite.api.events.ProjectileSpawned;
 import net.runelite.client.Notifier;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginType;
@@ -77,35 +73,40 @@ import net.runelite.client.ui.overlay.OverlayManager;
 public class AoeWarningPlugin extends Plugin
 {
 	@Getter(AccessLevel.PACKAGE)
-	private final Map<WorldPoint, CrystalBomb> bombs = new HashMap<>();
+	private final Set<CrystalBomb> bombs = new HashSet<>();
+
 	@Getter(AccessLevel.PACKAGE)
-	private final Map<Projectile, AoeProjectile> projectiles = new HashMap<>();
+	private final Set<ProjectileContainer> projectiles = new HashSet<>();
+
 	@Inject
 	public AoeWarningConfig config;
+
 	@Inject
 	private Notifier notifier;
+
 	@Inject
 	private OverlayManager overlayManager;
+
 	@Inject
 	private AoeWarningOverlay coreOverlay;
+
 	@Inject
 	private BombOverlay bombOverlay;
+
 	@Inject
 	private Client client;
-	@Getter(AccessLevel.PACKAGE)
-	private List<WorldPoint> LightningTrail = new ArrayList<>();
-	@Getter(AccessLevel.PACKAGE)
-	private List<WorldPoint> AcidTrail = new ArrayList<>();
-	@Getter(AccessLevel.PACKAGE)
-	private List<WorldPoint> CrystalSpike = new ArrayList<>();
-	@Getter(AccessLevel.PACKAGE)
-	private List<WorldPoint> WintertodtSnowFall = new ArrayList<>();
 
-	@Provides
-	AoeWarningConfig getConfig(ConfigManager configManager)
-	{
-		return configManager.getConfig(AoeWarningConfig.class);
-	}
+	@Getter(AccessLevel.PACKAGE)
+	private List<WorldPoint> lightningTrail = new ArrayList<>();
+
+	@Getter(AccessLevel.PACKAGE)
+	private List<GameObject> acidTrail = new ArrayList<>();
+
+	@Getter(AccessLevel.PACKAGE)
+	private List<GameObject> crystalSpike = new ArrayList<>();
+
+	@Getter(AccessLevel.PACKAGE)
+	private List<GameObject> wintertodtSnowFall = new ArrayList<>();
 
 	// Config values
 	private boolean aoeNotifyAll;
@@ -166,18 +167,23 @@ public class AoeWarningPlugin extends Plugin
 	private boolean configDemonicGorillaEnabled;
 	private boolean configDemonicGorillaNotifyEnabled;
 
+	@Provides
+	AoeWarningConfig getConfig(ConfigManager configManager)
+	{
+		return configManager.getConfig(AoeWarningConfig.class);
+	}
+
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
-
 		overlayManager.add(coreOverlay);
 		overlayManager.add(bombOverlay);
 		reset();
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(coreOverlay);
 		overlayManager.remove(bombOverlay);
@@ -185,7 +191,7 @@ public class AoeWarningPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("aoe"))
 		{
@@ -196,27 +202,28 @@ public class AoeWarningPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onProjectileMoved(ProjectileMoved event)
+	private void onProjectileSpawned(ProjectileSpawned event)
 	{
-		Projectile projectile = event.getProjectile();
+		final Projectile projectile = event.getProjectile();
 
-		int projectileId = projectile.getId();
-		int projectileLifetime = this.delay + (projectile.getRemainingCycles() * 20);
+		if (AoeProjectileInfo.getById(projectile.getId()) == null)
+		{
+			return;
+		}
+
+		final int id = projectile.getId();
+		final int lifetime = this.delay + (projectile.getRemainingCycles() * 20);
 		int ticksRemaining = projectile.getRemainingCycles() / 30;
-		if (!isTickTimersEnabledForProjectileID(projectileId))
+		if (!isTickTimersEnabledForProjectileID(id))
 		{
 			ticksRemaining = 0;
 		}
-		int tickCycle = client.getTickCount() + ticksRemaining;
-		AoeProjectileInfo aoeProjectileInfo = AoeProjectileInfo.getById(projectileId);
-		if (aoeProjectileInfo != null
-			&& isConfigEnabledForProjectileId(projectileId, false))
+		final int tickCycle = client.getTickCount() + ticksRemaining;
+		if (isConfigEnabledForProjectileId(id, false))
 		{
-			LocalPoint targetPoint = event.getPosition();
-			AoeProjectile aoeProjectile = new AoeProjectile(Instant.now(), targetPoint, aoeProjectileInfo, projectileLifetime, tickCycle);
-			projectiles.put(projectile, aoeProjectile);
+			projectiles.add(new ProjectileContainer(projectile, Instant.now(), lifetime, tickCycle));
 
-			if (this.aoeNotifyAll || isConfigEnabledForProjectileId(projectileId, true))
+			if (this.aoeNotifyAll || isConfigEnabledForProjectileId(id, true))
 			{
 				notifier.notify("AoE attack detected!");
 			}
@@ -224,15 +231,33 @@ public class AoeWarningPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameObjectSpawned(GameObjectSpawned event)
+	private void onProjectileMoved(ProjectileMoved event)
+	{
+		if (projectiles.isEmpty())
+		{
+			return;
+		}
+
+		final Projectile projectile = event.getProjectile();
+
+		projectiles.forEach(proj ->
+		{
+			if (proj.getProjectile() == projectile)
+			{
+				proj.setTargetPoint(event.getPosition());
+			}
+		});
+	}
+
+	@Subscribe
+	private void onGameObjectSpawned(GameObjectSpawned event)
 	{
 		final GameObject gameObject = event.getGameObject();
-		final WorldPoint wp = gameObject.getWorldLocation();
 
 		switch (gameObject.getId())
 		{
 			case ObjectID.CRYSTAL_BOMB:
-				bombs.put(wp, new CrystalBomb(gameObject, client.getTickCount()));
+				bombs.add(new CrystalBomb(gameObject, client.getTickCount()));
 
 				if (this.aoeNotifyAll || this.configbombDisplayNotifyEnabled)
 				{
@@ -240,16 +265,15 @@ public class AoeWarningPlugin extends Plugin
 				}
 				break;
 			case ObjectID.ACID_POOL:
-				AcidTrail.add(wp);
+				acidTrail.add(gameObject);
 				break;
 			case ObjectID.SMALL_CRYSTALS:
-				CrystalSpike.add(wp);
+				crystalSpike.add(gameObject);
 				break;
 			case NullObjectID.NULL_26690:
-				//Wintertodt Snowfall
 				if (this.configWintertodtEnabled)
 				{
-					WintertodtSnowFall.add(wp);
+					wintertodtSnowFall.add(gameObject);
 
 					if (this.aoeNotifyAll || this.configWintertodtNotifyEnabled)
 					{
@@ -261,102 +285,59 @@ public class AoeWarningPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameObjectDespawned(GameObjectDespawned event)
+	private void onGameObjectDespawned(GameObjectDespawned event)
 	{
-		GameObject gameObject = event.getGameObject();
-		WorldPoint wp = gameObject.getWorldLocation();
+		final GameObject gameObject = event.getGameObject();
+
 		switch (gameObject.getId())
 		{
 			case ObjectID.CRYSTAL_BOMB:
-				purgeBombs(bombs);
+				bombs.removeIf(o -> o.getGameObject() == gameObject);
 				break;
 			case ObjectID.ACID_POOL:
-				AcidTrail.remove(wp);
+				acidTrail.remove(gameObject);
 				break;
 			case ObjectID.SMALL_CRYSTALS:
-				CrystalSpike.remove(wp);
+				crystalSpike.remove(gameObject);
 				break;
 			case NullObjectID.NULL_26690:
-				//Wintertodt Snowfall
-				if (this.configWintertodtEnabled)
-				{
-					WintertodtSnowFall.remove(wp);
-				}
+				wintertodtSnowFall.remove(gameObject);
 				break;
 		}
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged delta)
+	private void onGameStateChanged(GameStateChanged event)
 	{
-		if (client.getGameState() == GameState.LOGGED_IN)
+		if (event.getGameState() == GameState.LOGGED_IN)
 		{
-			purgeBombs(bombs);
+			return;
 		}
+		reset();
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick event)
+	private void onGameTick(GameTick event)
 	{
+		lightningTrail.clear();
+
 		if (this.configLightningTrail)
 		{
-			LightningTrail.clear();
-			for (GraphicsObject o : client.getGraphicsObjects())
+			client.getGraphicsObjects().forEach(o ->
 			{
 				if (o.getId() == GraphicID.OLM_LIGHTNING)
 				{
-					LightningTrail.add(WorldPoint.fromLocal(client, o.getLocation()));
+					lightningTrail.add(WorldPoint.fromLocal(client, o.getLocation()));
 
 					if (this.aoeNotifyAll || this.configLightningTrailNotifyEnabled)
 					{
 						notifier.notify("Lightning!");
 					}
 				}
-			}
+			});
 		}
 
-		for (Map.Entry<WorldPoint, CrystalBomb> entry : bombs.entrySet())
-		{
-			CrystalBomb bomb = entry.getValue();
-			bomb.bombClockUpdate();
-			//bombClockUpdate smooths the shown timer; not using this results in 1.2 --> .6 vs. 1.2 --> 1.1, etc.
-		}
-	}
-
-	private void purgeBombs(Map<WorldPoint, CrystalBomb> bombs)
-	{
-		Iterator<Map.Entry<WorldPoint, CrystalBomb>> it = bombs.entrySet().iterator();
-		Tile[][][] tiles = client.getScene().getTiles();
-
-		while (it.hasNext())
-		{
-			Map.Entry<WorldPoint, CrystalBomb> entry = it.next();
-			WorldPoint world = entry.getKey();
-			LocalPoint local = LocalPoint.fromWorld(client, world);
-
-			if (local == null)
-			{
-				return;
-			}
-
-			Tile tile = tiles[world.getPlane()][local.getSceneX()][local.getSceneY()];
-			GameObject[] objects = tile.getGameObjects();
-			boolean containsObjects = false;
-
-			for (GameObject object : objects)
-			{
-				if (object != null)
-				{
-					containsObjects = true;
-				}
-			}
-
-			if (!containsObjects)
-			{
-				it.remove();
-			}
-
-		}
+		bombs.forEach(CrystalBomb::bombClockUpdate);
 	}
 
 	private boolean isTickTimersEnabledForProjectileID(int projectileId)
@@ -450,7 +431,7 @@ public class AoeWarningPlugin extends Plugin
 		return false;
 	}
 
-	public void updateConfig()
+	private void updateConfig()
 	{
 		this.aoeNotifyAll = config.aoeNotifyAll();
 		this.overlayColor = config.overlayColor();
@@ -505,10 +486,10 @@ public class AoeWarningPlugin extends Plugin
 
 	private void reset()
 	{
-		LightningTrail.clear();
-		AcidTrail.clear();
-		CrystalSpike.clear();
-		WintertodtSnowFall.clear();
+		lightningTrail.clear();
+		acidTrail.clear();
+		crystalSpike.clear();
+		wintertodtSnowFall.clear();
 		bombs.clear();
 		projectiles.clear();
 	}

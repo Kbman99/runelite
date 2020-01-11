@@ -53,14 +53,14 @@ public class JRichTextPane extends JEditorPane
 		ek.getStyleSheet().addRule("a {color: #DDDDDD }");
 	}
 
-	public JRichTextPane(String type, String text)
+	private JRichTextPane(String type, String text)
 	{
 		this();
 		setContentType(type);
 		setText(text);
 	}
 
-	void enableAutoLinkHandler(boolean enable)
+	private void enableAutoLinkHandler(boolean enable)
 	{
 		if (enable == (linkHandler == null))
 		{
@@ -68,18 +68,15 @@ public class JRichTextPane extends JEditorPane
 			{
 				linkHandler = e ->
 				{
-					if (HyperlinkEvent.EventType.ACTIVATED.equals(e.getEventType()) && e.getURL() != null)
+					if (HyperlinkEvent.EventType.ACTIVATED.equals(e.getEventType()) && e.getURL() != null && Desktop.isDesktopSupported())
 					{
-						if (Desktop.isDesktopSupported())
+						try
 						{
-							try
-							{
-								Desktop.getDesktop().browse(e.getURL().toURI());
-							}
-							catch (URISyntaxException | IOException ex)
-							{
-								log.warn("Error opening link", ex);
-							}
+							Desktop.getDesktop().browse(e.getURL().toURI());
+						}
+						catch (URISyntaxException | IOException ex)
+						{
+							log.warn("Error opening link", ex);
 						}
 					}
 				};

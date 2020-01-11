@@ -26,6 +26,7 @@ package net.runelite.api;
 
 import java.awt.Graphics2D;
 import java.awt.Polygon;
+import java.awt.Shape;
 import java.awt.image.BufferedImage;
 import javax.annotation.Nullable;
 import net.runelite.api.coords.LocalPoint;
@@ -35,7 +36,7 @@ import net.runelite.api.coords.WorldPoint;
 /**
  * Represents a RuneScape actor/entity.
  */
-public interface Actor extends Renderable
+public interface Actor extends Entity, Locatable
 {
 	/**
 	 * Gets the combat level of the actor.
@@ -49,6 +50,7 @@ public interface Actor extends Renderable
 	 *
 	 * @return the name
 	 */
+	@Nullable
 	String getName();
 
 	/**
@@ -62,8 +64,11 @@ public interface Actor extends Renderable
 	 * </ul>
 	 *
 	 * @return the actor, null if no interaction is occurring
+	 *
+	 * (getRSInteracting returns the npc/player index, useful for menus)
 	 */
 	Actor getInteracting();
+	int getRSInteracting();
 
 	/**
 	 * Gets the health ratio of the actor.
@@ -110,6 +115,8 @@ public interface Actor extends Renderable
 	 * @see net.runelite.api.coords.Angle
 	 */
 	int getOrientation();
+
+	int getCurrentOrientation();
 
 	/**
 	 * Gets the current animation the actor is performing.
@@ -210,7 +217,7 @@ public interface Actor extends Renderable
 	 * @return the convex hull
 	 * @see net.runelite.api.model.Jarvis
 	 */
-	Polygon getConvexHull();
+	Shape getConvexHull();
 
 	/**
 	 * Gets the world area that the actor occupies.

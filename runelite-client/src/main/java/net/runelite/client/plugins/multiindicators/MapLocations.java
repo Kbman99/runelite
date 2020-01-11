@@ -30,16 +30,23 @@ import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.geom.Area;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import net.runelite.api.Constants;
 
 public class MapLocations
 {
+	@SuppressWarnings("unchecked")
 	private static final List<Shape>[] MULTICOMBAT = new List[Constants.MAX_Z];
+	@SuppressWarnings("unchecked")
 	private static final List<Shape>[] NOT_MULTICOMBAT = new List[Constants.MAX_Z];
+	@SuppressWarnings("unchecked")
 	private static final List<Shape>[] ROUGH_WILDERNESS = new List[Constants.MAX_Z];
+	@SuppressWarnings("unchecked")
 	private static final List<Shape>[] WILDERNESS_LEVEL_LINES = new List[Constants.MAX_Z];
+	@SuppressWarnings("unchecked")
 	private static final List<Shape>[] DEADMAN_SAFE_ZONES = new List[Constants.MAX_Z];
+	@SuppressWarnings("unchecked")
 	private static final List<Shape>[] PVP_WORLD_SAFE_ZONES = new List[Constants.MAX_Z];
 
 	private static Area getArea(List<Shape> shapes)
@@ -121,10 +128,7 @@ public class MapLocations
 
 	private static void initializeWithEmptyLists(List<Shape>[] array)
 	{
-		for (int i = 0; i < array.length; i++)
-		{
-			array[i] = new ArrayList<>();
-		}
+		Arrays.fill(array, new ArrayList<>());
 	}
 
 	static

@@ -27,7 +27,6 @@ package net.runelite.deob.deobfuscators.mapping;
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -41,6 +40,8 @@ import net.runelite.asm.signature.Signature;
 import net.runelite.deob.DeobAnnotations;
 import net.runelite.deob.DeobTestProperties;
 import net.runelite.deob.util.JarUtil;
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -48,6 +49,23 @@ public class MappingDumper
 {
 	@Rule
 	public DeobTestProperties properties = new DeobTestProperties();
+
+	private ClassGroup group;
+	private static final String OUTDIR = "";
+	private final File OUTFILE = new File(OUTDIR, "rlplushooks.json");
+
+	@Before
+	public void before() throws IOException
+	{
+		group = JarUtil.loadJar(new File(properties.getRsClient()));
+	}
+
+	@Test
+	@Ignore
+	public void newDump()
+	{
+		new net.runelite.deob.updater.MappingDumper(group).dump(OUTFILE);
+	}
 
 	@Test
 	public void dump() throws IOException
@@ -126,7 +144,7 @@ public class MappingDumper
 
 				String methodName = DeobAnnotations.getObfuscatedName(m.getAnnotations());
 				Signature signature = DeobAnnotations.getObfuscatedSignature(m);
-				String garbageValue = DeobAnnotations.getObfuscatedValue(m);
+				String garbageValue = DeobAnnotations.getDecoder(m);
 
 				if (signature == null)
 				{
@@ -238,7 +256,7 @@ public class MappingDumper
 
 				String methodName = DeobAnnotations.getObfuscatedName(m.getAnnotations());
 				Signature obfSignature = DeobAnnotations.getObfuscatedSignature(m);
-				String predicate = DeobAnnotations.getObfuscatedValue(m);
+				String predicate = DeobAnnotations.getDecoder(m);
 
 				JsonObject jMethod = new JsonObject();
 

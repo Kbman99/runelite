@@ -27,6 +27,8 @@ package net.runelite.client.plugins.kourendlibrary;
 import com.google.inject.Provides;
 import java.awt.image.BufferedImage;
 import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
@@ -38,25 +40,32 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.AnimationID;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
 import net.runelite.api.InventoryID;
 import net.runelite.api.Item;
 import net.runelite.api.ItemContainer;
-import net.runelite.api.MenuAction;
+import net.runelite.api.MenuOpcode;
+import net.runelite.api.NPC;
+import net.runelite.api.NpcID;
 import net.runelite.api.Player;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.ConfigChanged;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.MenuOptionClicked;
+import net.runelite.api.events.NpcDespawned;
+import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.OverlayManager;
@@ -65,7 +74,8 @@ import net.runelite.client.util.ImageUtil;
 @PluginDescriptor(
 	name = "Kourend Library",
 	description = "Show where the books are found in the Kourend Library",
-	tags = {"arceuus", "magic", "runecrafting", "overlay", "panel"}
+	tags = {"arceuus", "magic", "runecrafting", "overlay", "panel"},
+	type = PluginType.MINIGAME
 )
 @Slf4j
 @Singleton
@@ -73,9 +83,9 @@ public class KourendLibraryPlugin extends Plugin
 {
 	private static final Pattern BOOK_EXTRACTOR = Pattern.compile("'<col=0000ff>(.*)</col>'");
 	private static final Pattern TAG_MATCHER = Pattern.compile("(<[^>]*>)");
-	final static int REGION = 6459;
+	static final int REGION = 6459;
 
-	final static boolean debug = false;
+	static final boolean debug = false;
 
 	@Inject
 	private ClientToolbar clientToolbar;
@@ -96,6 +106,9 @@ public class KourendLibraryPlugin extends Plugin
 	private KourendLibraryConfig config;
 
 	@Inject
+	private KourendLibraryTutorialOverlay tutorialOverlay;
+
+	@Inject
 	private ItemManager itemManager;
 
 	private KourendLibraryPanel panel;
@@ -105,9 +118,16 @@ public class KourendLibraryPlugin extends Plugin
 	private WorldPoint lastBookcaseAnimatedOn = null;
 	private EnumSet<Book> playerBooks = null;
 
+	@Getter(AccessLevel.PACKAGE)
+	private final Set<NPC> npcsToMark = new HashSet<>();
+
 	private boolean hideButton;
 	@Getter(AccessLevel.PACKAGE)
 	private boolean hideDuplicateBook;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean hideVarlamoreEnvoy;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean showTutorialOverlay;
 
 	@Provides
 	KourendLibraryConfig provideConfig(ConfigManager configManager)
@@ -116,10 +136,13 @@ public class KourendLibraryPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
+
 		hideButton = config.hideButton();
 		hideDuplicateBook = config.hideDuplicateBook();
+		hideVarlamoreEnvoy = config.hideVarlamoreEnvoy();
+		showTutorialOverlay = config.showTutorialOverlay();
 
 		Book.fillImages(itemManager);
 
@@ -136,6 +159,7 @@ public class KourendLibraryPlugin extends Plugin
 			.build();
 
 		overlayManager.add(overlay);
+		overlayManager.add(tutorialOverlay);
 
 		updatePlayerBooks();
 
@@ -148,60 +172,64 @@ public class KourendLibraryPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
-		overlay.setHidden(true);
 		overlayManager.remove(overlay);
+		overlayManager.remove(tutorialOverlay);
 		clientToolbar.removeNavigation(navButton);
 		buttonAttached = false;
 		lastBookcaseClick = null;
 		lastBookcaseAnimatedOn = null;
 		playerBooks = null;
+		npcsToMark.clear();
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged ev)
+	private void onConfigChanged(ConfigChanged ev)
 	{
 		if (!KourendLibraryConfig.GROUP_KEY.equals(ev.getGroup()))
 		{
 			return;
 		}
 
-		this.hideButton = config.hideButton();
-		this.hideDuplicateBook = config.hideDuplicateBook();
-
-		SwingUtilities.invokeLater(() ->
+		if (ev.getKey().equals("hideVarlamoreEnvoy"))
 		{
-			if (!this.hideButton)
+			SwingUtilities.invokeLater(panel::reload);
+		}
+		else if (ev.getKey().equals("hideButton"))
+		{
+			SwingUtilities.invokeLater(() ->
 			{
-				clientToolbar.addNavigation(navButton);
-			}
-			else
-			{
-				Player lp = client.getLocalPlayer();
-				boolean inRegion = lp != null && lp.getWorldLocation().getRegionID() == REGION;
-				if (inRegion)
+				if (!config.hideButton())
 				{
 					clientToolbar.addNavigation(navButton);
 				}
 				else
 				{
-					clientToolbar.removeNavigation(navButton);
+					Player lp = client.getLocalPlayer();
+					boolean inRegion = lp != null && lp.getWorldLocation().getRegionID() == REGION;
+					if (inRegion)
+					{
+						clientToolbar.addNavigation(navButton);
+					}
+					else
+					{
+						clientToolbar.removeNavigation(navButton);
+					}
 				}
-			}
-		});
-	}
-
-	@Subscribe
-	public void onMenuOptionClicked(MenuOptionClicked menuOpt)
-	{
-		if (MenuAction.GAME_OBJECT_FIRST_OPTION == menuOpt.getMenuAction() && menuOpt.getTarget().contains("Bookshelf"))
-		{
-			lastBookcaseClick = WorldPoint.fromScene(client, menuOpt.getActionParam0(), menuOpt.getActionParam1(), client.getPlane());
-			overlay.setHidden(false);
+			});
 		}
 	}
 
 	@Subscribe
-	public void onAnimationChanged(AnimationChanged anim)
+	private void onMenuOptionClicked(MenuOptionClicked menuOpt)
+	{
+		if (MenuOpcode.GAME_OBJECT_FIRST_OPTION == menuOpt.getMenuOpcode() && menuOpt.getTarget().contains("Bookshelf"))
+		{
+			lastBookcaseClick = WorldPoint.fromScene(client, menuOpt.getParam0(), menuOpt.getParam1(), client.getPlane());
+		}
+	}
+
+	@Subscribe
+	private void onAnimationChanged(AnimationChanged anim)
 	{
 		if (anim.getActor() == client.getLocalPlayer() && anim.getActor().getAnimation() == AnimationID.LOOKING_INTO)
 		{
@@ -210,7 +238,7 @@ public class KourendLibraryPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onChatMessage(ChatMessage event)
+	private void onChatMessage(ChatMessage event)
 	{
 		if (lastBookcaseAnimatedOn != null && event.getType() == ChatMessageType.GAMEMESSAGE)
 		{
@@ -220,6 +248,16 @@ public class KourendLibraryPlugin extends Plugin
 				panel.update();
 				lastBookcaseAnimatedOn = null;
 			}
+		}
+	}
+
+	@Subscribe
+	public void onGameStateChanged(GameStateChanged event)
+	{
+		if (event.getGameState() == GameState.LOGIN_SCREEN ||
+			event.getGameState() == GameState.HOPPING)
+		{
+			npcsToMark.clear();
 		}
 	}
 
@@ -266,8 +304,7 @@ public class KourendLibraryPlugin extends Plugin
 		Widget npcHead = client.getWidget(WidgetInfo.DIALOG_NPC_HEAD_MODEL);
 		if (npcHead != null)
 		{
-			LibraryCustomer cust = LibraryCustomer.getById(npcHead.getModelId());
-			if (cust != null)
+			if (isLibraryCustomer(npcHead.getModelId()))
 			{
 				Widget textw = client.getWidget(WidgetInfo.DIALOG_NPC_TEXT);
 				String text = textw.getText();
@@ -282,13 +319,12 @@ public class KourendLibraryPlugin extends Plugin
 						return;
 					}
 
-					overlay.setHidden(false);
-					library.setCustomer(cust, book);
+					library.setCustomer(npcHead.getModelId(), book);
 					panel.update();
 				}
 				else if (text.contains("You can have this other book") || text.contains("please accept a token of my thanks.") || text.contains("Thanks, I'll get on with reading it."))
 				{
-					library.setCustomer(null, null);
+					library.setCustomer(-1, null);
 					panel.update();
 				}
 			}
@@ -296,9 +332,24 @@ public class KourendLibraryPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onItemContainerChanged(ItemContainerChanged itemContainerChangedEvent)
+	private void onItemContainerChanged(ItemContainerChanged itemContainerChangedEvent)
 	{
 		updatePlayerBooks();
+	}
+
+	@Subscribe
+	public void onNpcSpawned(NpcSpawned event)
+	{
+		if (isLibraryCustomer(event.getNpc().getId()))
+		{
+			npcsToMark.add(event.getNpc());
+		}
+	}
+
+	@Subscribe
+	public void onNpcDespawned(NpcDespawned event)
+	{
+		npcsToMark.remove(event.getNpc());
 	}
 
 	boolean doesPlayerContainBook(Book book)
@@ -326,5 +377,10 @@ public class KourendLibraryPlugin extends Plugin
 
 			playerBooks = books;
 		}
+	}
+
+	static boolean isLibraryCustomer(int npcId)
+	{
+		return npcId == NpcID.VILLIA || npcId == NpcID.PROFESSOR_GRACKLEBONE || npcId == NpcID.SAM_7049;
 	}
 }

@@ -35,18 +35,13 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.AccessLevel;
 import lombok.Getter;
-import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameObject;
 import net.runelite.api.GameState;
-import net.runelite.api.InventoryID;
-import net.runelite.api.Item;
-import net.runelite.api.ItemContainer;
 import net.runelite.api.NullObjectID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.SpriteID;
 import net.runelite.api.WallObject;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameObjectChanged;
 import net.runelite.api.events.GameObjectDespawned;
 import net.runelite.api.events.GameObjectSpawned;
@@ -58,26 +53,23 @@ import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetID;
 import net.runelite.api.widgets.WidgetInfo;
-import net.runelite.client.chat.ChatColorType;
-import net.runelite.client.chat.ChatMessageBuilder;
-import net.runelite.client.chat.ChatMessageManager;
-import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.game.ItemManager;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.SpriteManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 import net.runelite.client.ui.overlay.infobox.InfoBoxPriority;
 import net.runelite.client.ui.overlay.infobox.LoopTimer;
-import net.runelite.client.util.StackFormatter;
 
 @PluginDescriptor(
 	name = "Barrows Brothers",
 	description = "Show helpful information for the Barrows minigame",
-	tags = {"combat", "minigame", "minimap", "bosses", "pve", "pvm"}
+	tags = {"combat", "minigame", "minimap", "bosses", "pve", "pvm"},
+	type = PluginType.MINIGAME
 )
 @Singleton
 public class BarrowsPlugin extends Plugin
@@ -111,7 +103,7 @@ public class BarrowsPlugin extends Plugin
 	private LoopTimer barrowsPrayerDrainTimer;
 	private boolean wasInCrypt = false;
 
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private Widget puzzleAnswer;
 
 	@Inject
@@ -127,31 +119,18 @@ public class BarrowsPlugin extends Plugin
 	private Client client;
 
 	@Inject
-	private ItemManager itemManager;
-
-	@Inject
 	private SpriteManager spriteManager;
 
 	@Inject
 	private InfoBoxManager infoBoxManager;
 
 	@Inject
-	private ChatMessageManager chatMessageManager;
-
-	@Inject
 	private BarrowsConfig config;
-
-	@Provides
-	BarrowsConfig provideConfig(ConfigManager configManager)
-	{
-		return configManager.getConfig(BarrowsConfig.class);
-	}
 
 	@Getter(AccessLevel.PACKAGE)
 	private boolean showMinimap;
 	@Getter(AccessLevel.PACKAGE)
 	private boolean showBrotherLoc;
-	private boolean showChestValue;
 	@Getter(AccessLevel.PACKAGE)
 	private Color brotherLocColor;
 	@Getter(AccessLevel.PACKAGE)
@@ -160,10 +139,17 @@ public class BarrowsPlugin extends Plugin
 	private boolean showPuzzleAnswer;
 	private boolean showPrayerDrainTimer;
 
+	@Provides
+	BarrowsConfig provideConfig(ConfigManager configManager)
+	{
+		return configManager.getConfig(BarrowsConfig.class);
+	}
+
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
+
 		overlayManager.add(barrowsOverlay);
 		overlayManager.add(brotherOverlay);
 	}
@@ -194,7 +180,7 @@ public class BarrowsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (event.getGroup().equals("barrows"))
 		{
@@ -207,11 +193,10 @@ public class BarrowsPlugin extends Plugin
 		}
 	}
 
-	public void updateConfig()
+	private void updateConfig()
 	{
 		this.showMinimap = config.showMinimap();
 		this.showBrotherLoc = config.showBrotherLoc();
-		this.showChestValue = config.showChestValue();
 		this.brotherLocColor = config.brotherLocColor();
 		this.deadBrotherLocColor = config.deadBrotherLocColor();
 		this.showPuzzleAnswer = config.showPuzzleAnswer();
@@ -219,7 +204,7 @@ public class BarrowsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onWallObjectSpawned(WallObjectSpawned event)
+	private void onWallObjectSpawned(WallObjectSpawned event)
 	{
 		WallObject wallObject = event.getWallObject();
 		if (BARROWS_WALLS.contains(wallObject.getId()))
@@ -229,7 +214,7 @@ public class BarrowsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onWallObjectChanged(WallObjectChanged event)
+	private void onWallObjectChanged(WallObjectChanged event)
 	{
 		WallObject previous = event.getPrevious();
 		WallObject wallObject = event.getWallObject();
@@ -242,14 +227,14 @@ public class BarrowsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onWallObjectDespawned(WallObjectDespawned event)
+	private void onWallObjectDespawned(WallObjectDespawned event)
 	{
 		WallObject wallObject = event.getWallObject();
 		walls.remove(wallObject);
 	}
 
 	@Subscribe
-	public void onGameObjectSpawned(GameObjectSpawned event)
+	private void onGameObjectSpawned(GameObjectSpawned event)
 	{
 		GameObject gameObject = event.getGameObject();
 		if (BARROWS_LADDERS.contains(gameObject.getId()))
@@ -259,7 +244,7 @@ public class BarrowsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameObjectChanged(GameObjectChanged event)
+	private void onGameObjectChanged(GameObjectChanged event)
 	{
 		GameObject previous = event.getPrevious();
 		GameObject gameObject = event.getGameObject();
@@ -272,14 +257,14 @@ public class BarrowsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameObjectDespawned(GameObjectDespawned event)
+	private void onGameObjectDespawned(GameObjectDespawned event)
 	{
 		GameObject gameObject = event.getGameObject();
 		ladders.remove(gameObject);
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		if (event.getGameState() == GameState.LOADING)
 		{
@@ -289,55 +274,24 @@ public class BarrowsPlugin extends Plugin
 			ladders.clear();
 			puzzleAnswer = null;
 		}
-		else if (event.getGameState() == GameState.LOGGED_IN)
+		else if (event.getGameState() == GameState.LOGGED_IN && client.getLocalPlayer() != null)
 		{
-			if (client.getLocalPlayer() != null)
+			boolean isInCrypt = isInCrypt();
+			if (wasInCrypt && !isInCrypt)
 			{
-				boolean isInCrypt = isInCrypt();
-				if (wasInCrypt && !isInCrypt)
-				{
-					stopPrayerDrainTimer();
-				}
-				else if (!wasInCrypt && isInCrypt)
-				{
-					startPrayerDrainTimer();
-				}
+				stopPrayerDrainTimer();
+			}
+			else if (!wasInCrypt && isInCrypt)
+			{
+				startPrayerDrainTimer();
 			}
 		}
 	}
 
 	@Subscribe
-	public void onWidgetLoaded(WidgetLoaded event)
+	private void onWidgetLoaded(WidgetLoaded event)
 	{
-		if (event.getGroupId() == WidgetID.BARROWS_REWARD_GROUP_ID && this.showChestValue)
-		{
-			ItemContainer barrowsRewardContainer = client.getItemContainer(InventoryID.BARROWS_REWARD);
-			Item[] items = new Item[0];
-			if (barrowsRewardContainer != null)
-			{
-				items = barrowsRewardContainer.getItems();
-			}
-			long chestPrice = 0;
-
-			for (Item item : items)
-			{
-				long itemStack = (long) itemManager.getItemPrice(item.getId()) * (long) item.getQuantity();
-				chestPrice += itemStack;
-			}
-
-			final ChatMessageBuilder message = new ChatMessageBuilder()
-				.append(ChatColorType.HIGHLIGHT)
-				.append("Your chest is worth around ")
-				.append(StackFormatter.formatNumber(chestPrice))
-				.append(" coins.")
-				.append(ChatColorType.NORMAL);
-
-			chatMessageManager.queue(QueuedMessage.builder()
-				.type(ChatMessageType.ITEM_EXAMINE)
-				.runeLiteFormattedMessage(message.build())
-				.build());
-		}
-		else if (event.getGroupId() == WidgetID.BARROWS_PUZZLE_GROUP_ID)
+		if (event.getGroupId() == WidgetID.BARROWS_PUZZLE_GROUP_ID)
 		{
 			final int answer = client.getWidget(WidgetInfo.BARROWS_FIRST_PUZZLE).getModelId() - 3;
 			puzzleAnswer = null;
@@ -362,9 +316,11 @@ public class BarrowsPlugin extends Plugin
 			final LoopTimer loopTimer = new LoopTimer(
 				PRAYER_DRAIN_INTERVAL_MS,
 				ChronoUnit.MILLIS,
-				spriteManager.getSprite(SpriteID.TAB_PRAYER, 0),
+				null,
 				this,
 				true);
+
+			spriteManager.getSpriteAsync(SpriteID.TAB_PRAYER, 0, loopTimer);
 
 			loopTimer.setPriority(InfoBoxPriority.MED);
 			loopTimer.setTooltip("Prayer Drain");

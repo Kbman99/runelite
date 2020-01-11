@@ -1,72 +1,81 @@
+import net.runelite.mapping.Export;
 import net.runelite.mapping.Implements;
 import net.runelite.mapping.ObfuscatedGetter;
 import net.runelite.mapping.ObfuscatedName;
 import net.runelite.mapping.ObfuscatedSignature;
 
-@ObfuscatedName("dq")
+@ObfuscatedName("dm")
 @Implements("VertexNormal")
 public class VertexNormal {
-   @ObfuscatedName("pe")
-   static boolean field945;
-   @ObfuscatedName("rq")
-   @ObfuscatedGetter(
-      intValue = 1351620693
-   )
-   static int field946;
-   @ObfuscatedName("m")
-   @ObfuscatedGetter(
-      intValue = 1414310131
-   )
-   int field947;
-   @ObfuscatedName("f")
-   @ObfuscatedGetter(
-      intValue = -1493845293
-   )
-   int field948;
-   @ObfuscatedName("q")
-   @ObfuscatedGetter(
-      intValue = 1575149515
-   )
-   int field949;
-   @ObfuscatedName("w")
-   @ObfuscatedGetter(
-      intValue = -487323631
-   )
-   int field950;
+	@ObfuscatedName("l")
+	@ObfuscatedGetter(
+		intValue = -914762705
+	)
+	@Export("cacheGamebuild")
+	static int cacheGamebuild;
+	@ObfuscatedName("cx")
+	@ObfuscatedGetter(
+		intValue = -435303731
+	)
+	public static int field1732;
+	@ObfuscatedName("fq")
+	@ObfuscatedSignature(
+		signature = "Lky;"
+	)
+	static AbstractSocket field1730;
+	@ObfuscatedName("f")
+	@ObfuscatedGetter(
+		intValue = 2142857667
+	)
+	@Export("x")
+	int x;
+	@ObfuscatedName("i")
+	@ObfuscatedGetter(
+		intValue = -62403169
+	)
+	@Export("y")
+	int y;
+	@ObfuscatedName("y")
+	@ObfuscatedGetter(
+		intValue = -2087129489
+	)
+	@Export("z")
+	int z;
+	@ObfuscatedName("w")
+	@ObfuscatedGetter(
+		intValue = 1861306347
+	)
+	@Export("magnitude")
+	int magnitude;
 
-   VertexNormal() {
-   }
+	VertexNormal() {
+	}
 
-   @ObfuscatedSignature(
-      signature = "(Ldq;)V"
-   )
-   VertexNormal(VertexNormal var1) {
-      this.field947 = var1.field947;
-      this.field948 = var1.field948;
-      this.field949 = var1.field949;
-      this.field950 = var1.field950;
-   }
+	@ObfuscatedSignature(
+		signature = "(Ldm;)V"
+	)
+	VertexNormal(VertexNormal var1) {
+		this.x = var1.x;
+		this.y = var1.y;
+		this.z = var1.z;
+		this.magnitude = var1.magnitude;
+	}
 
-   @ObfuscatedName("w")
-   @ObfuscatedSignature(
-      signature = "([BB)V",
-      garbageValue = "-86"
-   )
-   static synchronized void method2984(byte[] var0) {
-      if (var0.length == 100 && ByteArrayPool.ByteArrayPool_smallCount < 1000) {
-         ByteArrayPool.ByteArrayPool_small[++ByteArrayPool.ByteArrayPool_smallCount - 1] = var0;
-      } else if (var0.length == 5000 && ByteArrayPool.ByteArrayPool_mediumCount < 250) {
-         ByteArrayPool.ByteArrayPool_medium[++ByteArrayPool.ByteArrayPool_mediumCount - 1] = var0;
-      } else if (var0.length == 30000 && ByteArrayPool.ByteArrayPool_largeCount < 50) {
-         ByteArrayPool.ByteArrayPool_large[++ByteArrayPool.ByteArrayPool_largeCount - 1] = var0;
-      } else if (RouteStrategy.field760 != null) {
-         for (int var1 = 0; var1 < ByteArrayPool.field55.length; ++var1) {
-            if (var0.length == ByteArrayPool.field55[var1] && WorldMapSection2.field1082[var1] < RouteStrategy.field760[var1].length) {
-               RouteStrategy.field760[var1][WorldMapSection2.field1082[var1]++] = var0;
-               return;
-            }
-         }
-      }
+	@ObfuscatedName("t")
+	@ObfuscatedSignature(
+		signature = "(I)V",
+		garbageValue = "-1271488083"
+	)
+	static final void method2996() {
+		Tiles.method1143("Your ignore list is full. Max of 100 for free users, and 400 for members");
+	}
 
-   }
+	@ObfuscatedName("kj")
+	@ObfuscatedSignature(
+		signature = "(B)V",
+		garbageValue = "-68"
+	)
+	static final void method2995() {
+		Client.field711 = Client.cycleCntr;
+	}
 }

@@ -30,8 +30,12 @@ import java.awt.Dimension;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -63,7 +67,7 @@ class ProfilePanel extends JPanel
 	private final String loginText;
 	private String password = null;
 
-	ProfilePanel(final Client client, final String data, final ProfilesConfig config, final ProfilesPanel parent)
+	ProfilePanel(final Client client, final String data, final ProfilesPlugin plugin, final ProfilesPanel parent)
 	{
 		String[] parts = data.split(":");
 		this.loginText = parts[1];
@@ -101,9 +105,9 @@ class ProfilePanel extends JPanel
 				{
 					parent.removeProfile(data);
 				}
-				catch (InvalidKeySpecException | NoSuchAlgorithmException ex)
+				catch (InvalidKeySpecException | NoSuchAlgorithmException | IllegalBlockSizeException | InvalidKeyException | BadPaddingException | NoSuchPaddingException ex)
 				{
-					ex.printStackTrace();
+					log.error(e.toString());
 				}
 			}
 
@@ -140,7 +144,7 @@ class ProfilePanel extends JPanel
 				if (SwingUtilities.isLeftMouseButton(e) && client.getGameState() == GameState.LOGIN_SCREEN)
 				{
 					client.setUsername(loginText);
-					if (config.rememberPassword() && password != null)
+					if (plugin.isRememberPassword() && password != null)
 					{
 						client.setPassword(password);
 					}
@@ -159,20 +163,27 @@ class ProfilePanel extends JPanel
 				if (SwingUtilities.isLeftMouseButton(e) && client.getGameState() == GameState.LOGIN_SCREEN)
 				{
 					client.setUsername(loginText);
+					if (plugin.isRememberPassword() && password != null)
+					{
+						client.setPassword(password);
+					}
 				}
 			}
 		});
 
-		JLabel login = new JLabel();
-		login.setText(config.isStreamerMode() ? "Hidden email" : loginText);
-		login.setBorder(null);
-		login.setPreferredSize(new Dimension(0, 24));
-		login.setForeground(Color.WHITE);
-		login.setBorder(new EmptyBorder(0, 8, 0, 0));
+		if (plugin.isDisplayEmailAddress())
+		{
+			JLabel login = new JLabel();
+			login.setText(plugin.isStreamerMode() ? "Hidden email" : loginText);
+			login.setBorder(null);
+			login.setPreferredSize(new Dimension(0, 24));
+			login.setForeground(Color.WHITE);
+			login.setBorder(new EmptyBorder(0, 8, 0, 0));
 
-		bottomContainer.add(login, BorderLayout.CENTER);
-
+			bottomContainer.add(login, BorderLayout.CENTER);
+			add(bottomContainer, BorderLayout.CENTER);
+		}
 		add(labelWrapper, BorderLayout.NORTH);
-		add(bottomContainer, BorderLayout.CENTER);
+
 	}
 }

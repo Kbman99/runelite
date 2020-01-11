@@ -30,8 +30,9 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.ListCellRenderer;
 import javax.swing.border.EmptyBorder;
+import lombok.Setter;
+import net.runelite.api.util.Text;
 import net.runelite.client.ui.ColorScheme;
-import net.runelite.client.util.Text;
 
 /**
  * A custom list renderer to avoid substance's weird coloring.
@@ -41,6 +42,8 @@ import net.runelite.client.util.Text;
  */
 public final class ComboBoxListRenderer extends JLabel implements ListCellRenderer
 {
+	@Setter
+	private String defaultText = "Select an option...";
 
 	@Override
 	public Component getListCellRendererComponent(JList list, Object o, int index, boolean isSelected, boolean cellHasFocus)
@@ -56,12 +59,24 @@ public final class ComboBoxListRenderer extends JLabel implements ListCellRender
 			setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 		}
 
-		setBorder(new EmptyBorder(5, 5, 5, 0));
+		setBorder(new EmptyBorder(5, 10, 5, 10));
+		setIcon(null);
 
 		String text;
-		if (o instanceof Enum)
+		// If using setSelectedItem(null) or setSelectedIndex(-1) show default text until a selection is made
+		if (index == -1 && o == null)
+		{
+			text = defaultText;
+		}
+		else if (o instanceof Enum)
 		{
 			text = Text.titleCase((Enum) o);
+		}
+		else if (o instanceof ComboBoxIconEntry)
+		{
+			ComboBoxIconEntry e = (ComboBoxIconEntry) o;
+			text = e.getText();
+			setIcon(e.getIcon());
 		}
 		else
 		{

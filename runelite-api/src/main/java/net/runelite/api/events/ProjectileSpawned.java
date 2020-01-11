@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2019, 7ate9 <https://github.com/se7enAte9>
- * Copyright (c) 2019, https://runelitepl.us
+ * Copyright (c) 2019, https://openosrs.com
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,7 @@ import lombok.Data;
  * An event called whenever a {@link Projectile} has spawned.
  */
 @Data
-public class ProjectileSpawned
+public class ProjectileSpawned implements Event
 {
 	/**
 	 * The spawned projectile.

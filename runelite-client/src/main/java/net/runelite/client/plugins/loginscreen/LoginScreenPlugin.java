@@ -36,27 +36,28 @@ import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameStateChanged;
-import net.runelite.client.events.SessionOpen;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.events.SessionOpen;
 import net.runelite.client.input.KeyListener;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.util.OSType;
 
 @PluginDescriptor(
 	name = "Login Screen",
-	description = "Provides various enhancements for login screen"
+	description = "Provides various enhancements for login screen",
+	type = PluginType.MISCELLANEOUS
 )
 @Slf4j
 @Singleton
 public class LoginScreenPlugin extends Plugin implements KeyListener
 {
 	private static final int MAX_USERNAME_LENGTH = 254;
-	private static final int MAX_PASSWORD_LENGTH = 20;
 	private static final int MAX_PIN_LENGTH = 6;
 
 	@Inject
@@ -75,20 +76,25 @@ public class LoginScreenPlugin extends Plugin implements KeyListener
 	private String username;
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
+
+		client.setHideDisconnect(config.hideDisconnected());
+
 		applyUsername();
 		keyManager.registerKeyListener(this);
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		if (this.syncUsername)
 		{
 			client.getPreferences().setRememberedUsername(usernameCache);
 		}
+
+		client.setHideDisconnect(false);
 
 		keyManager.unregisterKeyListener(this);
 	}
@@ -100,7 +106,7 @@ public class LoginScreenPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		if (!this.syncUsername)
 		{
@@ -132,7 +138,7 @@ public class LoginScreenPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onSessionOpen(SessionOpen event)
+	private void onSessionOpen(SessionOpen event)
 	{
 		// configuation for the account is available now, so update the username
 		applyUsername();
@@ -203,11 +209,6 @@ public class LoginScreenPlugin extends Plugin implements KeyListener
 							// Truncate data to maximum username length if necessary
 							client.setUsername(data.substring(0, Math.min(data.length(), MAX_USERNAME_LENGTH)));
 						}
-						else
-						{
-							// Truncate data to maximum password length if necessary
-							client.setPassword(data.substring(0, Math.min(data.length(), MAX_PASSWORD_LENGTH)));
-						}
 
 						break;
 					// Authenticator form
@@ -231,10 +232,16 @@ public class LoginScreenPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("loginscreen"))
 		{
+			return;
+		}
+
+		if (event.getKey().equals("hideDisconnect"))
+		{
+			client.setHideDisconnect(config.hideDisconnected());
 			return;
 		}
 

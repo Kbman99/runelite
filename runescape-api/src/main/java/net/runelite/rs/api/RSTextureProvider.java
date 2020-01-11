@@ -5,7 +5,7 @@ import net.runelite.mapping.Import;
 
 public interface RSTextureProvider extends TextureProvider
 {
-	@Import("brightness0")
+	@Import("brightness")
 	@Override
 	double getBrightness();
 
@@ -23,7 +23,7 @@ public interface RSTextureProvider extends TextureProvider
 	@Override
 	RSTexture[] getTextures();
 
-	@Import("load")
+	@Import("getTexturePixels")
 	@Override
 	int[] load(int textureId);
 }

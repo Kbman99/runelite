@@ -30,18 +30,20 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.AccessLevel;
 import lombok.Getter;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @PluginDescriptor(
 	name = "Tile Indicators",
 	description = "Highlight the tile you are currently moving to",
 	tags = {"highlight", "overlay"},
-	enabledByDefault = false
+	enabledByDefault = false,
+	type = PluginType.UTILITY
 )
 @Singleton
 public class TileIndicatorsPlugin extends Plugin
@@ -60,13 +62,19 @@ public class TileIndicatorsPlugin extends Plugin
 	@Getter(AccessLevel.PACKAGE)
 	private boolean highlightDestinationTile;
 	@Getter(AccessLevel.PACKAGE)
+	private boolean thinDestinationTile;
+	@Getter(AccessLevel.PACKAGE)
 	private Color highlightCurrentColor;
 	@Getter(AccessLevel.PACKAGE)
 	private boolean highlightCurrentTile;
 	@Getter(AccessLevel.PACKAGE)
+	private boolean thinCurrentTile;
+	@Getter(AccessLevel.PACKAGE)
 	private Color highlightHoveredColor;
 	@Getter(AccessLevel.PACKAGE)
 	private boolean highlightHoveredTile;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean thinHoveredTile;
 
 	@Provides
 	TileIndicatorsConfig provideConfig(ConfigManager configManager)
@@ -75,20 +83,20 @@ public class TileIndicatorsPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 		overlayManager.add(overlay);
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!"tileindicators".equals(event.getGroup()))
 		{
@@ -102,9 +110,12 @@ public class TileIndicatorsPlugin extends Plugin
 	{
 		this.highlightDestinationColor = config.highlightDestinationColor();
 		this.highlightDestinationTile = config.highlightDestinationTile();
+		this.thinDestinationTile = config.thinDestinationTile();
 		this.highlightCurrentColor = config.highlightCurrentColor();
 		this.highlightCurrentTile = config.highlightCurrentTile();
+		this.thinCurrentTile = config.thinCurrentTile();
 		this.highlightHoveredColor = config.highlightHoveredColor();
 		this.highlightHoveredTile = config.highlightHoveredTile();
+		this.thinHoveredTile = config.thinHoveredTile();
 	}
 }

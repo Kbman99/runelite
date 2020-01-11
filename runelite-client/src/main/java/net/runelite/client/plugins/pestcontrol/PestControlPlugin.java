@@ -45,7 +45,6 @@ import net.runelite.api.ItemID;
 import net.runelite.api.Tile;
 import net.runelite.api.TileObject;
 import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameObjectChanged;
 import net.runelite.api.events.GameObjectDespawned;
 import net.runelite.api.events.GameObjectSpawned;
@@ -55,24 +54,27 @@ import net.runelite.api.events.GroundObjectChanged;
 import net.runelite.api.events.GroundObjectDespawned;
 import net.runelite.api.events.GroundObjectSpawned;
 import net.runelite.api.events.WidgetLoaded;
+import net.runelite.api.util.Text;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.plugins.pestcontrol.config.HighlightPortalOption;
 import net.runelite.client.plugins.pestcontrol.config.NpcHighlightStyle;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
-import net.runelite.client.util.Text;
 
 @Slf4j
 @PluginDescriptor(
 	name = "Pest Control",
 	description = "Show helpful information for the Pest Control minigame",
-	tags = {"minigame", "overlay"}
+	tags = {"minigame", "overlay"},
+	type = PluginType.MINIGAME
 )
 @Singleton
 public class PestControlPlugin extends Plugin
@@ -182,20 +184,20 @@ public class PestControlPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 		loadPlugin();
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		unloadPlugin();
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged configEvent)
+	private void onConfigChanged(ConfigChanged configEvent)
 	{
 		if (configEvent.getGroup().equals("pestcontrol"))
 		{
@@ -487,7 +489,7 @@ public class PestControlPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick gameTickEvent)
+	private void onGameTick(GameTick gameTickEvent)
 	{
 		// Check for widgets on main island
 		if (game == null && isOnPestControlMainIsland())
@@ -552,7 +554,7 @@ public class PestControlPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onChatMessage(ChatMessage chatMessage)
+	private void onChatMessage(ChatMessage chatMessage)
 	{
 		if (game != null && chatMessage.getType() == ChatMessageType.GAMEMESSAGE)
 		{
@@ -565,7 +567,7 @@ public class PestControlPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onWidgetLoaded(WidgetLoaded event)
+	private void onWidgetLoaded(WidgetLoaded event)
 	{
 		if (game != null)
 		{
@@ -641,39 +643,39 @@ public class PestControlPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameObjectSpawned(GameObjectSpawned event)
+	private void onGameObjectSpawned(GameObjectSpawned event)
 	{
 		handleTileObject(event.getTile(), event.getGameObject());
 	}
 
 	@Subscribe
-	public void onGameObjectChanged(GameObjectChanged event)
+	private void onGameObjectChanged(GameObjectChanged event)
 	{
 		unlistTileObject(event.getPrevious());
 		handleTileObject(event.getTile(), event.getGameObject());
 	}
 
 	@Subscribe
-	public void onGameObjectDespawned(GameObjectDespawned event)
+	private void onGameObjectDespawned(GameObjectDespawned event)
 	{
 		unlistTileObject(event.getGameObject());
 	}
 
 	@Subscribe
-	public void onGroundObjectSpawned(GroundObjectSpawned event)
+	private void onGroundObjectSpawned(GroundObjectSpawned event)
 	{
 		handleTileObject(event.getTile(), event.getGroundObject());
 	}
 
 	@Subscribe
-	public void onGroundObjectChanged(GroundObjectChanged event)
+	private void onGroundObjectChanged(GroundObjectChanged event)
 	{
 		unlistTileObject(event.getPrevious());
 		handleTileObject(event.getTile(), event.getGroundObject());
 	}
 
 	@Subscribe
-	public void onGroundObjectDespawned(GroundObjectDespawned event)
+	private void onGroundObjectDespawned(GroundObjectDespawned event)
 	{
 		unlistTileObject(event.getGroundObject());
 	}

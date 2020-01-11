@@ -37,9 +37,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import lombok.AccessLevel;
-import lombok.Setter;
 import net.runelite.api.Client;
+import net.runelite.api.NPC;
 import net.runelite.api.Perspective;
 import static net.runelite.api.Perspective.getCanvasTilePoly;
 import net.runelite.api.Player;
@@ -54,13 +53,10 @@ import net.runelite.client.ui.overlay.OverlayUtil;
 @Singleton
 class KourendLibraryOverlay extends Overlay
 {
-	private final static int MAXIMUM_DISTANCE = 24;
+	private static final int MAXIMUM_DISTANCE = 24;
 	private final Library library;
 	private final Client client;
 	private final KourendLibraryPlugin plugin;
-
-	@Setter(AccessLevel.PACKAGE)
-	private boolean hidden;
 
 	@Inject
 	private KourendLibraryOverlay(final Library library, final Client client, final KourendLibraryPlugin plugin)
@@ -76,11 +72,6 @@ class KourendLibraryOverlay extends Overlay
 	@Override
 	public Dimension render(Graphics2D g)
 	{
-		if (hidden)
-		{
-			return null;
-		}
-
 		Player player = client.getLocalPlayer();
 		if (player == null)
 		{
@@ -135,10 +126,15 @@ class KourendLibraryOverlay extends Overlay
 					book = possible.iterator().next();
 					bookIsKnown = true;
 				}
-				Color color = bookIsKnown ? Color.ORANGE : Color.WHITE;
+
+				if (book == Book.VARLAMORE_ENVOY && plugin.isHideVarlamoreEnvoy())
+				{
+					continue;
+				}
+				Color color = bookIsKnown ? (book == library.getCustomerBook() ? Color.GREEN : Color.ORANGE) : Color.WHITE;
 
 				// Render the poly on the floor
-				if (!(bookIsKnown && book == null) && (library.getState() == SolvedState.NO_DATA || book != null || !possible.isEmpty()) && !shouldHideOverlayIfDuplicateBook(book))
+				if (!(bookIsKnown && book == null) && (library.getState() == SolvedState.NO_DATA || book != null || !possible.isEmpty()) && shouldShowOverlayIfDuplicateBook(book))
 				{
 					Polygon poly = getCanvasTilePoly(client, localBookcase);
 					if (poly != null)
@@ -151,7 +147,7 @@ class KourendLibraryOverlay extends Overlay
 				// If the book is singled out, render the text and the book's icon
 				if (bookIsKnown)
 				{
-					if (book != null && !shouldHideOverlayIfDuplicateBook(book))
+					if (book != null && shouldShowOverlayIfDuplicateBook(book))
 					{
 						FontMetrics fm = g.getFontMetrics();
 						Rectangle2D bounds = fm.getStringBounds(book.getShortName(), g);
@@ -213,34 +209,37 @@ class KourendLibraryOverlay extends Overlay
 		}
 
 		// Render the customer's wanted book on their head and a poly under their feet
-		LibraryCustomer customer = library.getCustomer();
-		if (customer != null)
+		int customerId = library.getCustomerId();
+		if (customerId != -1)
 		{
-			client.getNpcs().stream()
-				.filter(n -> n.getId() == customer.getId())
-				.forEach(n ->
+			for (NPC n : plugin.getNpcsToMark())
+			{
+				if (n.getId() != customerId)
 				{
-					Book b = library.getCustomerBook();
-					boolean doesPlayerContainBook = b != null && plugin.doesPlayerContainBook(b);
-					LocalPoint local = n.getLocalLocation();
-					Polygon poly = getCanvasTilePoly(client, local);
-					OverlayUtil.renderPolygon(g, poly, doesPlayerContainBook ? Color.GREEN : Color.WHITE);
-					Point screen = Perspective.localToCanvas(client, local, client.getPlane(), n.getLogicalHeight());
-					if (screen != null)
-					{
-						g.drawImage(b.getIcon(), screen.getX() - (b.getIcon().getWidth() / 2), screen.getY() - b.getIcon().getHeight(), null);
-					}
-				});
+					continue;
+				}
+
+				Book b = library.getCustomerBook();
+				boolean doesPlayerContainBook = plugin.doesPlayerContainBook(b);
+				LocalPoint local = n.getLocalLocation();
+				Polygon poly = getCanvasTilePoly(client, local);
+				OverlayUtil.renderPolygon(g, poly, doesPlayerContainBook ? Color.GREEN : Color.WHITE);
+				Point screen = Perspective.localToCanvas(client, local, client.getPlane(), n.getLogicalHeight());
+				if (screen != null)
+				{
+					g.drawImage(b.getIcon(), screen.getX() - (b.getIcon().getWidth() / 2), screen.getY() - b.getIcon().getHeight(), null);
+				}
+			}
 		}
 
 		return null;
 	}
 
-	private boolean shouldHideOverlayIfDuplicateBook(@Nullable Book book)
+	private boolean shouldShowOverlayIfDuplicateBook(@Nullable Book book)
 	{
-		return plugin.isHideDuplicateBook()
-			&& book != null
-			&& !book.isDarkManuscript()
-			&& plugin.doesPlayerContainBook(book);
+		return !plugin.isHideDuplicateBook()
+			|| book == null
+			|| book.isDarkManuscript()
+			|| !plugin.doesPlayerContainBook(book);
 	}
 }

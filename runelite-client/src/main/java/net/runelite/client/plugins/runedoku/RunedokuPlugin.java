@@ -31,9 +31,9 @@ import javax.inject.Singleton;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginType;
@@ -43,7 +43,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 	name = "Runedoku Solver",
 	description = "Show solutions for current Runedoku puzzle.",
 	tags = {"overlay", "runedoku", "sudoku", "puzzle", "solving"},
-	type = PluginType.UTILITY,
+	type = PluginType.MINIGAME,
 	enabledByDefault = false
 )
 
@@ -88,20 +88,21 @@ public class RunedokuPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
+
 		overlayManager.add(runedokuOverlay);
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(runedokuOverlay);
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("runedoku"))
 		{

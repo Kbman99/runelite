@@ -25,44 +25,57 @@
 package net.runelite.client.plugins.lowmemory;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.events.GameStateChanged;
+import net.runelite.client.callback.ClientThread;
+import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 
 @PluginDescriptor(
 	name = "Low Detail",
 	description = "Turn off ground decorations and certain textures, reducing memory usage",
 	tags = {"memory", "usage", "ground", "decorations"},
-	enabledByDefault = false
+	enabledByDefault = false,
+	type = PluginType.MISCELLANEOUS
 )
-@Singleton
 public class LowMemoryPlugin extends Plugin
 {
 	@Inject
 	private Client client;
 
+	@Inject
+	private ClientThread clientThread;
+
+	@Inject
+	private EventBus eventBus;
+
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
+		this.eventBus.subscribe(GameStateChanged.class, this, this::onGameStateChanged);
+
 		if (client.getGameState() == GameState.LOGGED_IN)
 		{
-			client.changeMemoryMode(true);
+			clientThread.invoke(() -> client.changeMemoryMode(true));
 		}
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
-		client.changeMemoryMode(false);
+		clientThread.invoke(() -> client.changeMemoryMode(false));
 	}
 
 	@Subscribe
 	private void onGameStateChanged(GameStateChanged event)
 	{
+		// When the client starts it initializes the texture size based on the memory mode setting.
+		// Don't set low memory before the login screen is ready to prevent loading the low detail textures,
+		// which breaks the gpu plugin due to it requiring the 128x128px textures
 		if (event.getGameState() == GameState.LOGIN_SCREEN)
 		{
 			client.changeMemoryMode(true);

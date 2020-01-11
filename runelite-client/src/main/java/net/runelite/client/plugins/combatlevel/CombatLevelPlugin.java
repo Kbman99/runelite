@@ -38,7 +38,6 @@ import net.runelite.api.Experience;
 import net.runelite.api.GameState;
 import net.runelite.api.Skill;
 import net.runelite.api.WorldType;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.api.widgets.Widget;
@@ -46,14 +45,17 @@ import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @PluginDescriptor(
 	name = "Combat Level",
 	description = "Show a more accurate combat level in Combat Options panel and other combat level functions",
-	tags = {"wilderness", "attack", "range"}
+	tags = {"wilderness", "attack", "range"},
+	type = PluginType.UTILITY
 )
 @Singleton
 public class CombatLevelPlugin extends Plugin
@@ -95,7 +97,7 @@ public class CombatLevelPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 
@@ -108,7 +110,7 @@ public class CombatLevelPlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
 		Widget combatLevelWidget = client.getWidget(WidgetInfo.COMBAT_LEVEL);
@@ -119,7 +121,7 @@ public class CombatLevelPlugin extends Plugin
 
 			if (widgetText.contains("."))
 			{
-				combatLevelWidget.setText(widgetText.substring(0, widgetText.indexOf(".")));
+				combatLevelWidget.setText(widgetText.substring(0, widgetText.indexOf('.')));
 			}
 		}
 
@@ -127,7 +129,7 @@ public class CombatLevelPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick event)
+	private void onGameTick(GameTick event)
 	{
 		if (client.getGameState() != GameState.LOGGED_IN)
 		{
@@ -154,7 +156,7 @@ public class CombatLevelPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!CONFIG_GROUP.equals(event.getGroup()) || !ATTACK_RANGE_CONFIG_KEY.equals(event.getKey()))
 		{
@@ -174,7 +176,7 @@ public class CombatLevelPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onScriptCallbackEvent(ScriptCallbackEvent event)
+	private void onScriptCallbackEvent(ScriptCallbackEvent event)
 	{
 		if (this.wildernessAttackLevelRange
 			&& "wildernessWidgetTextSet".equals(event.getEventName()))

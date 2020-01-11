@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2018, Lotto <https://github.com/devLotto>
+ * Copyright (c) 2019, ThatGamerBlue <thatgamerblue@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,6 +25,9 @@
  */
 package net.runelite.mixins;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import net.runelite.api.mixins.Inject;
 import net.runelite.api.mixins.Mixin;
 import net.runelite.rs.api.RSClient;
@@ -59,14 +63,25 @@ public abstract class EntityHiderBridgeMixin implements RSClient
 	public static boolean hideNPCs2D;
 
 	@Inject
+	public static boolean hidePets;
+
+	@Inject
 	public static boolean hideAttackers;
 
 	@Inject
 	public static boolean hideProjectiles;
 
 	@Inject
-	public static String hideNPCsNames;
+	public static boolean hideDeadNPCs;
 
+	@Inject
+	public static HashMap<String, Integer> hiddenNpcsName = new HashMap<>();
+
+	@Inject
+	public static HashMap<String, Integer> hiddenNpcsDeath = new HashMap<>();
+
+	@Inject
+	public static List<String> hideSpecificPlayers = new ArrayList<>();
 
 	@Inject
 	@Override
@@ -133,9 +148,88 @@ public abstract class EntityHiderBridgeMixin implements RSClient
 
 	@Inject
 	@Override
-	public void setNPCsNames(String NPCs)
+	public void addHiddenNpcName(String npc)
 	{
-		hideNPCsNames = NPCs;
+		npc = npc.toLowerCase();
+		int i = hiddenNpcsName.getOrDefault(npc, 0);
+		if (i == Integer.MAX_VALUE)
+		{
+			throw new RuntimeException("NPC name " + npc + " has been hidden Integer.MAX_VALUE times, is something wrong?");
+		}
+
+		hiddenNpcsName.put(npc, ++i);
+	}
+
+	@Inject
+	@Override
+	public void removeHiddenNpcName(String npc)
+	{
+		npc = npc.toLowerCase();
+		int i = hiddenNpcsName.getOrDefault(npc, 0);
+		if (i == 0)
+		{
+			return;
+		}
+
+		hiddenNpcsName.put(npc, --i);
+	}
+
+	@Inject
+	@Override
+	public void forciblyUnhideNpcName(String npc)
+	{
+		npc = npc.toLowerCase();
+		hiddenNpcsName.put(npc, 0);
+	}
+
+	@Inject
+	@Override
+	public void addHiddenNpcDeath(String npc)
+	{
+		npc = npc.toLowerCase();
+		int i = hiddenNpcsDeath.getOrDefault(npc, 0);
+		if (i == Integer.MAX_VALUE)
+		{
+			throw new RuntimeException("NPC death " + npc + " has been hidden Integer.MAX_VALUE times, is something wrong?");
+		}
+
+		hiddenNpcsDeath.put(npc, ++i);
+	}
+
+	@Inject
+	@Override
+	public void removeHiddenNpcDeath(String npc)
+	{
+		npc = npc.toLowerCase();
+		int i = hiddenNpcsDeath.getOrDefault(npc, 0);
+		if (i == 0)
+		{
+			return;
+		}
+
+		hiddenNpcsDeath.put(npc, --i);
+	}
+
+	@Inject
+	@Override
+	public void forciblyUnhideNpcDeath(String npc)
+	{
+		npc = npc.toLowerCase();
+		hiddenNpcsDeath.put(npc, 0);
+	}
+
+	@Inject
+	@Override
+	public void setHideSpecificPlayers(List<String> players)
+	{
+		hideSpecificPlayers = players;
+	}
+
+	@Inject
+	@Override
+	public void setPetsHidden(boolean state)
+	{
+		hidePets = state;
 	}
 
 	@Inject
@@ -150,5 +244,12 @@ public abstract class EntityHiderBridgeMixin implements RSClient
 	public void setProjectilesHidden(boolean state)
 	{
 		hideProjectiles = state;
+	}
+
+	@Inject
+	@Override
+	public void setDeadNPCsHidden(boolean state)
+	{
+		hideDeadNPCs = state;
 	}
 }

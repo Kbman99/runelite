@@ -48,6 +48,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.FontID;
 import net.runelite.api.FontTypeFace;
+import net.runelite.api.util.Text;
 import net.runelite.api.widgets.JavaScriptCallback;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetPositionMode;
@@ -58,7 +59,6 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.input.KeyListener;
 import net.runelite.client.input.MouseListener;
 import net.runelite.client.util.MiscUtils;
-import net.runelite.client.util.Text;
 
 @Slf4j
 public class ChatboxTextInput extends ChatboxInput implements KeyListener, MouseListener
@@ -67,7 +67,7 @@ public class ChatboxTextInput extends ChatboxInput implements KeyListener, Mouse
 	private static final Pattern BREAK_MATCHER = Pattern.compile("[^a-zA-Z0-9']");
 
 	private final ChatboxPanelManager chatboxPanelManager;
-	private final ClientThread clientThread;
+	final ClientThread clientThread;
 
 	private static IntPredicate getDefaultCharValidator()
 	{
@@ -129,7 +129,13 @@ public class ChatboxTextInput extends ChatboxInput implements KeyListener, Mouse
 		this.clientThread = clientThread;
 	}
 
-	public ChatboxTextInput lines(int lines)
+	public ChatboxTextInput addCharValidator(IntPredicate validator)
+	{
+		this.charValidator = this.charValidator.and(validator);
+		return this;
+	}
+
+	protected ChatboxTextInput lines(int lines)
 	{
 		this.lines = lines;
 		if (built)
@@ -151,17 +157,25 @@ public class ChatboxTextInput extends ChatboxInput implements KeyListener, Mouse
 
 	public ChatboxTextInput value(String value)
 	{
-		this.value = new StringBuffer(value);
+		StringBuffer sb = new StringBuffer();
+		for (char c : value.toCharArray())
+		{
+			if (charValidator.test(c))
+			{
+				sb.append(c);
+			}
+		}
+		this.value = sb;
 		cursorAt(this.value.length());
 		return this;
 	}
 
-	public ChatboxTextInput cursorAt(int index)
+	private ChatboxTextInput cursorAt(int index)
 	{
 		return cursorAt(index, index);
 	}
 
-	public ChatboxTextInput cursorAt(int indexA, int indexB)
+	private ChatboxTextInput cursorAt(int indexA, int indexB)
 	{
 		if (indexA < 0)
 		{
@@ -559,7 +573,7 @@ public class ChatboxTextInput extends ChatboxInput implements KeyListener, Mouse
 	}
 
 	@Override
-	protected void close()
+	void close()
 	{
 		if (this.onClose != null)
 		{
@@ -722,9 +736,6 @@ public class ChatboxTextInput extends ChatboxInput implements KeyListener, Mouse
 				newPos++;
 				break;
 			case KeyEvent.VK_UP:
-				ev.consume();
-				newPos = getLineOffset.applyAsInt(code);
-				break;
 			case KeyEvent.VK_DOWN:
 				ev.consume();
 				newPos = getLineOffset.applyAsInt(code);

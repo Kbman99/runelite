@@ -27,15 +27,27 @@ package net.runelite.client.plugins.shiftwalker;
 import com.google.inject.Provides;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import net.runelite.api.events.ConfigChanged;
+import lombok.AccessLevel;
+import lombok.Setter;
+import net.runelite.api.Client;
+import net.runelite.api.GameState;
+import net.runelite.api.MenuEntry;
+import net.runelite.api.MenuOpcode;
+import net.runelite.api.events.ClientTick;
 import net.runelite.api.events.FocusChanged;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.config.Keybind;
+import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.input.KeyManager;
+import net.runelite.client.menus.AbstractComparableEntry;
 import net.runelite.client.menus.MenuManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginType;
+import net.runelite.client.util.HotkeyListener;
 
 /**
  * Shift Walker Plugin. Credit to MenuEntrySwapperPlugin for code some code structure used here.
@@ -51,20 +63,88 @@ import net.runelite.client.plugins.PluginType;
 public class ShiftWalkerPlugin extends Plugin
 {
 
-	private static final String WALK_HERE = "Walk here";
-	private static final String TAKE = "Take";
+	private static final AbstractComparableEntry WALK = new AbstractComparableEntry()
+	{
+		private final int hash = "WALK".hashCode() * 79 + getPriority();
+
+		@Override
+		public int hashCode()
+		{
+			return hash;
+		}
+
+		@Override
+		public boolean equals(Object entry)
+		{
+			return entry.getClass() == this.getClass() && entry.hashCode() == this.hashCode();
+		}
+
+		@Override
+		public int getPriority()
+		{
+			return 99;
+		}
+
+		@Override
+		public boolean matches(MenuEntry entry)
+		{
+			return
+				entry.getOpcode() == MenuOpcode.WALK.getId() ||
+					entry.getOpcode() == MenuOpcode.WALK.getId() + MenuOpcode.MENU_ACTION_DEPRIORITIZE_OFFSET;
+		}
+	};
+
+	private static final AbstractComparableEntry TAKE = new AbstractComparableEntry()
+	{
+		private final int hash = "TAKE".hashCode() * 79 + getPriority();
+
+		@Override
+		public int hashCode()
+		{
+			return hash;
+		}
+
+		@Override
+		public boolean equals(Object entry)
+		{
+			return entry.getClass() == this.getClass() && entry.hashCode() == this.hashCode();
+		}
+
+		@Override
+		public int getPriority()
+		{
+			return 100;
+		}
+
+		@Override
+		public boolean matches(MenuEntry entry)
+		{
+			int opcode = entry.getOpcode();
+			if (opcode > MenuOpcode.MENU_ACTION_DEPRIORITIZE_OFFSET)
+			{
+				opcode -= MenuOpcode.MENU_ACTION_DEPRIORITIZE_OFFSET;
+			}
+
+			return
+				opcode >= MenuOpcode.GROUND_ITEM_FIRST_OPTION.getId() &&
+					opcode <= MenuOpcode.GROUND_ITEM_FIFTH_OPTION.getId();
+		}
+	};
+
+	private static final String EVENTBUS_THING = "shiftwalker shift";
+	private static final String SHIFT_CHECK = "shiftwalker hotkey check";
+	@Inject
+	private Client client;
 	@Inject
 	private ShiftWalkerConfig config;
-
-	@Inject
-	private ShiftWalkerInputListener inputListener;
-
 	@Inject
 	private MenuManager menuManager;
-
 	@Inject
 	private KeyManager keyManager;
-
+	@Inject
+	private EventBus eventBus;
+	@Setter(AccessLevel.PRIVATE)
+	private boolean hotkeyActive;
 	private boolean shiftWalk;
 	private boolean shiftLoot;
 
@@ -74,23 +154,53 @@ public class ShiftWalkerPlugin extends Plugin
 		return configManager.getConfig(ShiftWalkerConfig.class);
 	}
 
+	private final HotkeyListener shift = new HotkeyListener(() -> Keybind.SHIFT)
+	{
+		@Override
+		public void hotkeyPressed()
+		{
+			startPrioritizing();
+			setHotkeyActive(true);
+		}
+
+		@Override
+		public void hotkeyReleased()
+		{
+			stopPrioritizing();
+			setHotkeyActive(false);
+		}
+	};
+
 	@Override
 	public void startUp()
 	{
 		this.shiftWalk = config.shiftWalk();
 		this.shiftLoot = config.shiftLoot();
-
-		keyManager.registerKeyListener(inputListener);
+		if (client.getGameState() == GameState.LOGGED_IN)
+		{
+			keyManager.registerKeyListener(shift);
+		}
 	}
 
 	@Override
 	public void shutDown()
 	{
-		keyManager.unregisterKeyListener(inputListener);
+		keyManager.unregisterKeyListener(shift);
 	}
 
 	@Subscribe
-	public void onFocusChanged(FocusChanged event)
+	private void onGameStateChanged(GameStateChanged event)
+	{
+		if (event.getGameState() != GameState.LOGGED_IN)
+		{
+			keyManager.unregisterKeyListener(shift);
+			return;
+		}
+		keyManager.registerKeyListener(shift);
+	}
+
+	@Subscribe
+	private void onFocusChanged(FocusChanged event)
 	{
 		if (!event.isFocused())
 		{
@@ -98,34 +208,74 @@ public class ShiftWalkerPlugin extends Plugin
 		}
 	}
 
-	void startPrioritizing()
-	{
-		if (this.shiftLoot)
-		{
-			menuManager.addPriorityEntry(TAKE).setPriority(100);
-		}
-		
-		if (this.shiftWalk)
-		{
-			menuManager.addPriorityEntry(WALK_HERE).setPriority(90);
-		}	
-	}
-
-	void stopPrioritizing()
-	{
-		menuManager.removePriorityEntry(TAKE);
-		menuManager.removePriorityEntry(WALK_HERE);
-	}
-
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("shiftwalkhere"))
 		{
 			return;
 		}
 
-		this.shiftWalk = config.shiftWalk();
-		this.shiftLoot = config.shiftLoot();
+		if ("shiftWalk".equals(event.getKey()))
+		{
+			this.shiftWalk = "true".equals(event.getNewValue());
+		}
+		else
+		{
+			this.shiftLoot = "true".equals(event.getNewValue());
+		}
+	}
+
+	private void hotkeyCheck(ClientTick event)
+	{
+		if (hotkeyActive)
+		{
+			int i = 0;
+			for (boolean bol : client.getPressedKeys())
+			{
+				if (bol)
+				{
+					i++;
+				}
+			}
+			if (i == 0)
+			{
+				stopPrioritizing();
+				setHotkeyActive(false);
+				eventBus.unregister(SHIFT_CHECK);
+			}
+		}
+	}
+
+	private void startPrioritizing()
+	{
+		eventBus.subscribe(ClientTick.class, EVENTBUS_THING, this::addEntries);
+		eventBus.subscribe(ClientTick.class, SHIFT_CHECK, this::hotkeyCheck);
+	}
+
+	private void addEntries(ClientTick event)
+	{
+		if (this.shiftLoot)
+		{
+			menuManager.addPriorityEntry(TAKE);
+		}
+		if (this.shiftWalk)
+		{
+			menuManager.addPriorityEntry(WALK);
+		}
+
+		eventBus.unregister(EVENTBUS_THING);
+	}
+
+	private void stopPrioritizing()
+	{
+		eventBus.subscribe(ClientTick.class, EVENTBUS_THING, this::removeEntries);
+	}
+
+	private void removeEntries(ClientTick event)
+	{
+		menuManager.removePriorityEntry(TAKE);
+		menuManager.removePriorityEntry(WALK);
+		eventBus.unregister(EVENTBUS_THING);
 	}
 }

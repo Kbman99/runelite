@@ -1,86 +1,75 @@
+import java.awt.Desktop;
+import java.awt.Desktop.Action;
+import java.net.URI;
 import net.runelite.mapping.Export;
-import net.runelite.mapping.ObfuscatedGetter;
 import net.runelite.mapping.ObfuscatedName;
 import net.runelite.mapping.ObfuscatedSignature;
 
-@ObfuscatedName("i")
+@ObfuscatedName("k")
 public class class13 {
-   @ObfuscatedName("x")
-   static int[] field1112;
-   @ObfuscatedName("k")
-   @ObfuscatedSignature(
-      signature = "Lhe;"
-   )
-   @Export("musicTrack")
-   public static MusicTrack musicTrack;
-   @ObfuscatedName("af")
-   @ObfuscatedGetter(
-      intValue = -1810047523
-   )
-   @Export("otpInt")
-   static int otpInt;
+	@ObfuscatedName("i")
+	@ObfuscatedSignature(
+		signature = "(Ljava/lang/String;ZZI)V",
+		garbageValue = "637886489"
+	)
+	@Export("openURL")
+	public static void openURL(String var0, boolean var1, boolean var2) {
+		if (var1) {
+			if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Action.BROWSE)) {
+				try {
+					Desktop.getDesktop().browse(new URI(var0));
+					return;
+				} catch (Exception var4) {
+				}
+			}
 
-   @ObfuscatedName("f")
-   @ObfuscatedSignature(
-      signature = "(IIII)Lln;",
-      garbageValue = "862375604"
-   )
-   static Sprite method164(int var0, int var1, int var2) {
-      return (Sprite)WorldMapRegion.field1051.get(MouseHandler.method1083(var0, var1, var2));
-   }
+			if (class50.field410.startsWith("win")) {
+				class216.method4017(var0, 0);
+			} else if (class50.field410.startsWith("mac")) {
+				GrandExchangeEvent.method79(var0, 1, "openjs");
+			} else {
+				class216.method4017(var0, 2);
+			}
+		} else {
+			class216.method4017(var0, 3);
+		}
 
-   @ObfuscatedName("fm")
-   @ObfuscatedSignature(
-      signature = "(B)V",
-      garbageValue = "63"
-   )
-   @Export("playPcmPlayers")
-   static final void playPcmPlayers() {
-      if (AbstractIndexCache.pcmPlayer1 != null) {
-         AbstractIndexCache.pcmPlayer1.run();
-      }
+	}
 
-      if (WorldMapCacheName.pcmPlayer0 != null) {
-         WorldMapCacheName.pcmPlayer0.run();
-      }
+	@ObfuscatedName("d")
+	@ObfuscatedSignature(
+		signature = "(IIIIB)I",
+		garbageValue = "119"
+	)
+	static final int method150(int var0, int var1, int var2, int var3) {
+		int var4 = 65536 - Rasterizer3D.Rasterizer3D_cosine[var2 * 1024 / var3] >> 1;
+		return ((65536 - var4) * var0 >> 16) + (var4 * var1 >> 16);
+	}
 
-   }
+	@ObfuscatedName("iw")
+	@ObfuscatedSignature(
+		signature = "(IIIIIIIII)V",
+		garbageValue = "1952174760"
+	)
+	@Export("drawWidgets")
+	static final void drawWidgets(int var0, int var1, int var2, int var3, int var4, int var5, int var6, int var7) {
+		if (MusicPatch.loadInterface(var0)) {
+			ClientPacket.field2223 = null;
+			UserComparator7.drawInterface(UserComparator7.Widget_interfaceComponents[var0], -1, var1, var2, var3, var4, var5, var6, var7);
+			if (ClientPacket.field2223 != null) {
+				UserComparator7.drawInterface(ClientPacket.field2223, -1412584499, var1, var2, var3, var4, GrandExchangeEvents.field31, class81.field1126, var7);
+				ClientPacket.field2223 = null;
+			}
 
-   @ObfuscatedName("hm")
-   @ObfuscatedSignature(
-      signature = "(Lbi;I)V",
-      garbageValue = "-527387190"
-   )
-   static final void method165(class68 var0) {
-      long var1 = 0L;
-      int var3 = -1;
-      int var4 = 0;
-      int var5 = 0;
-      if (var0.field906 == 0) {
-         var1 = class65.scene.method290(var0.field911, var0.field913, var0.field901);
-      }
+		} else {
+			if (var7 != -1) {
+				Client.field833[var7] = true;
+			} else {
+				for (int var8 = 0; var8 < 100; ++var8) {
+					Client.field833[var8] = true;
+				}
+			}
 
-      if (var0.field906 == 1) {
-         var1 = class65.scene.method291(var0.field911, var0.field913, var0.field901);
-      }
-
-      if (var0.field906 == 2) {
-         var1 = class65.scene.method292(var0.field911, var0.field913, var0.field901);
-      }
-
-      if (var0.field906 == 3) {
-         var1 = class65.scene.getFloorDecorationTag(var0.field911, var0.field913, var0.field901);
-      }
-
-      if (var1 != 0L) {
-         int var6 = class65.scene.getObjectFlags(var0.field911, var0.field913, var0.field901, var1);
-         var3 = HitSplatDefinition.method4972(var1);
-         var4 = var6 & 31;
-         var5 = var6 >> 6 & 3;
-      }
-
-      var0.field903 = var3;
-      var0.field905 = var4;
-      var0.field904 = var5;
-   }
+		}
+	}
 }

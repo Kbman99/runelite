@@ -34,8 +34,10 @@ import net.runelite.api.ItemID;
 import net.runelite.api.widgets.WidgetItem;
 import static net.runelite.client.plugins.itemcharges.ItemChargeType.ABYSSAL_BRACELET;
 import static net.runelite.client.plugins.itemcharges.ItemChargeType.BELLOWS;
+import static net.runelite.client.plugins.itemcharges.ItemChargeType.FRUIT_BASKET;
 import static net.runelite.client.plugins.itemcharges.ItemChargeType.FUNGICIDE_SPRAY;
 import static net.runelite.client.plugins.itemcharges.ItemChargeType.IMPBOX;
+import static net.runelite.client.plugins.itemcharges.ItemChargeType.SACK;
 import static net.runelite.client.plugins.itemcharges.ItemChargeType.TELEPORT;
 import static net.runelite.client.plugins.itemcharges.ItemChargeType.WATERCAN;
 import static net.runelite.client.plugins.itemcharges.ItemChargeType.WATERSKIN;
@@ -127,6 +129,14 @@ class ItemChargeOverlay extends WidgetItemOverlay
 			}
 			charges = plugin.getChronicle();
 		}
+		else if (itemId == ItemID.KHAREDSTS_MEMOIRS)
+		{
+			if (!plugin.isShowKharedstsMemoirs())
+			{
+				return;
+			}
+			charges = plugin.getKharedstsMemoirs();
+		}
 		else if (itemId >= ItemID.EXPLORERS_RING_1 && itemId <= ItemID.EXPLORERS_RING_4)
 		{
 			if (!plugin.isShowExplorerRingCharges())
@@ -136,8 +146,16 @@ class ItemChargeOverlay extends WidgetItemOverlay
 
 			charges = plugin.getExplorerRing();
 		}
-		else
+		else if (itemId == ItemID.RING_OF_FORGING)
+		{
+			if (!plugin.isShowRingOfForgingCount())
+			{
+				return;
+			}
 
+			charges = plugin.getRingOfForging();
+		}
+		else
 		{
 			ItemWithCharge chargeItem = ItemWithCharge.findItem(itemId);
 			if (chargeItem == null)
@@ -152,6 +170,8 @@ class ItemChargeOverlay extends WidgetItemOverlay
 				|| (type == WATERCAN && !plugin.isShowWateringCanCharges())
 				|| (type == WATERSKIN && !plugin.isShowWaterskinCharges())
 				|| (type == BELLOWS && !plugin.isShowBellowCharges())
+				|| (type == FRUIT_BASKET && !plugin.isShowBasketCharges())
+				|| (type == SACK && !plugin.isShowSackCharges())
 				|| (type == ABYSSAL_BRACELET && !plugin.isShowAbyssalBraceletCharges()))
 			{
 				return;
@@ -162,7 +182,7 @@ class ItemChargeOverlay extends WidgetItemOverlay
 
 		final Rectangle bounds = itemWidget.getCanvasBounds();
 		final TextComponent textComponent = new TextComponent();
-		textComponent.setPosition(new Point(bounds.x, bounds.y + 1 + graphics.getFontMetrics().getMaxAscent() - graphics.getFontMetrics().getMaxDescent()));
+		textComponent.setPosition(new Point(bounds.x - 1, bounds.y + 15));
 		textComponent.setText(charges < 0 ? "?" : String.valueOf(charges));
 		textComponent.setColor(plugin.getColor(charges));
 		textComponent.render(graphics);
@@ -172,6 +192,7 @@ class ItemChargeOverlay extends WidgetItemOverlay
 	{
 		return plugin.isShowTeleportCharges() || plugin.isShowDodgyCount() || plugin.isShowFungicideCharges()
 			|| plugin.isShowImpCharges() || plugin.isShowWateringCanCharges() || plugin.isShowWaterskinCharges()
-			|| plugin.isShowBellowCharges() || plugin.isShowAbyssalBraceletCharges() || plugin.isShowExplorerRingCharges();
+			|| plugin.isShowBellowCharges() || plugin.isShowBasketCharges() || plugin.isShowSackCharges() || plugin.isShowAbyssalBraceletCharges() || plugin.isShowExplorerRingCharges()
+			|| plugin.isShowRingOfForgingCount();
 	}
 }

@@ -50,7 +50,6 @@ import net.runelite.api.Tile;
 import net.runelite.api.TileObject;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.events.AnimationChanged;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.DecorativeObjectDespawned;
 import net.runelite.api.events.DecorativeObjectSpawned;
 import net.runelite.api.events.GameObjectDespawned;
@@ -58,9 +57,11 @@ import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.HiscoreManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.http.api.hiscore.HiscoreEndpoint;
 import net.runelite.http.api.hiscore.HiscoreResult;
@@ -69,7 +70,8 @@ import net.runelite.http.api.hiscore.Skill;
 @PluginDescriptor(
 	name = "Player-owned House",
 	description = "Show minimap icons and mark unlit/lit burners",
-	tags = {"construction", "poh", "minimap", "overlay"}
+	tags = {"construction", "poh", "minimap", "overlay"},
+	type = PluginType.UTILITY
 )
 @Slf4j
 @Singleton
@@ -139,7 +141,7 @@ public class PohPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 
@@ -149,7 +151,7 @@ public class PohPlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
 		overlayManager.remove(burnerOverlay);
@@ -158,7 +160,7 @@ public class PohPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("poh"))
 		{
@@ -171,7 +173,7 @@ public class PohPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameObjectSpawned(GameObjectSpawned event)
+	private void onGameObjectSpawned(GameObjectSpawned event)
 	{
 		final GameObject gameObject = event.getGameObject();
 
@@ -191,14 +193,14 @@ public class PohPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameObjectDespawned(GameObjectDespawned event)
+	private void onGameObjectDespawned(GameObjectDespawned event)
 	{
 		GameObject gameObject = event.getGameObject();
 		pohObjects.remove(gameObject);
 	}
 
 	@Subscribe
-	public void onDecorativeObjectSpawned(DecorativeObjectSpawned event)
+	private void onDecorativeObjectSpawned(DecorativeObjectSpawned event)
 	{
 		DecorativeObject decorativeObject = event.getDecorativeObject();
 		if (PohIcons.getIcon(decorativeObject.getId()) != null)
@@ -208,14 +210,14 @@ public class PohPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onDecorativeObjectDespawned(DecorativeObjectDespawned event)
+	private void onDecorativeObjectDespawned(DecorativeObjectDespawned event)
 	{
 		DecorativeObject decorativeObject = event.getDecorativeObject();
 		pohObjects.remove(decorativeObject);
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		if (event.getGameState() == GameState.LOADING)
 		{
@@ -225,7 +227,7 @@ public class PohPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onAnimationChanged(AnimationChanged event)
+	private void onAnimationChanged(AnimationChanged event)
 	{
 		final Actor actor = event.getActor();
 		final String actorName = actor.getName();

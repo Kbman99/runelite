@@ -42,22 +42,25 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.AccessLevel;
 import lombok.Getter;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.input.MouseManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.plugins.screenmarkers.ui.ScreenMarkerPluginPanel;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
+import net.runelite.client.ui.components.colorpicker.ColorPickerManager;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ImageUtil;
 
 @PluginDescriptor(
 	name = "Screen Markers",
 	description = "Enable drawing of screen markers on top of the client",
-	tags = {"boxes", "overlay", "panel"}
+	tags = {"boxes", "overlay", "panel"},
+	type = PluginType.UTILITY
 )
 @Singleton
 public class ScreenMarkerPlugin extends Plugin
@@ -69,7 +72,7 @@ public class ScreenMarkerPlugin extends Plugin
 	private static final String DEFAULT_MARKER_NAME = "Marker";
 	private static final Dimension DEFAULT_SIZE = new Dimension(2, 2);
 
-	@Getter
+	@Getter(AccessLevel.PUBLIC)
 	private final List<ScreenMarkerOverlay> screenMarkers = new ArrayList<>();
 
 	@Inject
@@ -87,6 +90,10 @@ public class ScreenMarkerPlugin extends Plugin
 	@Inject
 	private ScreenMarkerCreationOverlay overlay;
 
+	@Getter(AccessLevel.PUBLIC)
+	@Inject
+	private ColorPickerManager colorPickerManager;
+
 	private ScreenMarkerMouseListener mouseListener;
 	private ScreenMarkerPluginPanel pluginPanel;
 	private NavigationButton navigationButton;
@@ -94,18 +101,18 @@ public class ScreenMarkerPlugin extends Plugin
 	@Getter(AccessLevel.PACKAGE)
 	private ScreenMarker currentMarker;
 
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private boolean creatingScreenMarker = false;
 	private Point startLocation = null;
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		overlayManager.add(overlay);
 		loadConfig(configManager.getConfiguration(CONFIG_GROUP, CONFIG_KEY)).forEach(screenMarkers::add);
 		screenMarkers.forEach(overlayManager::add);
 
-		pluginPanel = injector.getInstance(ScreenMarkerPluginPanel.class);
+		pluginPanel = new ScreenMarkerPluginPanel(this);
 		pluginPanel.rebuild();
 
 		final BufferedImage icon = ImageUtil.getResourceStreamFromClass(getClass(), ICON_FILE);
@@ -123,7 +130,7 @@ public class ScreenMarkerPlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
 		overlayManager.removeIf(ScreenMarkerOverlay.class::isInstance);
@@ -139,7 +146,7 @@ public class ScreenMarkerPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (screenMarkers.isEmpty() && event.getGroup().equals(CONFIG_GROUP) && event.getKey().equals(CONFIG_KEY))
 		{
@@ -181,7 +188,7 @@ public class ScreenMarkerPlugin extends Plugin
 
 	public void finishCreation(boolean aborted)
 	{
-		if (!aborted)
+		if (!aborted && currentMarker != null)
 		{
 			final ScreenMarkerOverlay screenMarkerOverlay = new ScreenMarkerOverlay(currentMarker);
 			screenMarkerOverlay.setPreferredLocation(overlay.getBounds().getLocation());

@@ -2,7 +2,7 @@
  * Copyright (c) 2018, Cameron <https://github.com/noremac201>
  * Copyright (c) 2018, Jacob M <https://github.com/jacoblairm>
  * Copyright (c) 2019, 7ate9 <https://github.com/se7enAte9>
- * Copyright (c) 2019, https://runelitepl.us
+ * Copyright (c) 2019, https://openosrs.com
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,6 @@ package net.runelite.client.plugins.barbarianassault;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Provides;
-
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.KeyEvent;
@@ -42,12 +41,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javax.inject.Inject;
-
 import javax.inject.Singleton;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-
 import net.runelite.api.Actor;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
@@ -63,7 +60,6 @@ import net.runelite.api.Varbits;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.BeforeRender;
 import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.InteractingChanged;
 import net.runelite.api.events.ItemDespawned;
@@ -75,6 +71,7 @@ import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.events.ProjectileSpawned;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.WidgetLoaded;
+import net.runelite.api.util.Text;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetID;
 import net.runelite.api.widgets.WidgetInfo;
@@ -86,6 +83,7 @@ import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.input.KeyListener;
 import net.runelite.client.input.KeyManager;
@@ -100,7 +98,6 @@ import net.runelite.client.ui.overlay.infobox.InfoBox;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.ImageUtil;
-import net.runelite.client.util.Text;
 import org.apache.commons.lang3.StringUtils;
 
 
@@ -109,7 +106,7 @@ import org.apache.commons.lang3.StringUtils;
 	name = "Barbarian Assault",
 	description = "Custom barbarian assault plugin, use along with BA Tools",
 	tags = {"minigame", "overlay", "timer"},
-	type = PluginType.PVM // don't remove this, added this because our barbarian assault plugin is big time modified
+	type = PluginType.MINIGAME // don't remove this, added this because our barbarian assault plugin is big time modified
 )
 @Singleton
 public class BarbarianAssaultPlugin extends Plugin implements KeyListener
@@ -124,6 +121,24 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 
 	private static final ImmutableList<WidgetInfo> attackStyles = ImmutableList.of(WidgetInfo.COMBAT_STYLE_ONE,
 		WidgetInfo.COMBAT_STYLE_TWO, WidgetInfo.COMBAT_STYLE_THREE, WidgetInfo.COMBAT_STYLE_FOUR);
+
+	@Getter(AccessLevel.PACKAGE)
+	private final Map<WorldPoint, Integer> redEggs = new HashMap<>();
+
+	@Getter(AccessLevel.PACKAGE)
+	private final Map<WorldPoint, Integer> greenEggs = new HashMap<>();
+
+	@Getter(AccessLevel.PACKAGE)
+	private final Map<WorldPoint, Integer> blueEggs = new HashMap<>();
+
+	@Getter(AccessLevel.PACKAGE)
+	private final Map<WorldPoint, Integer> yellowEggs = new HashMap<>();
+
+	@Getter(AccessLevel.PACKAGE)
+	private final Map<Integer, Healer> healers = new HashMap<>();
+
+	private final List<TimerBox> deathTimes = new ArrayList<>();
+	private final Map<Integer, Projectile> projectiles = new HashMap<>();
 
 	@Inject
 	private Client client;
@@ -158,98 +173,49 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 	@Inject
 	private KeyManager keyManager;
 
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private boolean inGame = false;
-
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private Wave wave = null;
-
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private Role role = null;
-
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private Scorecard scorecard = null;
-
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private Timer gameTimer = null;
-
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private Timer callTimer = null;
-
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private int stage = -1;
-
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private BufferedImage clockImage;
-
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private Font font = null;
 
-	@Getter
-	private final HashMap<WorldPoint, Integer> redEggs = new HashMap<>();
-
-	@Getter
-	private final HashMap<WorldPoint, Integer> greenEggs = new HashMap<>();
-
-	@Getter
-	private final HashMap<WorldPoint, Integer> blueEggs = new HashMap<>();
-
-	@Getter
-	private final HashMap<WorldPoint, Integer> yellowEggs = new HashMap<>();
-
-	@Getter
-	private final Map<Integer, Healer> healers = new HashMap<>();
-
-	@Getter
+	// private String lastClickedTell = null;
+	@Getter(AccessLevel.PACKAGE)
 	private String lastCallText = null;
-
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private String lastListenText = null;
-
-	private String lastClickedTell = null;
-
 	private int lastCallColor = -1;
-
 	private int lastInteracted = -1;
 
+	// private int gameTick = -1;
 	private int lastHealerPoisoned = -1;
-
 	private int tickNum = 0;
-
-	private int gameTick = -1;
-
 	private int inGameBit = 0;
-
 	private boolean syncd = true;
-
 	private boolean tickReset = false;
-
 	private boolean hornCalled = false;
-
 	private boolean hornListened = false;
-
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private boolean usingGloryHorn = false;
-
 	private boolean shiftDown = false;
-
 	private boolean controlDown = false;
-
 	private BufferedImage torsoImage, fighterImage, healerImage, rangerImage, runnerImage;
-
-	private ArrayList<TimerBox> deathTimes = new ArrayList<>();
-
-	private HashMap<Integer, Projectile> projectiles = new HashMap<>();
-
 	private TimerBox tickCounter;
 
 	private String poisonUsed = null;
-
-	@Provides
-	BarbarianAssaultConfig provideConfig(ConfigManager configManager)
-	{
-		return configManager.getConfig(BarbarianAssaultConfig.class);
-	}
 
 	// save config values
 	@Getter(AccessLevel.PACKAGE)
@@ -305,8 +271,14 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 	@Getter(AccessLevel.PACKAGE)
 	private boolean showEggCountOverlay;
 
+	@Provides
+	BarbarianAssaultConfig provideConfig(ConfigManager configManager)
+	{
+		return configManager.getConfig(BarbarianAssaultConfig.class);
+	}
+
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 
@@ -324,7 +296,7 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(widgetsOverlay);
 		overlayManager.remove(sceneOverlay);
@@ -341,7 +313,7 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 		controlDown = false;
 		resetWave();
 		wave = null;
-		gameTick = client.getTickCount();
+		// gameTick = client.getTickCount();
 		menu.disableSwaps(true);
 		menu.clearHiddenMenus();
 	}
@@ -380,7 +352,7 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged configChanged)
+	private void onConfigChanged(ConfigChanged configChanged)
 	{
 		//not client thread be careful
 		if (!configChanged.getGroup().equals("barbarianAssault"))
@@ -402,7 +374,7 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 			case "swapLadder":
 			case "swapCollectorBag":
 			case "swapDestroyEggs":
-				if (Boolean.valueOf(configChanged.getNewValue()))
+				if (Boolean.parseBoolean(configChanged.getNewValue()))
 				{
 					menu.enableSwaps();
 				}
@@ -452,7 +424,7 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 		}
 	}
 
-	public void updateConfig()
+	private void updateConfig()
 	{
 		this.swapLadder = config.swapLadder();
 		this.showTimer = config.showTimer();
@@ -491,7 +463,7 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onWidgetLoaded(WidgetLoaded event)
+	private void onWidgetLoaded(WidgetLoaded event)
 	{
 		switch (event.getGroupId())
 		{
@@ -562,7 +534,7 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onChatMessage(ChatMessage chatMessage)
+	private void onChatMessage(ChatMessage chatMessage)
 	{
 		if (!chatMessage.getType().equals(ChatMessageType.GAMEMESSAGE))
 		{
@@ -581,6 +553,11 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 		}
 		else if (isInGame())
 		{
+			if (scorecard != null)
+			{
+				scorecard.onChatMessage(chatMessage);
+			}
+
 			if (message.contains("exploded") && wave != null)
 			{
 				wave.setWrongEggs(wave.getWrongEggs() + 1);
@@ -606,7 +583,7 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 			{
 				String[] tokens = message.split(" ");
 
-				int time = wave == null ? -1 : (int)wave.getWaveTimer().getElapsedTime();
+				int time = wave == null ? -1 : (int) wave.getWaveTimer().getElapsedTime();
 
 				switch (tokens[4])
 				{
@@ -641,14 +618,14 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onItemSpawned(ItemSpawned itemSpawned)
+	private void onItemSpawned(ItemSpawned itemSpawned)
 	{
 		if (!isInGame())
 		{
 			return;
 		}
 
-		HashMap<WorldPoint, Integer> eggMap = getEggMap(itemSpawned.getItem().getId());
+		Map<WorldPoint, Integer> eggMap = getEggMap(itemSpawned.getItem().getId());
 		if (eggMap != null)
 		{
 			WorldPoint worldPoint = itemSpawned.getTile().getWorldLocation();
@@ -661,7 +638,7 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onItemDespawned(ItemDespawned itemDespawned)
+	private void onItemDespawned(ItemDespawned itemDespawned)
 	{
 		if (!isInGame())
 		{
@@ -677,7 +654,7 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 
 		// If an egg despawns due to time and the collector is standing over it,
 		// a point will added as if the player picked it up
-		HashMap<WorldPoint, Integer> eggMap = getEggMap(itemId);
+		Map<WorldPoint, Integer> eggMap = getEggMap(itemId);
 		if (eggMap != null)
 		{
 			WorldPoint worldPoint = itemDespawned.getTile().getWorldLocation();
@@ -712,7 +689,7 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick event)
+	private void onGameTick(GameTick event)
 	{
 		// Keep in mind isInGame is delayed by a tick when a wave ends
 		if (!isInGame() || getRole() == null)
@@ -744,7 +721,7 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onNpcSpawned(NpcSpawned event)
+	private void onNpcSpawned(NpcSpawned event)
 	{
 		if (!isInGame())
 		{
@@ -760,17 +737,14 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 
 		String name = event.getNpc().getName();
 
-		if (name.equals("Penance Healer"))
+		if (name.equals("Penance Healer") && !healers.containsKey(npc.getIndex()))
 		{
-			if (!healers.containsKey(npc.getIndex()))
-			{
-				healers.put(npc.getIndex(), new Healer(npc, healers.size(), stage));
-			}
+			healers.put(npc.getIndex(), new Healer(npc, healers.size(), stage));
 		}
 	}
 
 	@Subscribe
-	public void onNpcDespawned(NpcDespawned event)
+	private void onNpcDespawned(NpcDespawned event)
 	{
 		if (!isInGame())
 		{
@@ -786,7 +760,7 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 	// actually uses the horn of glory. At least now there shouldn't be anyone complaining
 	// about the horn of glory breaking anything and everything that should never break.
 	@Subscribe
-	public void onBeforeRender(BeforeRender event)
+	private void onBeforeRender(BeforeRender event)
 	{
 		if (!isInGame())
 		{
@@ -960,7 +934,7 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 	// easily achievable using MenuManager, all other changes use MenuManager in
 	// the BarbarianAssaultMenu/Menus classes
 	@Subscribe
-	public void onMenuEntryAdded(MenuEntryAdded event)
+	private void onMenuEntryAdded(MenuEntryAdded event)
 	{
 		if (!isInGame())
 		{
@@ -1151,7 +1125,7 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onMenuOptionClicked(MenuOptionClicked event)
+	private void onMenuOptionClicked(MenuOptionClicked event)
 	{
 		if (!isInGame() && getRole() != null)
 		{
@@ -1160,16 +1134,12 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 
 		String target = Text.removeTags(event.getTarget()).toLowerCase();
 
-		if (getRole() == Role.HEALER)
+		if (getRole() == Role.HEALER && (target.startsWith("poisoned meat -> penance healer")
+			|| target.startsWith("poisoned tofu -> penance healer")
+			|| target.startsWith("poisoned worms -> penance healer")))
 		{
-			if (target.startsWith("poisoned meat -> penance healer")
-				|| target.startsWith("poisoned tofu -> penance healer")
-				|| target.startsWith("poisoned worms -> penance healer"))
-			{
-				lastHealerPoisoned = event.getIdentifier();
-				poisonUsed = StringUtils.substringBefore(target.replace("oned", "."), " ->");
-				return;
-			}
+			lastHealerPoisoned = event.getIdentifier();
+			poisonUsed = StringUtils.substringBefore(target.replace("oned", "."), " ->");
 		}
 
 		// INW
@@ -1188,7 +1158,7 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 
 	// Interacting changed has a slight delay until after the hitsplat is applied
 	@Subscribe
-	public void onInteractingChanged(InteractingChanged event)
+	private void onInteractingChanged(InteractingChanged event)
 	{
 		if (!isInGame() || getRole() != Role.HEALER)
 		{
@@ -1206,14 +1176,11 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 
 		if (opponent == null)
 		{
-			if (lastInteracted != -1)
+			if (lastInteracted != -1 && StringUtils.equalsIgnoreCase(poisonUsed, getRole().getListen(client)) && healers.containsKey(lastInteracted))
 			{
-				if (StringUtils.equalsIgnoreCase(poisonUsed, getRole().getListen(client)) && healers.containsKey(lastInteracted))
-				{
-					Healer healer = healers.get(lastInteracted);
-					healer.setFoodRemaining(healer.getFoodRemaining() - 1);
-					healer.setTimeLastPoisoned(Instant.now());
-				}
+				Healer healer = healers.get(lastInteracted);
+				healer.setFoodRemaining(healer.getFoodRemaining() - 1);
+				healer.setTimeLastPoisoned(Instant.now());
 			}
 
 			lastInteracted = -1;
@@ -1221,13 +1188,13 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 		}
 		else if (StringUtils.equals(opponent.getName(), "Penance Healer"))
 		{
-			lastInteracted = ((NPC)opponent).getIndex();
+			lastInteracted = ((NPC) opponent).getIndex();
 		}
 
 	}
 
 	@Subscribe
-	public void onProjectileSpawned(ProjectileSpawned event)
+	private void onProjectileSpawned(ProjectileSpawned event)
 	{
 		if (!isInGame())
 		{
@@ -1243,12 +1210,12 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 		String name = target.getName();
 		if ("Penance Fighter".equals(name) || "Penance Ranger".equals(name))
 		{
-			projectiles.put(((NPC)target).getIndex(), event.getProjectile());
+			projectiles.put(((NPC) target).getIndex(), event.getProjectile());
 		}
 	}
 
 	@Subscribe
-	public void onVarbitChanged(VarbitChanged event)
+	private void onVarbitChanged(VarbitChanged event)
 	{
 		int newInGameBit = client.getVar(Varbits.IN_GAME_BA);
 
@@ -1263,7 +1230,7 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 				lastListenText = null;
 				lastCallText = null;
 				lastCallColor = -1;
-				lastClickedTell = null;
+				// lastClickedTell = null;
 			}
 			else
 			{
@@ -1385,12 +1352,12 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 			if (newCallColor == COLOR_CALL_CALLED)
 			{
 				lastCallColor = COLOR_CALL_CALLED;
-				lastClickedTell = lastCallText;
+				// lastClickedTell = lastCallText;
 			}
 			else if (callTimer == null)
 			{
 				lastCallColor = COLOR_CALL_UPDATED;
-				lastClickedTell = null;
+				// lastClickedTell = null;
 			}
 
 			if (callWidget != null)
@@ -1603,7 +1570,7 @@ public class BarbarianAssaultPlugin extends Plugin implements KeyListener
 		yellowEggs.clear();
 	}
 
-	private HashMap<WorldPoint, Integer> getEggMap(int itemID)
+	private Map<WorldPoint, Integer> getEggMap(int itemID)
 	{
 		switch (itemID)
 		{

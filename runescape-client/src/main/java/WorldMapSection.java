@@ -3,54 +3,54 @@ import net.runelite.mapping.Implements;
 import net.runelite.mapping.ObfuscatedName;
 import net.runelite.mapping.ObfuscatedSignature;
 
-@ObfuscatedName("ab")
+@ObfuscatedName("az")
 @Implements("WorldMapSection")
 public interface WorldMapSection {
-   @ObfuscatedName("m")
-   @ObfuscatedSignature(
-      signature = "(Lag;I)V",
-      garbageValue = "1384899025"
-   )
-   @Export("expandBounds")
-   void expandBounds(WorldMapArea var1);
+	@ObfuscatedName("f")
+	@ObfuscatedSignature(
+		signature = "(Laa;I)V",
+		garbageValue = "515570621"
+	)
+	@Export("expandBounds")
+	void expandBounds(WorldMapArea var1);
 
-   @ObfuscatedName("f")
-   @ObfuscatedSignature(
-      signature = "(IIIB)Z",
-      garbageValue = "93"
-   )
-   @Export("containsCoord")
-   boolean containsCoord(int var1, int var2, int var3);
+	@ObfuscatedName("i")
+	@ObfuscatedSignature(
+		signature = "(IIII)Z",
+		garbageValue = "2033433479"
+	)
+	@Export("containsCoord")
+	boolean containsCoord(int var1, int var2, int var3);
 
-   @ObfuscatedName("q")
-   @ObfuscatedSignature(
-      signature = "(IIB)Z",
-      garbageValue = "4"
-   )
-   @Export("containsPosition")
-   boolean containsPosition(int var1, int var2);
+	@ObfuscatedName("y")
+	@ObfuscatedSignature(
+		signature = "(IIB)Z",
+		garbageValue = "-66"
+	)
+	@Export("containsPosition")
+	boolean containsPosition(int var1, int var2);
 
-   @ObfuscatedName("w")
-   @ObfuscatedSignature(
-      signature = "(IIII)[I",
-      garbageValue = "1545934424"
-   )
-   @Export("position")
-   int[] position(int var1, int var2, int var3);
+	@ObfuscatedName("w")
+	@ObfuscatedSignature(
+		signature = "(IIII)[I",
+		garbageValue = "1684413985"
+	)
+	@Export("getBorderTileLengths")
+	int[] getBorderTileLengths(int var1, int var2, int var3);
 
-   @ObfuscatedName("o")
-   @ObfuscatedSignature(
-      signature = "(III)Lhu;",
-      garbageValue = "-1916486802"
-   )
-   @Export("coord")
-   TileLocation coord(int var1, int var2);
+	@ObfuscatedName("p")
+	@ObfuscatedSignature(
+		signature = "(IIB)Lht;",
+		garbageValue = "21"
+	)
+	@Export("coord")
+	Coord coord(int var1, int var2);
 
-   @ObfuscatedName("u")
-   @ObfuscatedSignature(
-      signature = "(Lgr;B)V",
-      garbageValue = "-113"
-   )
-   @Export("read")
-   void read(Buffer var1);
+	@ObfuscatedName("b")
+	@ObfuscatedSignature(
+		signature = "(Lkq;B)V",
+		garbageValue = "74"
+	)
+	@Export("read")
+	void read(Buffer var1);
 }

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2018-2019, Ethan <https://github.com/Wea1thRS/>
- * Copyright (c) 2018, https://runelitepl.us
+ * Copyright (c) 2018, https://openosrs.com
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,7 @@ import javax.inject.Singleton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
-import net.runelite.client.game.AsyncBufferedImage;
+import net.runelite.client.util.AsyncBufferedImage;
 
 @Singleton
 class InventorySetupSlot extends JPanel

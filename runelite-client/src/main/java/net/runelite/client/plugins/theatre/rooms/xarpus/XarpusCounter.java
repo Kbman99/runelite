@@ -3,7 +3,7 @@ package net.runelite.client.plugins.theatre.rooms.xarpus;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
-import static net.runelite.api.MenuAction.RUNELITE_OVERLAY_CONFIG;
+import static net.runelite.api.MenuOpcode.RUNELITE_OVERLAY_CONFIG;
 import net.runelite.client.plugins.theatre.TheatrePlugin;
 import net.runelite.client.ui.overlay.Overlay;
 import static net.runelite.client.ui.overlay.OverlayManager.OPTION_CONFIGURE;
@@ -14,10 +14,10 @@ import net.runelite.client.ui.overlay.components.TitleComponent;
 import net.runelite.client.ui.overlay.components.table.TableAlignment;
 import net.runelite.client.ui.overlay.components.table.TableComponent;
 
-public class XarpusCounter extends Overlay
+class XarpusCounter extends Overlay
 {
-	private PanelComponent panelComponent = new PanelComponent();
-	private XarpusHandler xarpusHandler;
+	private final PanelComponent panelComponent = new PanelComponent();
+	private final XarpusHandler xarpusHandler;
 
 	XarpusCounter(final TheatrePlugin plugin, final XarpusHandler xarpushandler)
 	{

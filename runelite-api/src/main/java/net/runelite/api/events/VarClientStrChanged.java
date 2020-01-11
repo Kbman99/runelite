@@ -28,10 +28,11 @@ package net.runelite.api.events;
 import lombok.Value;
 
 /**
- * An event where a varbit string has changed.
+ * An event where a client var string has changed.
+ * @see net.runelite.api.VarClientStr
  */
 @Value
-public class VarClientStrChanged
+public class VarClientStrChanged implements Event
 {
 	private int index;
 }

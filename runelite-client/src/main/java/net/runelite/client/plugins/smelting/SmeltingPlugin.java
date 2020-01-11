@@ -32,21 +32,26 @@ import javax.inject.Singleton;
 import lombok.AccessLevel;
 import lombok.Getter;
 import net.runelite.api.ChatMessageType;
+import net.runelite.api.MenuOpcode;
 import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.events.OverlayMenuClicked;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDependency;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.plugins.xptracker.XpTrackerPlugin;
 import net.runelite.client.ui.overlay.OverlayManager;
+import net.runelite.client.ui.overlay.OverlayMenuEntry;
 
 @PluginDescriptor(
 	name = "Smelting",
 	description = "Show Smelting stats",
-	tags = {"overlay", "skilling"}
+	tags = {"overlay", "skilling"},
+	type = PluginType.SKILLING
 )
 @Singleton
 @PluginDependency(XpTrackerPlugin.class)
@@ -75,6 +80,7 @@ public class SmeltingPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
+
 		this.statTimeout = config.statTimeout();
 		session = null;
 		overlayManager.add(overlay);
@@ -88,7 +94,19 @@ public class SmeltingPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onChatMessage(ChatMessage event)
+	public void onOverlayMenuClicked(OverlayMenuClicked overlayMenuClicked)
+	{
+		OverlayMenuEntry overlayMenuEntry = overlayMenuClicked.getEntry();
+		if (overlayMenuEntry.getMenuOpcode() == MenuOpcode.RUNELITE_OVERLAY
+			&& overlayMenuClicked.getEntry().getOption().equals(SmeltingOverlay.SMELTING_RESET)
+			&& overlayMenuClicked.getOverlay() == overlay)
+		{
+			session = null;
+		}
+	}
+
+	@Subscribe
+	void onChatMessage(ChatMessage event)
 	{
 		if (event.getType() != ChatMessageType.SPAM)
 		{
@@ -114,7 +132,7 @@ public class SmeltingPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick event)
+	private void onGameTick(GameTick event)
 	{
 		if (session != null)
 		{

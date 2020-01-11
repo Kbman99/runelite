@@ -26,10 +26,9 @@ package net.runelite.api.widgets;
 
 import java.awt.Rectangle;
 import java.util.Collection;
-
 import net.runelite.api.FontTypeFace;
 import net.runelite.api.Point;
-import net.runelite.api.SpriteID;
+import net.runelite.api.Sprite;
 
 /**
  * Represents an on-screen UI element that is drawn on the canvas.
@@ -244,17 +243,10 @@ public interface Widget
 	void setName(String name);
 
 	/**
-	 * Gets the model ID displayed in the widget.
-	 *
-	 * @return the model ID
-	 */
-	int getModelId();
-
-	/**
 	 * Gets the sprite ID displayed in the widget.
 	 *
 	 * @return the sprite ID
-	 * @see SpriteID
+	 * SpriteID
 	 */
 	int getSpriteId();
 
@@ -262,7 +254,7 @@ public interface Widget
 	 * Sets the sprite ID displayed in the widget.
 	 *
 	 * @param spriteId the sprite ID
-	 * @see SpriteID
+	 * SpriteID
 	 */
 	void setSpriteId(int spriteId);
 
@@ -294,6 +286,76 @@ public interface Widget
 	 * The index of this widget in it's parent's children array
 	 */
 	int getIndex();
+
+	/**
+	 * Gets the model ID displayed in the widget.
+	 *
+	 * @return the model ID
+	 */
+	int getModelId();
+
+	/**
+	 * Sets the model ID displayed in the widget
+	 *
+	 * @param modelId the new model ID
+	 */
+	void setModelId(int modelId);
+
+	/**
+	 * Gets the x rotation of the model displayed in the widget
+	 *
+	 * @return the x rotation
+	 */
+	int getRotationX();
+
+	/**
+	 * Sets the x rotation of the model displayed in the widget
+	 *
+	 * @param rotationX 0 = no rotation, 2047 = full rotation, outside range = crash
+	 */
+	void setRotationX(int rotationX);
+
+	/**
+	 * Gets the y rotation of the model displayed in the widget
+	 *
+	 * @return the y rotation
+	 */
+	int getRotationY();
+
+	/**
+	 * Sets the y rotation of the model displayed in the widget
+	 *
+	 * @param rotationY 0 = no rotation, 2047 = full rotation, outside range = crash
+	 */
+	void setRotationY(int rotationY);
+
+	/**
+	 * Gets the z rotation of the model displayed in the widget
+	 *
+	 * @return the z rotation
+	 */
+	int getRotationZ();
+
+	/**
+	 * Sets the z rotation of the model displayed in the widget
+	 *
+	 * @param rotationZ 0 = no rotation, 2047 = full rotation, outside range = crash
+	 */
+	void setRotationZ(int rotationZ);
+
+	/**
+	 * Gets the amount zoomed in on the model displayed in the widget
+	 *
+	 * @return the amount zoomed in
+	 */
+	int getModelZoom();
+
+	/**
+	 * Sets the amount zoomed in on the model displayed in the widget
+	 * 
+	 * @param modelZoom the new zoom amount
+	 */
+	void setModelZoom(int modelZoom);
 
 	/**
 	 * Gets the location the widget is being drawn on the canvas.
@@ -555,7 +617,7 @@ public interface Widget
 	void setOnMouseOverListener(Object... args);
 
 	/**
-	 * Sets a script to be ran every frame when the mouse is in the widget bounds
+	 * Sets a script to be ran every client tick when the mouse is in the widget bounds
 	 *
 	 * @param args A ScriptID, then the args for the script
 	 */
@@ -569,7 +631,7 @@ public interface Widget
 	void setOnMouseLeaveListener(Object... args);
 
 	/**
-	 * Sets a script to be ran every frame
+	 * Sets a script to be ran every client tick
 	 *
 	 * @param args A ScriptID, then the args for the script
 	 */
@@ -623,6 +685,10 @@ public interface Widget
 	 * Array of widget load listeners
 	 */
 	Object[] getOnLoadListener();
+
+	Object[] getOnInvTransmit();
+
+	Object[] getOnOp();
 
 	/**
 	 * Returns the archive id of the font used
@@ -843,4 +909,41 @@ public interface Widget
 	 * Seems like this needs to set to true when creating new widgets
 	 */
 	void setIsIf3(boolean isIf3);
+
+	/**
+	 * Returns yes if your mouse pointer is over this widget or any of it's children.
+	 */
+	boolean containsMouse();
+
+	/**
+	 * Gets the image which is (or should be) drawn on this widget
+	 */
+	Sprite getSprite();
+
+	/**
+	 * {@link net.runelite.api.VarPlayer}s that triggers this widgets varTransmitListener
+	 */
+	void setVarTransmitTrigger(int ...trigger);
+
+	/**
+	 * Sets a script to be ran the first client tick the mouse is held ontop of this widget
+	 *
+	 * @param args A ScriptID, then the args for the script
+	 */
+	void setOnClickListener(Object ...args);
+
+	/**
+	 * Sets a script to be ran the every client tick the mouse is held ontop of this widget,
+	 * except the first client tick.
+	 *
+	 * @param args A ScriptID, then the args for the script
+	 */
+	void setOnHoldListener(Object ...args);
+
+	/**
+	 * Sets a script to be ran the first client tick the mouse is not held ontop of this widget
+	 *
+	 * @param args A ScriptID, then the args for the script
+	 */
+	void setOnReleaseListener(Object ...args);
 }

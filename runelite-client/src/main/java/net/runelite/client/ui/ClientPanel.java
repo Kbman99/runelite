@@ -24,17 +24,22 @@
  */
 package net.runelite.client.ui;
 
+import io.sentry.Sentry;
 import java.applet.Applet;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import javax.annotation.Nullable;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import net.runelite.api.Client;
 import net.runelite.api.Constants;
+import net.runelite.client.RuneLite;
+import net.runelite.client.util.StringFileUtils;
 
 final class ClientPanel extends JPanel
 {
-	public ClientPanel(@Nullable Applet client)
+	ClientPanel(@Nullable Applet client)
 	{
 		setSize(Constants.GAME_FIXED_SIZE);
 		setMinimumSize(Constants.GAME_FIXED_SIZE);
@@ -50,12 +55,35 @@ final class ClientPanel extends JPanel
 		client.setLayout(null);
 		client.setSize(Constants.GAME_FIXED_SIZE);
 
-		client.init();
+		try
+		{
+			client.init();
+		}
+		catch (Exception e)
+		{
+			if (RuneLite.allowPrivateServer)
+			{
+				String message = "Detected a bad codebase. Resetting...\n"
+					+ "Please restart client.\n";
+				JOptionPane.showMessageDialog(new JFrame(), message, "Bad Codebase",
+					JOptionPane.ERROR_MESSAGE);
+				StringFileUtils.writeStringToFile(RuneLite.RUNELITE_DIR + "/codebase", "http://127.0.0.1/");
+			}
+			else
+			{
+				JOptionPane.showMessageDialog(new JFrame(), "Error loading Oldschool RuneScape!", "Error",
+					JOptionPane.ERROR_MESSAGE);
+				Sentry.capture(e);
+			}
+
+			((Client) client).getLogger().error(null, e);
+			System.exit(0);
+		}
 		client.start();
 
 		add(client, BorderLayout.CENTER);
 
-		// api.renderableThis causes the whole game frame to be redrawn each frame instead
+		// This causes the whole game frame to be redrawn each frame instead
 		// of only the viewport, so we can hook to MainBufferProvider#draw
 		// and draw anywhere without it leaving artifacts
 		if (client instanceof Client)

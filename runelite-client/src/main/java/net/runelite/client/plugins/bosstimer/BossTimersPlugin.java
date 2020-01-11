@@ -34,12 +34,14 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 
 @PluginDescriptor(
 	name = "Boss Timers",
 	description = "Show boss spawn timer overlays",
-	tags = {"combat", "pve", "overlay", "spawn"}
+	tags = {"combat", "pve", "overlay", "spawn"},
+	type = PluginType.PVM
 )
 @Singleton
 @Slf4j
@@ -52,13 +54,13 @@ public class BossTimersPlugin extends Plugin
 	private ItemManager itemManager;
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		infoBoxManager.removeIf(t -> t instanceof RespawnTimer);
 	}
 
 	@Subscribe
-	public void onNpcDespawned(NpcDespawned npcDespawned)
+	private void onNpcDespawned(NpcDespawned npcDespawned)
 	{
 		NPC npc = npcDespawned.getNpc();
 

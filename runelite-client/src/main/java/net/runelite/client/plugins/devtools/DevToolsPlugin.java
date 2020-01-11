@@ -32,20 +32,21 @@ import java.awt.image.BufferedImage;
 import static java.lang.Math.min;
 import java.util.List;
 import javax.inject.Inject;
+import lombok.AccessLevel;
 import lombok.Getter;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.Experience;
-import net.runelite.api.MenuAction;
-import net.runelite.api.MenuEntry;
+import net.runelite.api.MenuOpcode;
 import net.runelite.api.NPC;
 import net.runelite.api.Player;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.BoostedLevelChanged;
+import net.runelite.api.events.AreaSoundEffectPlayed;
 import net.runelite.api.events.CommandExecuted;
-import net.runelite.api.events.ExperienceChanged;
 import net.runelite.api.events.MenuEntryAdded;
+import net.runelite.api.events.SoundEffectPlayed;
+import net.runelite.api.events.StatChanged;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.kit.KitType;
 import net.runelite.client.config.ConfigManager;
@@ -53,6 +54,7 @@ import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.JagexColors;
 import net.runelite.client.ui.NavigationButton;
@@ -65,13 +67,14 @@ import org.slf4j.LoggerFactory;
 @PluginDescriptor(
 	name = "Developer Tools",
 	tags = {"panel"},
-	developerPlugin = true
+	developerPlugin = true,
+	type = PluginType.MISCELLANEOUS
 )
-@Getter
+@Getter(AccessLevel.PACKAGE)
 public class DevToolsPlugin extends Plugin
 {
-	private static final List<MenuAction> EXAMINE_MENU_ACTIONS = ImmutableList.of(MenuAction.EXAMINE_ITEM,
-		MenuAction.EXAMINE_ITEM_GROUND, MenuAction.EXAMINE_NPC, MenuAction.EXAMINE_OBJECT);
+	private static final List<MenuOpcode> EXAMINE_MENU_ACTIONS = ImmutableList.of(MenuOpcode.EXAMINE_ITEM,
+		MenuOpcode.EXAMINE_ITEM_GROUND, MenuOpcode.EXAMINE_NPC, MenuOpcode.EXAMINE_OBJECT);
 
 	@Inject
 	private Client client;
@@ -141,8 +144,9 @@ public class DevToolsPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
+
 		players = new DevToolsButton("Players");
 		npcs = new DevToolsButton("NPCs");
 
@@ -200,14 +204,11 @@ public class DevToolsPlugin extends Plugin
 			.build();
 
 		clientToolbar.addNavigation(navButton);
-
-		eventBus.register(soundEffectOverlay);
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
-		eventBus.unregister(soundEffectOverlay);
 		overlayManager.remove(overlay);
 		overlayManager.remove(locationOverlay);
 		overlayManager.remove(sceneOverlay);
@@ -219,7 +220,7 @@ public class DevToolsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onCommandExecuted(CommandExecuted commandExecuted)
+	private void onCommandExecuted(CommandExecuted commandExecuted)
 	{
 		String[] args = commandExecuted.getArguments();
 
@@ -260,7 +261,7 @@ public class DevToolsPlugin extends Plugin
 				client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Set VarPlayer " + varp + " to " + value, null);
 				VarbitChanged varbitChanged = new VarbitChanged();
 				varbitChanged.setIndex(varp);
-				eventBus.post(varbitChanged); // fake event
+				eventBus.post(VarbitChanged.class, varbitChanged); // fake event
 				break;
 			}
 			case "getvarb":
@@ -276,7 +277,7 @@ public class DevToolsPlugin extends Plugin
 				int value = Integer.parseInt(args[1]);
 				client.setVarbitValue(client.getVarps(), varbit, value);
 				client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Set varbit " + varbit + " to " + value, null);
-				eventBus.post(new VarbitChanged()); // fake event
+				eventBus.post(VarbitChanged.class, new VarbitChanged()); // fake event
 				break;
 			}
 			case "addxp":
@@ -293,9 +294,13 @@ public class DevToolsPlugin extends Plugin
 
 				client.queueChangedSkill(skill);
 
-				ExperienceChanged experienceChanged = new ExperienceChanged();
-				experienceChanged.setSkill(skill);
-				eventBus.post(experienceChanged);
+				StatChanged statChanged = new StatChanged(
+					skill,
+					totalXp,
+					level,
+					level
+				);
+				eventBus.post(StatChanged.class, statChanged);
 				break;
 			}
 			case "setstat":
@@ -312,13 +317,13 @@ public class DevToolsPlugin extends Plugin
 
 				client.queueChangedSkill(skill);
 
-				ExperienceChanged experienceChanged = new ExperienceChanged();
-				experienceChanged.setSkill(skill);
-				eventBus.post(experienceChanged);
-
-				BoostedLevelChanged boostedLevelChanged = new BoostedLevelChanged();
-				boostedLevelChanged.setSkill(skill);
-				eventBus.post(boostedLevelChanged);
+				StatChanged statChanged = new StatChanged(
+					skill,
+					xp,
+					level,
+					level
+				);
+				eventBus.post(StatChanged.class, statChanged);
 				break;
 			}
 			case "anim":
@@ -360,28 +365,30 @@ public class DevToolsPlugin extends Plugin
 				client.playSoundEffect(id);
 				break;
 			}
+			case "msg":
+			{
+				client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", String.join(" ", args), "");
+				break;
+			}
 		}
 	}
 
 	@Subscribe
-	public void onMenuEntryAdded(MenuEntryAdded event)
+	private void onMenuEntryAdded(MenuEntryAdded entry)
 	{
 		if (!examine.isActive())
 		{
 			return;
 		}
 
-		MenuAction action = MenuAction.of(event.getType());
+		MenuOpcode action = MenuOpcode.of(entry.getOpcode());
 
 		if (EXAMINE_MENU_ACTIONS.contains(action))
 		{
-			MenuEntry[] entries = client.getMenuEntries();
-			MenuEntry entry = entries[entries.length - 1];
-
-			final int identifier = event.getIdentifier();
+			final int identifier = entry.getIdentifier();
 			String info = "ID: ";
 
-			if (action == MenuAction.EXAMINE_NPC)
+			if (action == MenuOpcode.EXAMINE_NPC)
 			{
 				NPC npc = client.getCachedNPCs()[identifier];
 				info += npc.getId();
@@ -390,7 +397,7 @@ public class DevToolsPlugin extends Plugin
 			{
 				info += identifier;
 
-				if (action == MenuAction.EXAMINE_OBJECT)
+				if (action == MenuOpcode.EXAMINE_OBJECT)
 				{
 					WorldPoint point = WorldPoint.fromScene(client, entry.getParam0(), entry.getParam1(), client.getPlane());
 					info += " X: " + point.getX() + " Y: " + point.getY();
@@ -398,7 +405,29 @@ public class DevToolsPlugin extends Plugin
 			}
 
 			entry.setTarget(entry.getTarget() + " " + ColorUtil.prependColorTag("(" + info + ")", JagexColors.MENU_TARGET));
-			client.setMenuEntries(entries);
+			entry.setModified();
 		}
+	}
+
+	@Subscribe
+	private void onSoundEffectPlayed(SoundEffectPlayed event)
+	{
+		if (!getSoundEffects().isActive() || soundEffectOverlay == null)
+		{
+			return;
+		}
+
+		soundEffectOverlay.onSoundEffectPlayed(event);
+	}
+
+	@Subscribe
+	private void onAreaSoundEffectPlayed(AreaSoundEffectPlayed event)
+	{
+		if (!getSoundEffects().isActive() || soundEffectOverlay == null)
+		{
+			return;
+		}
+
+		soundEffectOverlay.onAreaSoundEffectPlayed(event);
 	}
 }

@@ -28,9 +28,10 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
+import io.reactivex.Completable;
+import io.reactivex.schedulers.Schedulers;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -38,6 +39,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -50,156 +52,22 @@ import static net.runelite.api.Constants.HIGH_ALCHEMY_MULTIPLIER;
 import net.runelite.api.GameState;
 import net.runelite.api.ItemDefinition;
 import net.runelite.api.ItemID;
-import static net.runelite.api.ItemID.AGILITY_CAPE;
-import static net.runelite.api.ItemID.AGILITY_CAPET;
-import static net.runelite.api.ItemID.AGILITY_CAPET_13341;
-import static net.runelite.api.ItemID.AGILITY_CAPE_13340;
-import static net.runelite.api.ItemID.BOOTS_OF_LIGHTNESS;
-import static net.runelite.api.ItemID.BOOTS_OF_LIGHTNESS_89;
-import static net.runelite.api.ItemID.GRACEFUL_BOOTS;
-import static net.runelite.api.ItemID.GRACEFUL_BOOTS_11861;
-import static net.runelite.api.ItemID.GRACEFUL_BOOTS_13589;
-import static net.runelite.api.ItemID.GRACEFUL_BOOTS_13590;
-import static net.runelite.api.ItemID.GRACEFUL_BOOTS_13601;
-import static net.runelite.api.ItemID.GRACEFUL_BOOTS_13602;
-import static net.runelite.api.ItemID.GRACEFUL_BOOTS_13613;
-import static net.runelite.api.ItemID.GRACEFUL_BOOTS_13614;
-import static net.runelite.api.ItemID.GRACEFUL_BOOTS_13625;
-import static net.runelite.api.ItemID.GRACEFUL_BOOTS_13626;
-import static net.runelite.api.ItemID.GRACEFUL_BOOTS_13637;
-import static net.runelite.api.ItemID.GRACEFUL_BOOTS_13638;
-import static net.runelite.api.ItemID.GRACEFUL_BOOTS_13677;
-import static net.runelite.api.ItemID.GRACEFUL_BOOTS_13678;
-import static net.runelite.api.ItemID.GRACEFUL_BOOTS_21076;
-import static net.runelite.api.ItemID.GRACEFUL_BOOTS_21078;
-import static net.runelite.api.ItemID.GRACEFUL_CAPE;
-import static net.runelite.api.ItemID.GRACEFUL_CAPE_11853;
-import static net.runelite.api.ItemID.GRACEFUL_CAPE_13581;
-import static net.runelite.api.ItemID.GRACEFUL_CAPE_13582;
-import static net.runelite.api.ItemID.GRACEFUL_CAPE_13593;
-import static net.runelite.api.ItemID.GRACEFUL_CAPE_13594;
-import static net.runelite.api.ItemID.GRACEFUL_CAPE_13605;
-import static net.runelite.api.ItemID.GRACEFUL_CAPE_13606;
-import static net.runelite.api.ItemID.GRACEFUL_CAPE_13617;
-import static net.runelite.api.ItemID.GRACEFUL_CAPE_13618;
-import static net.runelite.api.ItemID.GRACEFUL_CAPE_13629;
-import static net.runelite.api.ItemID.GRACEFUL_CAPE_13630;
-import static net.runelite.api.ItemID.GRACEFUL_CAPE_13669;
-import static net.runelite.api.ItemID.GRACEFUL_CAPE_13670;
-import static net.runelite.api.ItemID.GRACEFUL_CAPE_21064;
-import static net.runelite.api.ItemID.GRACEFUL_CAPE_21066;
-import static net.runelite.api.ItemID.GRACEFUL_GLOVES;
-import static net.runelite.api.ItemID.GRACEFUL_GLOVES_11859;
-import static net.runelite.api.ItemID.GRACEFUL_GLOVES_13587;
-import static net.runelite.api.ItemID.GRACEFUL_GLOVES_13588;
-import static net.runelite.api.ItemID.GRACEFUL_GLOVES_13599;
-import static net.runelite.api.ItemID.GRACEFUL_GLOVES_13600;
-import static net.runelite.api.ItemID.GRACEFUL_GLOVES_13611;
-import static net.runelite.api.ItemID.GRACEFUL_GLOVES_13612;
-import static net.runelite.api.ItemID.GRACEFUL_GLOVES_13623;
-import static net.runelite.api.ItemID.GRACEFUL_GLOVES_13624;
-import static net.runelite.api.ItemID.GRACEFUL_GLOVES_13635;
-import static net.runelite.api.ItemID.GRACEFUL_GLOVES_13636;
-import static net.runelite.api.ItemID.GRACEFUL_GLOVES_13675;
-import static net.runelite.api.ItemID.GRACEFUL_GLOVES_13676;
-import static net.runelite.api.ItemID.GRACEFUL_GLOVES_21073;
-import static net.runelite.api.ItemID.GRACEFUL_GLOVES_21075;
-import static net.runelite.api.ItemID.GRACEFUL_HOOD;
-import static net.runelite.api.ItemID.GRACEFUL_HOOD_11851;
-import static net.runelite.api.ItemID.GRACEFUL_HOOD_13579;
-import static net.runelite.api.ItemID.GRACEFUL_HOOD_13580;
-import static net.runelite.api.ItemID.GRACEFUL_HOOD_13591;
-import static net.runelite.api.ItemID.GRACEFUL_HOOD_13592;
-import static net.runelite.api.ItemID.GRACEFUL_HOOD_13603;
-import static net.runelite.api.ItemID.GRACEFUL_HOOD_13604;
-import static net.runelite.api.ItemID.GRACEFUL_HOOD_13615;
-import static net.runelite.api.ItemID.GRACEFUL_HOOD_13616;
-import static net.runelite.api.ItemID.GRACEFUL_HOOD_13627;
-import static net.runelite.api.ItemID.GRACEFUL_HOOD_13628;
-import static net.runelite.api.ItemID.GRACEFUL_HOOD_13667;
-import static net.runelite.api.ItemID.GRACEFUL_HOOD_13668;
-import static net.runelite.api.ItemID.GRACEFUL_HOOD_21061;
-import static net.runelite.api.ItemID.GRACEFUL_HOOD_21063;
-import static net.runelite.api.ItemID.GRACEFUL_LEGS;
-import static net.runelite.api.ItemID.GRACEFUL_LEGS_11857;
-import static net.runelite.api.ItemID.GRACEFUL_LEGS_13585;
-import static net.runelite.api.ItemID.GRACEFUL_LEGS_13586;
-import static net.runelite.api.ItemID.GRACEFUL_LEGS_13597;
-import static net.runelite.api.ItemID.GRACEFUL_LEGS_13598;
-import static net.runelite.api.ItemID.GRACEFUL_LEGS_13609;
-import static net.runelite.api.ItemID.GRACEFUL_LEGS_13610;
-import static net.runelite.api.ItemID.GRACEFUL_LEGS_13621;
-import static net.runelite.api.ItemID.GRACEFUL_LEGS_13622;
-import static net.runelite.api.ItemID.GRACEFUL_LEGS_13633;
-import static net.runelite.api.ItemID.GRACEFUL_LEGS_13634;
-import static net.runelite.api.ItemID.GRACEFUL_LEGS_13673;
-import static net.runelite.api.ItemID.GRACEFUL_LEGS_13674;
-import static net.runelite.api.ItemID.GRACEFUL_LEGS_21070;
-import static net.runelite.api.ItemID.GRACEFUL_LEGS_21072;
-import static net.runelite.api.ItemID.GRACEFUL_TOP;
-import static net.runelite.api.ItemID.GRACEFUL_TOP_11855;
-import static net.runelite.api.ItemID.GRACEFUL_TOP_13583;
-import static net.runelite.api.ItemID.GRACEFUL_TOP_13584;
-import static net.runelite.api.ItemID.GRACEFUL_TOP_13595;
-import static net.runelite.api.ItemID.GRACEFUL_TOP_13596;
-import static net.runelite.api.ItemID.GRACEFUL_TOP_13607;
-import static net.runelite.api.ItemID.GRACEFUL_TOP_13608;
-import static net.runelite.api.ItemID.GRACEFUL_TOP_13619;
-import static net.runelite.api.ItemID.GRACEFUL_TOP_13620;
-import static net.runelite.api.ItemID.GRACEFUL_TOP_13631;
-import static net.runelite.api.ItemID.GRACEFUL_TOP_13632;
-import static net.runelite.api.ItemID.GRACEFUL_TOP_13671;
-import static net.runelite.api.ItemID.GRACEFUL_TOP_13672;
-import static net.runelite.api.ItemID.GRACEFUL_TOP_21067;
-import static net.runelite.api.ItemID.GRACEFUL_TOP_21069;
-import static net.runelite.api.ItemID.MAX_CAPE;
-import static net.runelite.api.ItemID.MAX_CAPE_13342;
-import static net.runelite.api.ItemID.PENANCE_GLOVES;
-import static net.runelite.api.ItemID.PENANCE_GLOVES_10554;
-import static net.runelite.api.ItemID.SPOTTED_CAPE;
-import static net.runelite.api.ItemID.SPOTTED_CAPE_10073;
-import static net.runelite.api.ItemID.SPOTTIER_CAPE;
-import static net.runelite.api.ItemID.SPOTTIER_CAPE_10074;
+import static net.runelite.api.ItemID.*;
 import net.runelite.api.Sprite;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.PostItemDefinition;
 import net.runelite.client.callback.ClientThread;
-import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.eventbus.EventBus;
+import net.runelite.client.util.AsyncBufferedImage;
 import net.runelite.http.api.item.ItemClient;
 import net.runelite.http.api.item.ItemPrice;
 import net.runelite.http.api.item.ItemStats;
+import org.jetbrains.annotations.NotNull;
 
 @Singleton
 @Slf4j
 public class ItemManager
 {
-	@Value
-	private static class ImageKey
-	{
-		private final int itemId;
-		private final int itemQuantity;
-		private final boolean stackable;
-	}
-
-	@Value
-	private static class OutlineKey
-	{
-		private final int itemId;
-		private final int itemQuantity;
-		private final Color outlineColor;
-	}
-
-	private final Client client;
-	private final ScheduledExecutorService scheduledExecutorService;
-	private final ClientThread clientThread;
-
-	private final ItemClient itemClient = new ItemClient();
-	private Map<Integer, ItemPrice> itemPrices = Collections.emptyMap();
-	private Map<Integer, ItemStats> itemStats = Collections.emptyMap();
-	private final LoadingCache<ImageKey, AsyncBufferedImage> itemImages;
-	private final LoadingCache<Integer, ItemDefinition> itemDefinitions;
-	private final LoadingCache<OutlineKey, BufferedImage> itemOutlines;
-
 	// Worn items with weight reducing property have a different worn and inventory ItemID
 	private static final ImmutableMap<Integer, Integer> WORN_ITEMS = ImmutableMap.<Integer, Integer>builder().
 		put(BOOTS_OF_LIGHTNESS_89, BOOTS_OF_LIGHTNESS).
@@ -262,16 +130,30 @@ public class ItemManager
 		put(AGILITY_CAPET_13341, AGILITY_CAPET).
 		put(AGILITY_CAPE_13340, AGILITY_CAPE).
 		build();
+	private final Client client;
+	private final ClientThread clientThread;
+	private final ItemClient itemClient;
+	private final LoadingCache<ImageKey, AsyncBufferedImage> itemImages;
+	private final LoadingCache<Integer, ItemDefinition> itemDefinitions;
+	private final LoadingCache<OutlineKey, BufferedImage> itemOutlines;
+	private Map<Integer, ItemPrice> itemPrices = Collections.emptyMap();
+	private ImmutableMap<Integer, ItemStats> itemStats = ImmutableMap.of();
 
 	@Inject
-	public ItemManager(Client client, ScheduledExecutorService executor, ClientThread clientThread)
+	public ItemManager(
+		Client client,
+		ScheduledExecutorService executor,
+		ClientThread clientThread,
+		EventBus eventbus,
+		ItemClient itemClient
+	)
 	{
 		this.client = client;
-		this.scheduledExecutorService = executor;
 		this.clientThread = clientThread;
+		this.itemClient = itemClient;
 
-		scheduledExecutorService.scheduleWithFixedDelay(this::loadPrices, 0, 30, TimeUnit.MINUTES);
-		scheduledExecutorService.submit(this::loadStats);
+		executor.scheduleWithFixedDelay(this::loadPrices, 0, 30, TimeUnit.MINUTES);
+		executor.submit(this::loadStats);
 
 		itemImages = CacheBuilder.newBuilder()
 			.maximumSize(128L)
@@ -279,7 +161,7 @@ public class ItemManager
 			.build(new CacheLoader<ImageKey, AsyncBufferedImage>()
 			{
 				@Override
-				public AsyncBufferedImage load(ImageKey key) throws Exception
+				public AsyncBufferedImage load(@NotNull ImageKey key)
 				{
 					return loadImage(key.itemId, key.itemQuantity, key.stackable);
 				}
@@ -291,7 +173,7 @@ public class ItemManager
 			.build(new CacheLoader<Integer, ItemDefinition>()
 			{
 				@Override
-				public ItemDefinition load(Integer key) throws Exception
+				public ItemDefinition load(@NotNull Integer key)
 				{
 					return client.getItemDefinition(key);
 				}
@@ -303,57 +185,46 @@ public class ItemManager
 			.build(new CacheLoader<OutlineKey, BufferedImage>()
 			{
 				@Override
-				public BufferedImage load(OutlineKey key) throws Exception
+				public BufferedImage load(@NotNull OutlineKey key)
 				{
 					return loadItemOutline(key.itemId, key.itemQuantity, key.outlineColor);
 				}
 			});
+
+		eventbus.subscribe(GameStateChanged.class, this, this::onGameStateChanged);
+		eventbus.subscribe(PostItemDefinition.class, this, this::onPostItemDefinition);
+
+		Completable.fromAction(ItemVariationMapping::load)
+			.subscribeOn(Schedulers.computation())
+			.subscribe(
+				() -> log.debug("Loaded {} item variations", ItemVariationMapping.getSize()),
+				ex -> log.warn("Error loading item variations", ex)
+			);
 	}
 
 	private void loadPrices()
 	{
-		try
-		{
-			ItemPrice[] prices = itemClient.getPrices();
-			if (prices != null)
-			{
-				ImmutableMap.Builder<Integer, ItemPrice> map = ImmutableMap.builderWithExpectedSize(prices.length);
-				for (ItemPrice price : prices)
-				{
-					map.put(price.getId(), price);
-				}
-				itemPrices = map.build();
-			}
-
-			log.debug("Loaded {} prices", itemPrices.size());
-		}
-		catch (IOException e)
-		{
-			log.warn("error loading prices!", e);
-		}
+		itemClient.getPrices()
+			.subscribeOn(Schedulers.io())
+			.subscribe(
+				m -> itemPrices = m,
+				e -> log.warn("Error loading prices", e),
+				() -> log.debug("Loaded {} prices", itemPrices.size())
+			);
 	}
 
 	private void loadStats()
 	{
-		try
-		{
-			final Map<Integer, ItemStats> stats = itemClient.getStats();
-			if (stats != null)
-			{
-				itemStats = ImmutableMap.copyOf(stats);
-			}
-
-			log.debug("Loaded {} stats", itemStats.size());
-		}
-		catch (IOException e)
-		{
-			log.warn("error loading stats!", e);
-		}
+		itemClient.getStats()
+			.subscribeOn(Schedulers.io())
+			.subscribe(
+				m -> itemStats = m,
+				e -> log.warn("Error fetching stats", e),
+				() -> log.debug("Loaded {} stats", itemStats.size())
+			);
 	}
 
-
-	@Subscribe
-	public void onGameStateChanged(final GameStateChanged event)
+	private void onGameStateChanged(final GameStateChanged event)
 	{
 		if (event.getGameState() == GameState.HOPPING || event.getGameState() == GameState.LOGIN_SCREEN)
 		{
@@ -361,8 +232,7 @@ public class ItemManager
 		}
 	}
 
-	@Subscribe
-	public void onPostItemDefinition(PostItemDefinition event)
+	private void onPostItemDefinition(PostItemDefinition event)
 	{
 		itemDefinitions.put(event.getItemDefinition().getId(), event.getItemDefinition());
 	}
@@ -385,6 +255,18 @@ public class ItemManager
 	 */
 	public int getItemPrice(int itemID)
 	{
+		return getItemPrice(itemID, false);
+	}
+
+	/**
+	 * Look up an item's price
+	 *
+	 * @param itemID               item id
+	 * @param ignoreUntradeableMap should the price returned ignore the {@link UntradeableItemMapping}
+	 * @return item price
+	 */
+	public int getItemPrice(int itemID, boolean ignoreUntradeableMap)
+	{
 		if (itemID == ItemID.COINS_995)
 		{
 			return 1;
@@ -394,10 +276,13 @@ public class ItemManager
 			return 1000;
 		}
 
-		UntradeableItemMapping p = UntradeableItemMapping.map(ItemVariationMapping.map(itemID));
-		if (p != null)
+		if (!ignoreUntradeableMap)
 		{
-			return getItemPrice(p.getPriceID()) * p.getQuantity();
+			UntradeableItemMapping p = UntradeableItemMapping.map(ItemVariationMapping.map(itemID));
+			if (p != null)
+			{
+				return getItemPrice(p.getPriceID()) * p.getQuantity();
+			}
 		}
 
 		int price = 0;
@@ -441,6 +326,27 @@ public class ItemManager
 		return (int) Math.max(1, getItemDefinition(itemID).getPrice() * HIGH_ALCHEMY_MULTIPLIER);
 	}
 
+	public int getRepairValue(int itemId)
+	{
+		return getRepairValue(itemId, false);
+	}
+
+	private int getRepairValue(int itemId, boolean fullValue)
+	{
+		final ItemReclaimCost b = ItemReclaimCost.of(itemId);
+
+		if (b != null)
+		{
+			if (fullValue || b.getItemID() == GRANITE_MAUL_24225 || b.getItemID() == GRANITE_MAUL_24227)
+			{
+				return b.getValue();
+			}
+			return (int) (b.getValue() * (75.0f / 100.0f));
+		}
+
+		return 0;
+	}
+
 	/**
 	 * Look up an item's stats
 	 *
@@ -452,7 +358,7 @@ public class ItemManager
 	{
 		ItemDefinition itemDefinition = getItemDefinition(itemId);
 
-		if (itemDefinition == null || itemDefinition.getName() == null || (!allowNote && itemDefinition.getNote() != -1))
+		if (!allowNote && itemDefinition.getNote() != -1)
 		{
 			return null;
 		}
@@ -488,6 +394,7 @@ public class ItemManager
 	 * @param itemId item id
 	 * @return item composition
 	 */
+	@Nonnull
 	public ItemDefinition getItemDefinition(int itemId)
 	{
 		assert client.isClientThread() : "getItemDefinition must be called on client thread";
@@ -536,7 +443,7 @@ public class ItemManager
 				return false;
 			}
 			sprite.toBufferedImage(img);
-			img.changed();
+			img.loaded();
 			return true;
 		});
 		return img;
@@ -612,5 +519,21 @@ public class ItemManager
 		{
 			return null;
 		}
+	}
+
+	@Value
+	private static class ImageKey
+	{
+		private final int itemId;
+		private final int itemQuantity;
+		private final boolean stackable;
+	}
+
+	@Value
+	private static class OutlineKey
+	{
+		private final int itemId;
+		private final int itemQuantity;
+		private final Color outlineColor;
 	}
 }

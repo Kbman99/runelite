@@ -24,12 +24,11 @@
  */
 package net.runelite.mixins;
 
+import java.awt.Shape;
 import net.runelite.api.Perspective;
 import net.runelite.api.Point;
 import net.runelite.api.coords.Angle;
 import net.runelite.api.coords.LocalPoint;
-import java.awt.Polygon;
-import java.awt.geom.Area;
 import net.runelite.api.mixins.Inject;
 import net.runelite.api.mixins.Mixin;
 import net.runelite.api.mixins.Shadow;
@@ -62,7 +61,7 @@ public abstract class RSGameObjectMixin implements RSGameObject
 	@Override
 	public RSModel getModel()
 	{
-		RSEntity renderable = getRenderable();
+		RSEntity renderable = getEntity();
 		if (renderable == null)
 		{
 			return null;
@@ -80,14 +79,14 @@ public abstract class RSGameObjectMixin implements RSGameObject
 
 	@Inject
 	@Override
-	public Area getClickbox()
+	public Shape getClickbox()
 	{
 		return Perspective.getClickbox(client, getModel(), getRsOrientation(), getLocalLocation());
 	}
 
 	@Inject
 	@Override
-	public Polygon getConvexHull()
+	public Shape getConvexHull()
 	{
 		RSModel model = getModel();
 
@@ -97,6 +96,7 @@ public abstract class RSGameObjectMixin implements RSGameObject
 		}
 
 		int tileHeight = Perspective.getTileHeight(client, new LocalPoint(getX(), getY()), client.getPlane());
+
 		return model.getConvexHull(getX(), getY(), getRsOrientation(), tileHeight);
 	}
 

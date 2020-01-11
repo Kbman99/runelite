@@ -35,20 +35,22 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.GameObject;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.api.events.GameTick;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @Slf4j
 @PluginDescriptor(
 	name = "Tithe Farm",
 	description = "Show timers for the farming patches within the Tithe Farm minigame",
-	tags = {"farming", "minigame", "overlay", "skilling", "timers"}
+	tags = {"farming", "minigame", "overlay", "skilling", "timers"},
+	type = PluginType.MINIGAME
 )
 @Singleton
 public class TitheFarmPlugin extends Plugin
@@ -79,21 +81,22 @@ public class TitheFarmPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
+
 		overlayManager.add(titheFarmOverlay);
 		titheFarmOverlay.updateConfig();
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(titheFarmOverlay);
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (event.getGroup().equals("tithefarmplugin"))
 		{
@@ -104,13 +107,13 @@ public class TitheFarmPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(final GameTick event)
+	private void onGameTick(final GameTick event)
 	{
 		plants.removeIf(plant -> plant.getPlantTimeRelative() == 1);
 	}
 
 	@Subscribe
-	public void onGameObjectSpawned(GameObjectSpawned event)
+	private void onGameObjectSpawned(GameObjectSpawned event)
 	{
 		GameObject gameObject = event.getGameObject();
 
@@ -130,16 +133,12 @@ public class TitheFarmPlugin extends Plugin
 			log.debug("Added plant {}", newPlant);
 			plants.add(newPlant);
 		}
-		else if (oldPlant == null)
-		{
-			return;
-		}
 		else if (newPlant.getType() == TitheFarmPlantType.EMPTY)
 		{
 			log.debug("Removed plant {}", oldPlant);
 			plants.remove(oldPlant);
 		}
-		else if (oldPlant.getGameObject().getId() != newPlant.getGameObject().getId())
+		else if (oldPlant != null && oldPlant.getGameObject().getId() != newPlant.getGameObject().getId())
 		{
 			if (oldPlant.getState() != TitheFarmPlantState.WATERED && newPlant.getState() == TitheFarmPlantState.WATERED)
 			{

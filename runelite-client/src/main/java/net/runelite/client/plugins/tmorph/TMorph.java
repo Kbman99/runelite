@@ -23,22 +23,36 @@
  */
 package net.runelite.client.plugins.tmorph;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Provides;
+import java.awt.Color;
+import java.util.Arrays;
+import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import lombok.AccessLevel;
+import lombok.Getter;
+import net.runelite.api.Actor;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.Player;
 import net.runelite.api.events.AnimationChanged;
-import net.runelite.api.events.ConfigChanged;
+import net.runelite.api.events.CommandExecuted;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.events.SpotAnimationChanged;
 import net.runelite.api.kit.KitType;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginType;
+import net.runelite.client.util.Clipboard;
+import net.runelite.client.util.ColorUtil;
 import org.apache.commons.lang3.ObjectUtils;
 
 @PluginDescriptor(
@@ -51,72 +65,44 @@ import org.apache.commons.lang3.ObjectUtils;
 @Singleton
 public class TMorph extends Plugin
 {
+	@Getter(AccessLevel.PACKAGE)
+	private static final Map<String, KitType> kit;
+	private static final Color COLOR = new Color(10, 134, 74, 255);
+
+	static
+	{
+		final ImmutableMap.Builder<String, KitType> builder = new ImmutableMap.Builder<>();
+		for (KitType kit : KitType.values())
+		{
+			builder.put(kit.getName(), kit);
+		}
+		kit = builder.build();
+	}
+
+	@Getter(AccessLevel.PACKAGE)
+	private static final Splitter NEWLINE_SPLITTER = Splitter
+		.on("\n")
+		.omitEmptyStrings()
+		.trimResults();
+
 	@Inject
 	private Client client;
 
 	@Inject
 	private TMorphConfig config;
 
-	private boolean mageSwap;
-	private boolean rangeSwap;
-	private boolean meleeSwap;
+	@Inject
+	private EventBus eventBus;
+
+	private Map<String, String> set1;
+	private Map<String, String> set2;
+	private Map<String, String> set3;
+	private int animation;
 	private int globalAnimSwap;
-	private int animationSwap;
-	private int animationTarget;
-	private int MainhandMage;
-	private int targetMainhandMage;
-	private int OffhandMage;
-	private int targetOffhandMage;
-	private int HelmetMage;
-	private int targetHelmetMage;
-	private int CapeMage;
-	private int targetCapeMage;
-	private int NeckMage;
-	private int targetNeckMage;
-	private int BodyMage;
-	private int targetBodyMage;
-	private int LegsMage;
-	private int targetLegsMage;
-	private int BootsMage;
-	private int targetBootsMage;
-	private int GlovesMage;
-	private int targetGlovesMage;
-	private int MainhandRange;
-	private int targetMainhandRange;
-	private int OffhandRange;
-	private int targetOffhandRange;
-	private int HelmetRange;
-	private int targetHelmetRange;
-	private int CapeRange;
-	private int targetCapeRange;
-	private int NeckRange;
-	private int targetNeckRange;
-	private int BodyRange;
-	private int targetBodyRange;
-	private int LegsRange;
-	private int targetLegsRange;
-	private int BootsRange;
-	private int targetBootsRange;
-	private int GlovesRange;
-	private int targetGlovesRange;
-	private int MainhandMelee;
-	private int targetMainhandMelee;
-	private int OffhandMelee;
-	private int targetOffhandMelee;
-	private int HelmetMelee;
-	private int targetHelmetMelee;
-	private int CapeMelee;
-	private int targetCapeMelee;
-	private int NeckMelee;
-	private int targetNeckMelee;
-	private int BodyMelee;
-	private int targetBodyMelee;
-	private int LegsMelee;
-	private int targetLegsMelee;
-	private int BootsMelee;
-	private int targetBootsMelee;
-	private int GlovesMelee;
-	private int targetGlovesMelee;
+	private int globalGraphicSwap;
+	private int graphic;
+	private int targetAnimation;
+	private int targetGraphic;
 
 	@Provides
 	TMorphConfig provideConfig(ConfigManager configManager)
@@ -125,13 +111,84 @@ public class TMorph extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
+		addSubscriptions();
+	}
+
+	@Override
+	protected void shutDown()
+	{
+		eventBus.unregister(this);
+	}
+
+	private void addSubscriptions()
+	{
+		eventBus.subscribe(AnimationChanged.class, this, this::onAnimationChanged);
+		eventBus.subscribe(GameTick.class, this, this::onGameTick);
+		eventBus.subscribe(SpotAnimationChanged.class, this, this::onSpotAnimationChanged);
+		eventBus.subscribe(CommandExecuted.class, this, this::onCommandExecuted);
+	}
+
+	private void onCommandExecuted(CommandExecuted event)
+	{
+		final String[] args = event.getArguments();
+
+		if (event.getCommand().equals("tmorph"))
+		{
+			try
+			{
+				if (args[0].equals("copy"))
+				{
+					final StringBuilder sb = new StringBuilder();
+					final Player player = client.getLocalPlayer();
+
+					if (player == null
+						|| player.getPlayerAppearance() == null
+						|| client.getWidget(WidgetInfo.LOGIN_CLICK_TO_PLAY_SCREEN) != null
+						|| client.getViewportWidget() == null)
+					{
+						return;
+					}
+
+					for (KitType kitType : KitType.values())
+					{
+						if (kitType.equals(KitType.RING) || kitType.equals(KitType.AMMUNITION))
+						{
+							continue;
+						}
+
+						final int id = player.getPlayerAppearance().getEquipmentId(kitType);
+
+						if (id == -1)
+						{
+							continue;
+						}
+
+						sb.append(id);
+						sb.append(",-1");
+						sb.append(":");
+						sb.append(kitType.getName());
+						sb.append("\n");
+					}
+					client.addChatMessage(ChatMessageType.GAMEMESSAGE, "TMorph", ColorUtil.prependColorTag("Your current gear has been copied to your clipboard", COLOR), null);
+					Clipboard.store(sb.toString());
+				}
+				else
+				{
+					client.addChatMessage(ChatMessageType.GAMEMESSAGE, "TMorph", ColorUtil.prependColorTag("Invalid syntax, do ::tmorph copy", Color.RED), null);
+				}
+			}
+			catch (Exception e)
+			{
+				client.addChatMessage(ChatMessageType.GAMEMESSAGE, "TMorph", ColorUtil.prependColorTag("Invalid syntax, do ::tmorph copy", Color.RED), null);
+			}
+		}
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (event.getGroup().equals("TMorph"))
 		{
@@ -139,38 +196,58 @@ public class TMorph extends Plugin
 		}
 	}
 
-	@Subscribe
-	public void onAnimationChanged(AnimationChanged event)
+	private void onSpotAnimationChanged(SpotAnimationChanged event)
 	{
-		if (this.animationTarget <= 0 && this.animationSwap <= 0 && this.globalAnimSwap > 0)
+		final Actor actor = event.getActor();
+
+		if (actor.getSpotAnimation() == -1)
 		{
-			if (event.getActor().getAnimation() != -1)
-			{
-				event.getActor().setAnimation(this.globalAnimSwap);
-			}
+			return;
 		}
-		if (this.animationTarget > 0 && this.animationSwap > 0)
+
+		if (this.graphic <= 0 && this.targetGraphic <= 0 && this.globalGraphicSwap > 0)
 		{
-			if (event.getActor().getAnimation() == this.animationTarget)
+			actor.setSpotAnimation(this.globalGraphicSwap);
+		}
+		if (this.graphic > 0 && this.targetGraphic > 0)
+		{
+			if (actor.getSpotAnimation() == this.targetGraphic)
 			{
-				event.getActor().setAnimation(this.animationSwap);
+				actor.setSpotAnimation(this.graphic);
 			}
 		}
 	}
 
-	@Subscribe
-	public void onGameTick(GameTick event)
+	private void onAnimationChanged(AnimationChanged event)
+	{
+		final Actor actor = event.getActor();
+
+		if (actor.getAnimation() == -1)
+		{
+			return;
+		}
+
+		if (this.targetAnimation <= 0 && this.animation <= 0 && this.globalAnimSwap > 0)
+		{
+			actor.setAnimation(this.globalAnimSwap);
+		}
+		if (this.targetAnimation > 0 && this.animation > 0)
+		{
+			if (actor.getAnimation() == this.targetAnimation)
+			{
+				actor.setAnimation(this.animation);
+			}
+		}
+	}
+
+	private void onGameTick(GameTick event)
 	{
 		if (client.getGameState() != GameState.LOGGED_IN)
 		{
 			return;
 		}
-		updateEquip();
-	}
 
-	private void updateEquip()
-	{
-		Player player = client.getLocalPlayer();
+		final Player player = client.getLocalPlayer();
 
 		if (player == null
 			|| player.getPlayerAppearance() == null
@@ -180,368 +257,65 @@ public class TMorph extends Plugin
 			return;
 		}
 
-		final int mainhandID = ObjectUtils.defaultIfNull(player.getPlayerAppearance().
-			getEquipmentId(KitType.WEAPON), 0);
-		final int offhandID = ObjectUtils.defaultIfNull(player.getPlayerAppearance().
-			getEquipmentId(KitType.SHIELD), 0);
-		final int helmetID = ObjectUtils.defaultIfNull(player.getPlayerAppearance().
-			getEquipmentId(KitType.HELMET), 0);
-		final int capeID = ObjectUtils.defaultIfNull(player.getPlayerAppearance().
-			getEquipmentId(KitType.CAPE), 0);
-		final int neckID = ObjectUtils.defaultIfNull(player.getPlayerAppearance().
-			getEquipmentId(KitType.AMULET), 0);
-		final int bodyID = ObjectUtils.defaultIfNull(player.getPlayerAppearance().
-			getEquipmentId(KitType.TORSO), 0);
-		final int legsID = ObjectUtils.defaultIfNull(player.getPlayerAppearance().
-			getEquipmentId(KitType.LEGS), 0);
-		final int bootsID = ObjectUtils.defaultIfNull(player.getPlayerAppearance().
-			getEquipmentId(KitType.BOOTS), 0);
-		final int glovesID = ObjectUtils.defaultIfNull(player.getPlayerAppearance().
-			getEquipmentId(KitType.HANDS), 0);
+		updateGear(set1, player);
+		updateGear(set2, player);
+		updateGear(set3, player);
+	}
 
-		if (this.mageSwap)
+	private void updateGear(Map<String, String> map, Player player)
+	{
+		if (map == null || map.isEmpty())
 		{
-			if (this.MainhandMage > 0)
+			return;
+		}
+
+		for (Map.Entry<String, String> entry : map.entrySet())
+		{
+			if (!kit.containsKey(entry.getValue()))
 			{
-				if (this.targetMainhandMage > 0)
-				{
-					if (mainhandID == this.targetMainhandMage)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.WEAPON.getIndex()] = this.MainhandMage + 512;
-					}
-				}
+				continue;
 			}
-			if (this.OffhandMage > 0)
+
+			final KitType slot = kit.get(entry.getValue());
+			int[] ints;
+
+			try
 			{
-				if (this.targetOffhandMage > 0)
-				{
-					if (offhandID == this.targetOffhandMage)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.SHIELD.getIndex()] = this.OffhandMage + 512;
-					}
-				}
+				ints = Arrays.stream(entry.getKey().split(",")).map(String::trim).mapToInt(Integer::parseInt).toArray();
 			}
-			if (this.HelmetMage > 0)
+			catch (NumberFormatException ex)
 			{
-				if (this.targetHelmetMage > 0)
-				{
-					if (helmetID == this.targetHelmetMage)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.HELMET.getIndex()] = this.HelmetMage + 512;
-					}
-				}
+				ints = null;
 			}
-			if (this.CapeMage > 0)
+
+			if (ints == null || ints.length <= 1)
 			{
-				if (this.targetCapeMage > 0)
-				{
-					if (capeID == this.targetCapeMage)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.CAPE.getIndex()] = this.CapeMage + 512;
-					}
-				}
+				continue;
 			}
-			if (this.NeckMage > 0)
+
+			final int item = ObjectUtils.defaultIfNull(player.getPlayerAppearance().getEquipmentId(slot), 0);
+
+			if (item == ints[0])
 			{
-				if (this.targetNeckMage > 0)
+				if (ints[1] == -1)
 				{
-					if (neckID == this.targetNeckMage)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.AMULET.getIndex()] = this.NeckMage + 512;
-					}
+					continue;
 				}
-			}
-			if (this.BodyMage > 0)
-			{
-				if (this.targetBodyMage > 0)
-				{
-					if (bodyID == this.targetBodyMage)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.TORSO.getIndex()] = this.BodyMage + 512;
-					}
-				}
-			}
-			if (this.LegsMage > 0)
-			{
-				if (this.targetLegsMage > 0)
-				{
-					if (legsID == this.targetLegsMage)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.LEGS.getIndex()] = this.LegsMage + 512;
-					}
-				}
-			}
-			if (this.BootsMage > 0)
-			{
-				if (this.targetBootsMage > 0)
-				{
-					if (bootsID == this.targetBootsMage)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.BOOTS.getIndex()] = this.BootsMage + 512;
-					}
-				}
-			}
-			if (this.GlovesMage > 0)
-			{
-				if (this.targetGlovesMage > 0)
-				{
-					if (glovesID == this.targetGlovesMage)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.HANDS.getIndex()] = this.GlovesMage + 512;
-					}
-				}
+				player.getPlayerAppearance().getEquipmentIds()[slot.getIndex()] = ints[1] + 512;
 			}
 		}
-		if (this.rangeSwap)
-		{
-			if (this.MainhandRange > 0)
-			{
-				if (this.targetMainhandRange > 0)
-				{
-					if (mainhandID == this.targetMainhandRange)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.WEAPON.getIndex()] = this.MainhandRange + 512;
-					}
-				}
-			}
-			if (this.OffhandRange > 0)
-			{
-				if (this.targetOffhandRange > 0)
-				{
-					if (offhandID == this.targetOffhandRange)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.SHIELD.getIndex()] = this.OffhandRange + 512;
-					}
-				}
-			}
-			if (this.HelmetRange > 0)
-			{
-				if (this.targetHelmetRange > 0)
-				{
-					if (helmetID == this.targetHelmetRange)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.HELMET.getIndex()] = this.HelmetRange + 512;
-					}
-				}
-			}
-			if (this.CapeRange > 0)
-			{
-				if (this.targetCapeRange > 0)
-				{
-					if (capeID == this.targetCapeRange)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.CAPE.getIndex()] = this.CapeRange + 512;
-					}
-				}
-			}
-			if (this.NeckRange > 0)
-			{
-				if (this.targetNeckRange > 0)
-				{
-					if (neckID == this.targetNeckRange)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.AMULET.getIndex()] = this.NeckRange + 512;
-					}
-				}
-			}
-			if (this.BodyRange > 0)
-			{
-				if (this.targetBodyRange > 0)
-				{
-					if (bodyID == this.targetBodyRange)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.TORSO.getIndex()] = this.BodyRange + 512;
-					}
-				}
-			}
-			if (this.LegsRange > 0)
-			{
-				if (this.targetLegsRange > 0)
-				{
-					if (legsID == this.targetLegsRange)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.LEGS.getIndex()] = this.LegsRange + 512;
-					}
-				}
-			}
-			if (this.BootsRange > 0)
-			{
-				if (this.targetBootsRange > 0)
-				{
-					if (bootsID == this.targetBootsRange)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.BOOTS.getIndex()] = this.BootsRange + 512;
-					}
-				}
-			}
-			if (this.GlovesRange > 0)
-			{
-				if (this.targetGlovesRange > 0)
-				{
-					if (glovesID == this.targetGlovesRange)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.HANDS.getIndex()] = this.GlovesRange + 512;
-					}
-				}
-			}
-		}
-		if (this.meleeSwap)
-		{
-			if (this.MainhandMelee > 0)
-			{
-				if (this.targetMainhandMelee > 0)
-				{
-					if (mainhandID == this.targetMainhandMelee)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.WEAPON.getIndex()] = this.MainhandMelee + 512;
-					}
-				}
-			}
-			if (this.OffhandMelee > 0)
-			{
-				if (this.targetOffhandMelee > 0)
-				{
-					if (offhandID == this.targetOffhandMelee)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.SHIELD.getIndex()] = this.OffhandMelee + 512;
-					}
-				}
-			}
-			if (this.HelmetMelee > 0)
-			{
-				if (this.targetHelmetMelee > 0)
-				{
-					if (helmetID == this.targetHelmetMelee)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.HELMET.getIndex()] = this.HelmetMelee + 512;
-					}
-				}
-			}
-			if (this.CapeMelee > 0)
-			{
-				if (this.targetCapeMelee > 0)
-				{
-					if (capeID == this.targetCapeMelee)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.CAPE.getIndex()] = this.CapeMelee + 512;
-					}
-				}
-			}
-			if (this.NeckMelee > 0)
-			{
-				if (this.targetNeckMelee > 0)
-				{
-					if (neckID == this.targetNeckMelee)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.AMULET.getIndex()] = this.NeckMelee + 512;
-					}
-				}
-			}
-			if (this.BodyMelee > 0)
-			{
-				if (this.targetBodyMelee > 0)
-				{
-					if (bodyID == this.targetBodyMelee)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.TORSO.getIndex()] = this.BodyMelee + 512;
-					}
-				}
-			}
-			if (this.LegsMelee > 0)
-			{
-				if (this.targetLegsMelee > 0)
-				{
-					if (legsID == this.targetLegsMelee)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.LEGS.getIndex()] = this.LegsMelee + 512;
-					}
-				}
-			}
-			if (this.BootsMelee > 0)
-			{
-				if (this.targetBootsMelee > 0)
-				{
-					if (bootsID == this.targetBootsMelee)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.BOOTS.getIndex()] = this.BootsMelee + 512;
-					}
-				}
-			}
-			if (this.GlovesMelee > 0)
-			{
-				if (this.targetGlovesMelee > 0)
-				{
-					if (glovesID == this.targetGlovesMelee)
-					{
-						player.getPlayerAppearance().getEquipmentIds()[KitType.HANDS.getIndex()] = this.GlovesMelee + 512;
-					}
-				}
-			}
-		}
-		player.getPlayerAppearance().setHash();
 	}
 
 	private void updateConfig()
 	{
-		this.mageSwap = config.mageSwap();
-		this.rangeSwap = config.rangeSwap();
-		this.meleeSwap = config.meleeSwap();
+		this.set1 = NEWLINE_SPLITTER.withKeyValueSeparator(':').split(config.set1());
+		this.set2 = NEWLINE_SPLITTER.withKeyValueSeparator(':').split(config.set2());
+		this.set3 = NEWLINE_SPLITTER.withKeyValueSeparator(':').split(config.set3());
+		this.animation = config.animationSwap();
 		this.globalAnimSwap = config.globalAnimSwap();
-		this.animationSwap = config.animationSwap();
-		this.animationTarget = config.animationTarget();
-		this.MainhandMage = config.MainhandMage();
-		this.targetMainhandMage = config.targetMainhandMage();
-		this.OffhandMage = config.OffhandMage();
-		this.targetOffhandMage = config.targetOffhandMage();
-		this.HelmetMage = config.HelmetMage();
-		this.targetHelmetMage = config.targetHelmetMage();
-		this.CapeMage = config.CapeMage();
-		this.targetCapeMage = config.targetCapeMage();
-		this.NeckMage = config.NeckMage();
-		this.targetNeckMage = config.targetNeckMage();
-		this.BodyMage = config.BodyMage();
-		this.targetBodyMage = config.targetBodyMage();
-		this.LegsMage = config.LegsMage();
-		this.targetLegsMage = config.targetLegsMage();
-		this.BootsMage = config.BootsMage();
-		this.targetBootsMage = config.targetBootsMage();
-		this.GlovesMage = config.GlovesMage();
-		this.targetGlovesMage = config.targetGlovesMage();
-		this.MainhandRange = config.MainhandRange();
-		this.targetMainhandRange = config.targetMainhandRange();
-		this.OffhandRange = config.OffhandRange();
-		this.targetOffhandRange = config.targetOffhandRange();
-		this.HelmetRange = config.HelmetRange();
-		this.targetHelmetRange = config.targetHelmetRange();
-		this.CapeRange = config.CapeRange();
-		this.targetCapeRange = config.targetCapeRange();
-		this.NeckRange = config.NeckRange();
-		this.targetNeckRange = config.targetNeckRange();
-		this.BodyRange = config.BodyRange();
-		this.targetBodyRange = config.targetBodyRange();
-		this.LegsRange = config.LegsRange();
-		this.targetLegsRange = config.targetLegsRange();
-		this.BootsRange = config.BootsRange();
-		this.targetBootsRange = config.targetBootsRange();
-		this.GlovesRange = config.GlovesRange();
-		this.targetGlovesRange = config.targetGlovesRange();
-		this.MainhandMelee = config.MainhandMelee();
-		this.targetMainhandMelee = config.targetMainhandMelee();
-		this.OffhandMelee = config.OffhandMelee();
-		this.targetOffhandMelee = config.targetOffhandMelee();
-		this.HelmetMelee = config.HelmetMelee();
-		this.targetHelmetMelee = config.targetHelmetMelee();
-		this.CapeMelee = config.CapeMelee();
-		this.targetCapeMelee = config.targetCapeMelee();
-		this.NeckMelee = config.NeckMelee();
-		this.targetNeckMelee = config.targetNeckMelee();
-		this.BodyMelee = config.BodyMelee();
-		this.targetBodyMelee = config.targetBodyMelee();
-		this.LegsMelee = config.LegsMelee();
-		this.targetLegsMelee = config.targetLegsMelee();
-		this.BootsMelee = config.BootsMelee();
-		this.targetBootsMelee = config.targetBootsMelee();
-		this.GlovesMelee = config.GlovesMelee();
-		this.targetGlovesMelee = config.targetGlovesMelee();
+		this.globalGraphicSwap = config.globalGraphicSwap();
+		this.graphic = config.graphicSwap();
+		this.targetAnimation = config.animationTarget();
+		this.targetGraphic = config.graphicTarget();
 	}
 }

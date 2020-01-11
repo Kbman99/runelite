@@ -55,6 +55,7 @@ import okhttp3.Callback;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.jetbrains.annotations.NotNull;
 
 @Slf4j
 public class WikiSearchChatboxTextInput extends ChatboxTextInput
@@ -124,21 +125,19 @@ public class WikiSearchChatboxTextInput extends ChatboxTextInput
 				RuneLiteAPI.CLIENT.newCall(req).enqueue(new Callback()
 				{
 					@Override
-					public void onFailure(Call call, IOException e)
+					public void onFailure(@NotNull Call call, @NotNull IOException e)
 					{
 						log.warn("error searching wiki", e);
 					}
 
 					@Override
-					public void onResponse(Call call, Response response) throws IOException
+					public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException
 					{
 						String body = response.body().string();
 						try
 						{
 							JsonArray jar = new JsonParser().parse(body).getAsJsonArray();
-							List<String> apredictions = gson.fromJson(jar.get(1), new TypeToken<List<String>>()
-							{
-							}.getType());
+							List<String> apredictions = gson.fromJson(jar.get(1), new TypeToken<List<String>>() {}.getType());
 
 							if (apredictions.size() > MAX_NUM_PREDICTIONS)
 							{
@@ -297,7 +296,7 @@ public class WikiSearchChatboxTextInput extends ChatboxTextInput
 	{
 		LinkBrowser.browse(WikiPlugin.WIKI_BASE.newBuilder()
 			.addQueryParameter("search", search)
-			.addQueryParameter(WikiPlugin.UTM_SORUCE_KEY, WikiPlugin.UTM_SORUCE_VALUE)
+			.addQueryParameter(WikiPlugin.UTM_SOURCE_KEY, WikiPlugin.UTM_SOURCE_VALUE)
 			.build()
 			.toString());
 		chatboxPanelManager.close();

@@ -31,18 +31,20 @@ import com.google.inject.Singleton;
 import java.awt.Color;
 import lombok.AccessLevel;
 import lombok.Getter;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @PluginDescriptor(
 	name = "Inventory Grid",
 	description = "Shows a grid over the inventory and a preview of where items will be dragged",
 	tags = {"items", "overlay"},
-	enabledByDefault = false
+	enabledByDefault = false,
+	type = PluginType.UTILITY
 )
 @Singleton
 public class InventoryGridPlugin extends Plugin
@@ -89,7 +91,7 @@ public class InventoryGridPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged config)
+	private void onConfigChanged(ConfigChanged config)
 	{
 		if (config.getGroup().equals("inventorygrid"))
 		{

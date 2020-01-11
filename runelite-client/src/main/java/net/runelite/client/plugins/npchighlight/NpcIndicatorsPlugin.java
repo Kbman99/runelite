@@ -31,7 +31,6 @@ import com.google.inject.Provides;
 import java.awt.Color;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -49,12 +48,10 @@ import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.GraphicID;
 import net.runelite.api.GraphicsObject;
-import net.runelite.api.MenuAction;
-import static net.runelite.api.MenuAction.MENU_ACTION_DEPRIORITIZE_OFFSET;
-import net.runelite.api.MenuEntry;
+import net.runelite.api.MenuOpcode;
+import static net.runelite.api.MenuOpcode.MENU_ACTION_DEPRIORITIZE_OFFSET;
 import net.runelite.api.NPC;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.FocusChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
@@ -64,20 +61,24 @@ import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.NpcDefinitionChanged;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
+import net.runelite.api.util.Text;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
-import net.runelite.client.util.Text;
+import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.WildcardMatcher;
 
 @PluginDescriptor(
 	name = "NPC Indicators",
 	description = "Highlight NPCs on-screen and/or on the minimap",
-	tags = {"highlight", "minimap", "npcs", "overlay", "respawn", "tags"}
+	tags = {"highlight", "minimap", "npcs", "overlay", "respawn", "tags"},
+	type = PluginType.UTILITY
 )
 @Slf4j
 @Singleton
@@ -87,10 +88,15 @@ public class NpcIndicatorsPlugin extends Plugin
 
 	// Option added to NPC menu
 	private static final String TAG = "Tag";
-	private static final String UNTAG = "Untag";
+	private static final String UNTAG = "Un-tag";
 
-	private static final Set<MenuAction> NPC_MENU_ACTIONS = ImmutableSet.of(MenuAction.NPC_FIRST_OPTION, MenuAction.NPC_SECOND_OPTION,
-		MenuAction.NPC_THIRD_OPTION, MenuAction.NPC_FOURTH_OPTION, MenuAction.NPC_FIFTH_OPTION);
+	private static final Set<MenuOpcode> NPC_MENU_ACTIONS = ImmutableSet.of(
+		MenuOpcode.NPC_FIRST_OPTION,
+		MenuOpcode.NPC_SECOND_OPTION,
+		MenuOpcode.NPC_THIRD_OPTION,
+		MenuOpcode.NPC_FOURTH_OPTION,
+		MenuOpcode.NPC_FIFTH_OPTION
+	);
 
 	@Inject
 	private Client client;
@@ -189,7 +195,11 @@ public class NpcIndicatorsPlugin extends Plugin
 	@Getter(AccessLevel.PACKAGE)
 	private Color getHighlightColor;
 	@Getter(AccessLevel.PACKAGE)
+	private Color getInteractingColor;
+	@Getter(AccessLevel.PACKAGE)
 	private boolean drawNames;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean drawInteracting;
 	@Getter(AccessLevel.PACKAGE)
 	private boolean drawMinimapNames;
 	@Getter(AccessLevel.PACKAGE)
@@ -204,7 +214,7 @@ public class NpcIndicatorsPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 
@@ -220,7 +230,7 @@ public class NpcIndicatorsPlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(npcSceneOverlay);
 		overlayManager.remove(npcMinimapOverlay);
@@ -235,7 +245,7 @@ public class NpcIndicatorsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		if (event.getGameState() == GameState.LOGIN_SCREEN ||
 			event.getGameState() == GameState.HOPPING)
@@ -249,7 +259,7 @@ public class NpcIndicatorsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged configChanged)
+	private void onConfigChanged(ConfigChanged configChanged)
 	{
 		if (!configChanged.getGroup().equals("npcindicators"))
 		{
@@ -263,7 +273,7 @@ public class NpcIndicatorsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onFocusChanged(FocusChanged focusChanged)
+	private void onFocusChanged(FocusChanged focusChanged)
 	{
 		if (!focusChanged.isFocused())
 		{
@@ -272,11 +282,9 @@ public class NpcIndicatorsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onMenuEntryAdded(MenuEntryAdded event)
+	private void onMenuEntryAdded(MenuEntryAdded event)
 	{
-		MenuEntry[] menuEntries = client.getMenuEntries();
-		String target = event.getTarget();
-		int type = event.getType();
+		int type = event.getOpcode();
 
 		if (type >= MENU_ACTION_DEPRIORITIZE_OFFSET)
 		{
@@ -284,34 +292,33 @@ public class NpcIndicatorsPlugin extends Plugin
 		}
 
 		if (this.highlightMenuNames &&
-			NPC_MENU_ACTIONS.contains(MenuAction.of(type)) &&
+			NPC_MENU_ACTIONS.contains(MenuOpcode.of(type)) &&
 			highlightedNpcs.stream().anyMatch(npc -> npc.getIndex() == event.getIdentifier()))
 		{
-			final MenuEntry menuEntry = menuEntries[menuEntries.length - 1];
-			menuEntry.setTarget(target);
-			client.setMenuEntries(menuEntries);
+			final String target = ColorUtil.prependColorTag(Text.removeTags(event.getTarget()), this.getHighlightColor);
+			event.setTarget(target);
+			event.setModified();
 		}
-		else if (hotKeyPressed && type == MenuAction.EXAMINE_NPC.getId())
+		else if (hotKeyPressed && type == MenuOpcode.EXAMINE_NPC.getId())
 		{
 			// Add tag option
-			menuEntries = Arrays.copyOf(menuEntries, menuEntries.length + 1);
-			final MenuEntry tagEntry = menuEntries[menuEntries.length - 1] = new MenuEntry();
-			tagEntry.setOption(npcTags.contains(event.getIdentifier()) ? UNTAG : TAG);
-			tagEntry.setTarget(event.getTarget());
-			tagEntry.setParam0(event.getActionParam0());
-			tagEntry.setParam1(event.getActionParam1());
-			tagEntry.setIdentifier(event.getIdentifier());
-			tagEntry.setType(MenuAction.RUNELITE.getId());
-			client.setMenuEntries(menuEntries);
+			client.insertMenuItem(
+				highlightedNpcs.stream().anyMatch(npc -> npc.getIndex() == event.getIdentifier()) ? UNTAG : TAG,
+				event.getTarget(),
+				MenuOpcode.RUNELITE.getId(),
+				event.getIdentifier(),
+				event.getParam0(),
+				event.getParam1(),
+				false
+			);
 		}
 	}
 
 	@Subscribe
-	public void onMenuOptionClicked(MenuOptionClicked click)
+	private void onMenuOptionClicked(MenuOptionClicked click)
 	{
-		if (click.getMenuAction() != MenuAction.RUNELITE
-			|| (!click.getOption().equals(TAG)
-			&& !click.getOption().equals(UNTAG)))
+		if (click.getMenuOpcode() != MenuOpcode.RUNELITE ||
+			!(click.getOption().equals(TAG) || click.getOption().equals(UNTAG)))
 		{
 			return;
 		}
@@ -332,18 +339,20 @@ public class NpcIndicatorsPlugin extends Plugin
 			if (mn != null && isNpcMemorizationUnnecessary(mn))
 			{
 				memorizedNpcs.remove(npc.getIndex());
+				rebuildAllNpcs();
 			}
 		}
 		else
 		{
 			npcTags.add(id);
+			rebuildAllNpcs();
 		}
 
 		click.consume();
 	}
 
 	@Subscribe
-	public void onNpcSpawned(NpcSpawned npcSpawned)
+	private void onNpcSpawned(NpcSpawned npcSpawned)
 	{
 		NPC npc = npcSpawned.getNpc();
 		highlightNpcIfMatch(npc);
@@ -355,7 +364,7 @@ public class NpcIndicatorsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onNpcDefinitionChanged(NpcDefinitionChanged event)
+	private void onNpcDefinitionChanged(NpcDefinitionChanged event)
 	{
 		NPC npc = event.getNpc();
 		highlightNpcIfMatch(npc);
@@ -372,7 +381,7 @@ public class NpcIndicatorsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onNpcDespawned(NpcDespawned npcDespawned)
+	private void onNpcDespawned(NpcDespawned npcDespawned)
 	{
 		final NPC npc = npcDespawned.getNpc();
 
@@ -385,7 +394,7 @@ public class NpcIndicatorsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGraphicsObjectCreated(GraphicsObjectCreated event)
+	private void onGraphicsObjectCreated(GraphicsObjectCreated event)
 	{
 		final GraphicsObject go = event.getGraphicsObject();
 
@@ -396,7 +405,7 @@ public class NpcIndicatorsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick event)
+	private void onGameTick(GameTick event)
 	{
 		removeOldHighlightedRespawns();
 		validateSpawnedNpcs();
@@ -562,13 +571,10 @@ public class NpcIndicatorsPlugin extends Plugin
 		{
 			for (NPC npc : despawnedNpcsThisTick)
 			{
-				if (!teleportGraphicsObjectSpawnedThisTick.isEmpty())
+				if (!teleportGraphicsObjectSpawnedThisTick.isEmpty() && teleportGraphicsObjectSpawnedThisTick.contains(npc.getWorldLocation()))
 				{
-					if (teleportGraphicsObjectSpawnedThisTick.contains(npc.getWorldLocation()))
-					{
-						// NPC teleported away, so we don't want to add the respawn timer
-						continue;
-					}
+					// NPC teleported away, so we don't want to add the respawn timer
+					continue;
 				}
 
 				if (isInViewRange(client.getLocalPlayer().getWorldLocation(), npc.getWorldLocation()))
@@ -590,14 +596,12 @@ public class NpcIndicatorsPlugin extends Plugin
 
 			for (NPC npc : spawnedNpcsThisTick)
 			{
-				if (!teleportGraphicsObjectSpawnedThisTick.isEmpty())
+				if (!teleportGraphicsObjectSpawnedThisTick.isEmpty() &&
+					(teleportGraphicsObjectSpawnedThisTick.contains(npc.getWorldLocation()) ||
+						teleportGraphicsObjectSpawnedThisTick.contains(getWorldLocationBehind(npc))))
 				{
-					if (teleportGraphicsObjectSpawnedThisTick.contains(npc.getWorldLocation()) ||
-						teleportGraphicsObjectSpawnedThisTick.contains(getWorldLocationBehind(npc)))
-					{
-						// NPC teleported here, so we don't want to update the respawn timer
-						continue;
-					}
+					// NPC teleported here, so we don't want to update the respawn timer
+					continue;
 				}
 
 				if (lastPlayerLocation != null && isInViewRange(lastPlayerLocation, npc.getWorldLocation()))
@@ -647,7 +651,9 @@ public class NpcIndicatorsPlugin extends Plugin
 		this.renderStyle = config.renderStyle();
 		this.getNpcToHighlight = config.getNpcToHighlight();
 		this.getHighlightColor = config.getHighlightColor();
+		this.getInteractingColor = config.getInteractingColor();
 		this.drawNames = config.drawNames();
+		this.drawInteracting = config.drawInteracting();
 		this.drawMinimapNames = config.drawMinimapNames();
 		this.highlightMenuNames = config.highlightMenuNames();
 		this.showRespawnTimer = config.showRespawnTimer();

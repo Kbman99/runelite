@@ -31,7 +31,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.WidgetLoaded;
@@ -40,20 +39,24 @@ import net.runelite.api.widgets.WidgetID;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @PluginDescriptor(
 	name = "Mouse Tooltips",
 	description = "Render default actions as a tooltip",
-	tags = {"actions", "overlay", "tooltip", "hide"}
+	tags = {"actions", "overlay", "tooltip", "hide"},
+	type = PluginType.UTILITY
 )
 @Singleton
 public class MouseHighlightPlugin extends Plugin
 {
 	@Inject
 	MouseHighlightConfig config;
+
 	@Inject
 	private Client client;
 
@@ -81,7 +84,7 @@ public class MouseHighlightPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 
@@ -90,14 +93,14 @@ public class MouseHighlightPlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		resetTips();
 		overlayManager.remove(overlay);
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		if (event.getGameState() == GameState.LOGGED_IN)
 		{
@@ -106,7 +109,7 @@ public class MouseHighlightPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onWidgetLoaded(WidgetLoaded event)
+	private void onWidgetLoaded(WidgetLoaded event)
 	{
 		if (event.getGroupId() == WidgetID.SPELLBOOK_GROUP_ID || event.getGroupId() == WidgetID.COMBAT_GROUP_ID)
 		{
@@ -115,7 +118,7 @@ public class MouseHighlightPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick event)
+	private void onGameTick(GameTick event)
 	{
 		adjustTips();
 	}
@@ -169,7 +172,7 @@ public class MouseHighlightPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("motherlode"))
 		{

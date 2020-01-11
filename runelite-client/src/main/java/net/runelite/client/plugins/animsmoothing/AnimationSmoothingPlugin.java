@@ -28,17 +28,19 @@ import com.google.inject.Provides;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.runelite.api.Client;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 
 @PluginDescriptor(
 	name = "Animation Smoothing",
 	description = "Show smoother player, NPC, and object animations",
 	tags = {"npcs", "objects", "players"},
-	enabledByDefault = false
+	enabledByDefault = false,
+	type = PluginType.MISCELLANEOUS
 )
 @Singleton
 public class AnimationSmoothingPlugin extends Plugin
@@ -58,21 +60,22 @@ public class AnimationSmoothingPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		update();
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		client.setInterpolatePlayerAnimations(false);
 		client.setInterpolateNpcAnimations(false);
 		client.setInterpolateObjectAnimations(false);
+		client.setInterpolateWidgetAnimations(false);
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (event.getGroup().equals(CONFIG_GROUP))
 		{
@@ -85,5 +88,6 @@ public class AnimationSmoothingPlugin extends Plugin
 		client.setInterpolatePlayerAnimations(config.smoothPlayerAnimations());
 		client.setInterpolateNpcAnimations(config.smoothNpcAnimations());
 		client.setInterpolateObjectAnimations(config.smoothObjectAnimations());
+		client.setInterpolateWidgetAnimations(config.smoothWidgetAnimations());
 	}
 }

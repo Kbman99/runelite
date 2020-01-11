@@ -4,126 +4,104 @@ import net.runelite.mapping.ObfuscatedGetter;
 import net.runelite.mapping.ObfuscatedName;
 import net.runelite.mapping.ObfuscatedSignature;
 
-@ObfuscatedName("s")
+@ObfuscatedName("j")
 @Implements("WorldMapLabelSize")
 public class WorldMapLabelSize {
-   @ObfuscatedName("st")
-   @ObfuscatedSignature(
-      signature = "Llb;"
-   )
-   @Export("platformInfo")
-   static PlatformInfo platformInfo;
-   @ObfuscatedName("m")
-   @ObfuscatedSignature(
-      signature = "Ls;"
-   )
-   @Export("WorldMapLabelSize_small")
-   public static final WorldMapLabelSize WorldMapLabelSize_small;
-   @ObfuscatedName("f")
-   @ObfuscatedSignature(
-      signature = "Ls;"
-   )
-   @Export("WorldMapLabelSize_medium")
-   public static final WorldMapLabelSize WorldMapLabelSize_medium;
-   @ObfuscatedName("q")
-   @ObfuscatedSignature(
-      signature = "Ls;"
-   )
-   @Export("WorldMapLabelSize_large")
-   public static final WorldMapLabelSize WorldMapLabelSize_large;
-   @ObfuscatedName("dq")
-   @ObfuscatedSignature(
-      signature = "Lit;"
-   )
-   static IndexCache field1040;
-   @ObfuscatedName("fi")
-   @ObfuscatedGetter(
-      intValue = 1577759565
-   )
-   static int field1041;
-   @ObfuscatedName("w")
-   @ObfuscatedGetter(
-      intValue = 1252293513
-   )
-   final int field1042;
-   @ObfuscatedName("o")
-   @ObfuscatedGetter(
-      intValue = 707828941
-   )
-   final int field1043;
-   @ObfuscatedName("u")
-   @ObfuscatedGetter(
-      intValue = -422937451
-   )
-   final int field1044;
+	@ObfuscatedName("f")
+	@ObfuscatedSignature(
+		signature = "Lj;"
+	)
+	@Export("WorldMapLabelSize_small")
+	public static final WorldMapLabelSize WorldMapLabelSize_small;
+	@ObfuscatedName("i")
+	@ObfuscatedSignature(
+		signature = "Lj;"
+	)
+	@Export("WorldMapLabelSize_medium")
+	public static final WorldMapLabelSize WorldMapLabelSize_medium;
+	@ObfuscatedName("y")
+	@ObfuscatedSignature(
+		signature = "Lj;"
+	)
+	@Export("WorldMapLabelSize_large")
+	public static final WorldMapLabelSize WorldMapLabelSize_large;
+	@ObfuscatedName("hs")
+	@ObfuscatedGetter(
+		intValue = 1779595595
+	)
+	@Export("cameraYaw")
+	static int cameraYaw;
+	@ObfuscatedName("w")
+	@ObfuscatedGetter(
+		intValue = 753179293
+	)
+	final int field113;
+	@ObfuscatedName("p")
+	@ObfuscatedGetter(
+		intValue = -1705085615
+	)
+	final int field110;
+	@ObfuscatedName("b")
+	@ObfuscatedGetter(
+		intValue = -1894041549
+	)
+	final int field109;
 
-   WorldMapLabelSize(int var1, int var2, int var3) {
-      this.field1042 = var1;
-      this.field1043 = var2;
-      this.field1044 = var3;
-   }
+	static {
+		WorldMapLabelSize_small = new WorldMapLabelSize(2, 0, 4);
+		WorldMapLabelSize_medium = new WorldMapLabelSize(1, 1, 2);
+		WorldMapLabelSize_large = new WorldMapLabelSize(0, 2, 0);
+	}
 
-   @ObfuscatedName("f")
-   @ObfuscatedSignature(
-      signature = "(FI)Z",
-      garbageValue = "2107231705"
-   )
-   boolean method400(float var1) {
-      return var1 >= (float)this.field1044;
-   }
+	WorldMapLabelSize(int var1, int var2, int var3) {
+		this.field113 = var1;
+		this.field110 = var2;
+		this.field109 = var3;
+	}
 
-   @ObfuscatedName("m")
-   @ObfuscatedSignature(
-      signature = "(I)[Ls;",
-      garbageValue = "1579674051"
-   )
-   static WorldMapLabelSize[] method192() {
-      return new WorldMapLabelSize[]{WorldMapLabelSize_small, WorldMapLabelSize_medium, WorldMapLabelSize_large};
-   }
+	@ObfuscatedName("f")
+	@ObfuscatedSignature(
+		signature = "(FI)Z",
+		garbageValue = "-886615284"
+	)
+	boolean method183(float var1) {
+		return var1 >= (float)this.field109;
+	}
 
-   @ObfuscatedName("q")
-   @ObfuscatedSignature(
-      signature = "(IB)Ls;",
-      garbageValue = "-67"
-   )
-   static WorldMapLabelSize method195(int var0) {
-      WorldMapLabelSize[] var1 = method192();
+	@ObfuscatedName("i")
+	@ObfuscatedSignature(
+		signature = "(II)Lj;",
+		garbageValue = "1782583414"
+	)
+	static WorldMapLabelSize method182(int var0) {
+		WorldMapLabelSize[] var1 = new WorldMapLabelSize[]{WorldMapLabelSize_small, WorldMapLabelSize_large, WorldMapLabelSize_medium};
+		WorldMapLabelSize[] var2 = var1;
 
-      for (int var2 = 0; var2 < var1.length; ++var2) {
-         WorldMapLabelSize var3 = var1[var2];
-         if (var0 == var3.field1043) {
-            return var3;
-         }
-      }
+		for (int var3 = 0; var3 < var2.length; ++var3) {
+			WorldMapLabelSize var4 = var2[var3];
+			if (var0 == var4.field110) {
+				return var4;
+			}
+		}
 
-      return null;
-   }
+		return null;
+	}
 
-   @ObfuscatedName("jj")
-   @ObfuscatedSignature(
-      signature = "(I)V",
-      garbageValue = "-187598326"
-   )
-   static final void method198() {
-      PacketBufferNode var0 = Interpreter.method1915(ClientPacket.field242, Client.packetWriter.isaacCipher);
-      Client.packetWriter.method241(var0);
+	@ObfuscatedName("i")
+	@ObfuscatedSignature(
+		signature = "(ILkg;Lif;I)V",
+		garbageValue = "408985273"
+	)
+	static void method186(int var0, ArchiveDisk var1, Archive var2) {
+		ArchiveDiskAction var3 = new ArchiveDiskAction();
+		var3.type = 1;
+		var3.key = (long)var0;
+		var3.archiveDisk = var1;
+		var3.archive = var2;
+		synchronized(ArchiveDiskActionHandler.ArchiveDiskActionHandler_requestQueue) {
+			ArchiveDiskActionHandler.ArchiveDiskActionHandler_requestQueue.addFirst(var3);
+		}
 
-      for (WidgetGroupParent var1 = (WidgetGroupParent)Client.widgetGroupParents.first(); var1 != null; var1 = (WidgetGroupParent)Client.widgetGroupParents.next()) {
-         if (var1.type == 0 || var1.type == 3) {
-            MenuAction.closeWidgetGroup(var1, true);
-         }
-      }
-
-      if (Client.field127 != null) {
-         class22.method295(Client.field127);
-         Client.field127 = null;
-      }
-
-   }
-
-   static {
-      WorldMapLabelSize_small = new WorldMapLabelSize(0, 0, 4);
-      WorldMapLabelSize_medium = new WorldMapLabelSize(2, 1, 2);
-      WorldMapLabelSize_large = new WorldMapLabelSize(1, 2, 0);
-   }
+		class32.method549();
+	}
 }

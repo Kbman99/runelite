@@ -32,12 +32,13 @@ import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.inject.Inject;
 import net.runelite.api.Client;
+import net.runelite.client.config.OpenOSRSConfig;
 import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class NpcIndicatorsPluginTest
@@ -53,6 +54,10 @@ public class NpcIndicatorsPluginTest
 	@Mock
 	@Bind
 	private NpcIndicatorsConfig npcIndicatorsConfig;
+
+	@Mock
+	@Bind
+	private OpenOSRSConfig openOSRSConfig;
 
 	@Inject
 	private NpcIndicatorsPlugin npcIndicatorsPlugin;

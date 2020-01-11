@@ -46,13 +46,13 @@ import net.runelite.api.MessageNode;
 import net.runelite.api.Player;
 import net.runelite.api.Varbits;
 import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.ResizeableChanged;
 import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ChatColorConfig;
-import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.eventbus.EventBus;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.ui.JagexColors;
 import net.runelite.client.util.ColorUtil;
 
@@ -70,17 +70,23 @@ public class ChatMessageManager
 
 	@Inject
 	private ChatMessageManager(
-		Client client,
-		ChatColorConfig chatColorConfig,
-		ClientThread clientThread)
+		final Client client,
+		final ChatColorConfig chatColorConfig,
+		final ClientThread clientThread,
+		final EventBus eventbus)
 	{
 		this.client = client;
 		this.chatColorConfig = chatColorConfig;
 		this.clientThread = clientThread;
+
+		eventbus.subscribe(VarbitChanged.class, this, this::onVarbitChanged);
+		eventbus.subscribe(ResizeableChanged.class, this, this::onResizeableChanged);
+		eventbus.subscribe(ConfigChanged.class, this, this::onConfigChanged);
+		eventbus.subscribe(ChatMessage.class, this, this::onChatMessage);
+		eventbus.subscribe(ScriptCallbackEvent.class, this, this::onScriptCallbackEvent);
 	}
 
-	@Subscribe
-	public void onVarbitChanged(VarbitChanged event)
+	private void onVarbitChanged(VarbitChanged event)
 	{
 		int setting = client.getVar(Varbits.TRANSPARENT_CHATBOX);
 
@@ -91,14 +97,12 @@ public class ChatMessageManager
 		}
 	}
 
-	@Subscribe
-	public void onResizeableChanged(ResizeableChanged event)
+	private void onResizeableChanged(ResizeableChanged event)
 	{
 		refreshAll();
 	}
 
-	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (event.getGroup().equals("textrecolor"))
 		{
@@ -107,24 +111,19 @@ public class ChatMessageManager
 		}
 	}
 
-	@Subscribe
-	public void onChatMessage(ChatMessage chatMessage)
+	void onChatMessage(ChatMessage chatMessage)
 	{
 		MessageNode messageNode = chatMessage.getMessageNode();
 		ChatMessageType chatMessageType = chatMessage.getType();
 
 		boolean isChatboxTransparent = client.isResized() && client.getVar(Varbits.TRANSPARENT_CHATBOX) == 1;
 		Color usernameColor = null;
-		Color senderColor = null;
+		Color senderColor;
 
 		switch (chatMessageType)
 		{
-			case MODPRIVATECHAT:
-			case PRIVATECHAT:
-			case PRIVATECHATOUT:
-				usernameColor = isChatboxTransparent ? chatColorConfig.transparentPrivateUsernames() : chatColorConfig.opaquePrivateUsernames();
-				break;
-
+			// username recoloring for MODPRIVATECHAT, PRIVATECHAT and PRIVATECHATOUT
+			// ChatMessageTypes is handled in the script callback event
 			case TRADEREQ:
 			case AUTOTYPER:
 			case PUBLICCHAT:
@@ -154,7 +153,7 @@ public class ChatMessageManager
 			messageNode.setName(ColorUtil.wrapWithColorTag(messageNode.getName(), usernameColor));
 		}
 
-		String sender = chatMessage.getSender();
+		String sender = messageNode.getSender();
 		if (senderColor != null && !Strings.isNullOrEmpty(sender))
 		{
 			messageNode.setSender(ColorUtil.wrapWithColorTag(sender, senderColor));
@@ -168,13 +167,16 @@ public class ChatMessageManager
 				continue;
 			}
 
-			messageNode.setValue(ColorUtil.wrapWithColorTag(messageNode.getValue(), chatColor.getColor()));
+			// Replace </col> tags in the message with the new color so embedded </col> won't reset the color
+			final Color color = chatColor.getColor();
+			messageNode.setValue(ColorUtil.wrapWithColorTag(
+				messageNode.getValue().replace(ColorUtil.CLOSING_COLOR_TAG, ColorUtil.colorTag(color)),
+				color));
 			break;
 		}
 	}
 
-	@Subscribe
-	public void onScriptCallbackEvent(ScriptCallbackEvent scriptCallbackEvent)
+	private void onScriptCallbackEvent(ScriptCallbackEvent scriptCallbackEvent)
 	{
 		final String eventName = scriptCallbackEvent.getEventName();
 
@@ -399,6 +401,11 @@ public class ChatMessageManager
 			cacheColor(new ChatColor(ChatColorType.HIGHLIGHT, chatColorConfig.opaqueFilteredHighlight(), false),
 				ChatMessageType.SPAM);
 		}
+		if (chatColorConfig.opaquePrivateUsernames() != null)
+		{
+			cacheColor(new ChatColor(ChatColorType.NORMAL, chatColorConfig.opaquePrivateUsernames(), false),
+				ChatMessageType.LOGINLOGOUTNOTIFICATION);
+		}
 
 		//Transparent Chat Colours
 		if (chatColorConfig.transparentPublicChat() != null)
@@ -527,6 +534,11 @@ public class ChatMessageManager
 			cacheColor(new ChatColor(ChatColorType.HIGHLIGHT, chatColorConfig.transparentFilteredHighlight(), true),
 				ChatMessageType.SPAM);
 		}
+		if (chatColorConfig.transparentPrivateUsernames() != null)
+		{
+			cacheColor(new ChatColor(ChatColorType.NORMAL, chatColorConfig.transparentPrivateUsernames(), true),
+				ChatMessageType.LOGINLOGOUTNOTIFICATION);
+		}
 	}
 
 	private void cacheColor(final ChatColor chatColor, final ChatMessageType... types)
@@ -546,16 +558,9 @@ public class ChatMessageManager
 
 	public void process()
 	{
-		if (!queuedMessages.isEmpty())
+		for (QueuedMessage msg; (msg = queuedMessages.poll()) != null; )
 		{
-			try
-			{
-				queuedMessages.forEach(this::add);
-			}
-			finally
-			{
-				queuedMessages.clear();
-			}
+			add(msg);
 		}
 	}
 
@@ -564,6 +569,12 @@ public class ChatMessageManager
 		// Do not send message if the player is on tutorial island
 		final Player player = client.getLocalPlayer();
 		if (player != null && TUTORIAL_ISLAND_REGIONS.contains(player.getWorldLocation().getRegionID()))
+		{
+			return;
+		}
+
+		//guard case for google MoreObjects#firstNonNull
+		if (message.getValue() == null && message.getRuneLiteFormattedMessage() == null)
 		{
 			return;
 		}

@@ -30,7 +30,6 @@ import net.runelite.api.Client;
 import net.runelite.api.InventoryID;
 import net.runelite.api.Item;
 import net.runelite.api.ItemContainer;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.widgets.Widget;
@@ -57,19 +56,13 @@ public class MaxHitPlugin extends Plugin
 	private Client client;
 
 	@Subscribe
-	public void onItemContainerChanged(final ItemContainerChanged event)
+	private void onItemContainerChanged(final ItemContainerChanged event)
 	{
 		this.updateMaxHitWidget();
 	}
 
 	@Subscribe
-	public void onConfigChanged(final ConfigChanged event)
-	{
-		this.updateMaxHitWidget();
-	}
-
-	@Subscribe
-	public void onVarbitChanged(VarbitChanged event)
+	private void onVarbitChanged(VarbitChanged event)
 	{
 		this.updateMaxHitWidget();
 	}
@@ -108,7 +101,7 @@ public class MaxHitPlugin extends Plugin
 		equipYourCharacter.setText(maxHitText);
 	}
 
-	private class MaxHit
+	private static class MaxHit
 	{
 		private final double maxMeleeHit;
 		private final double maxRangeHit;

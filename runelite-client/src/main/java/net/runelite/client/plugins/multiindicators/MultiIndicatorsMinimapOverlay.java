@@ -31,13 +31,14 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.geom.GeneralPath;
 import javax.inject.Inject;
-
 import javax.inject.Singleton;
-import net.runelite.api.geometry.Geometry;
 import net.runelite.api.Client;
 import net.runelite.api.Perspective;
 import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.geometry.Geometry;
+import net.runelite.api.widgets.Widget;
+import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
@@ -69,8 +70,13 @@ public class MultiIndicatorsMinimapOverlay extends Overlay
 
 	private void renderPath(Graphics2D graphics, GeneralPath path, Color color)
 	{
-		LocalPoint playerLp = client.getLocalPlayer().getLocalLocation();
-		Rectangle viewArea = new Rectangle(
+		if (client.getLocalPlayer() == null)
+		{
+			return;
+		}
+
+		final LocalPoint playerLp = client.getLocalPlayer().getLocalLocation();
+		final Rectangle viewArea = new Rectangle(
 			playerLp.getX() - MAX_LOCAL_DRAW_LENGTH,
 			playerLp.getY() - MAX_LOCAL_DRAW_LENGTH,
 			MAX_LOCAL_DRAW_LENGTH * 2,
@@ -84,7 +90,7 @@ public class MultiIndicatorsMinimapOverlay extends Overlay
 				Perspective.localToMinimap(client, new LocalPoint((int) p2[0], (int) p2[1])) != null);
 		path = Geometry.transformPath(path, coords ->
 		{
-			Point point = Perspective.localToMinimap(client, new LocalPoint((int) coords[0], (int) coords[1]));
+			final Point point = Perspective.localToMinimap(client, new LocalPoint((int) coords[0], (int) coords[1]));
 			if (point != null)
 			{
 				coords[0] = point.getX();
@@ -103,9 +109,28 @@ public class MultiIndicatorsMinimapOverlay extends Overlay
 			return null;
 		}
 
-		GeneralPath multicombatPath = plugin.getMulticombatPathToDisplay()[client.getPlane()];
-		GeneralPath pvpPath = plugin.getPvpPathToDisplay()[client.getPlane()];
-		GeneralPath wildernessLevelLinesPath = plugin.getWildernessLevelLinesPathToDisplay()[client.getPlane()];
+		final Widget widget;
+		if (client.getWidget(WidgetInfo.FIXED_VIEWPORT_MINIMAP_DRAW_AREA) != null)
+		{
+			widget = client.getWidget(WidgetInfo.FIXED_VIEWPORT_MINIMAP_DRAW_AREA);
+		}
+		else
+		{
+			widget = client.getWidget(WidgetInfo.RESIZABLE_MINIMAP_STONES_DRAW_AREA);
+		}
+
+		if (widget == null)
+		{
+			return null;
+		}
+
+		final Rectangle minimapClip = widget.getBounds();
+
+		graphics.setClip(minimapClip);
+
+		final GeneralPath multicombatPath = plugin.getMulticombatPathToDisplay()[client.getPlane()];
+		final GeneralPath pvpPath = plugin.getPvpPathToDisplay()[client.getPlane()];
+		final GeneralPath wildernessLevelLinesPath = plugin.getWildernessLevelLinesPathToDisplay()[client.getPlane()];
 
 		if (plugin.getMulticombatZoneVisibility() != ZoneVisibility.HIDE && multicombatPath != null)
 		{

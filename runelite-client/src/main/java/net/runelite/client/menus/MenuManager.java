@@ -30,31 +30,29 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import com.google.common.collect.Sets;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
-import net.runelite.api.MenuAction;
-import static net.runelite.api.MenuAction.MENU_ACTION_DEPRIORITIZE_OFFSET;
 import net.runelite.api.MenuEntry;
+import net.runelite.api.MenuOpcode;
+import static net.runelite.api.MenuOpcode.MENU_ACTION_DEPRIORITIZE_OFFSET;
 import net.runelite.api.NPCDefinition;
 import net.runelite.api.events.BeforeRender;
+import net.runelite.api.events.ClientTick;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.MenuOpened;
 import net.runelite.api.events.MenuOptionClicked;
@@ -62,10 +60,11 @@ import net.runelite.api.events.NpcActionChanged;
 import net.runelite.api.events.PlayerMenuOptionClicked;
 import net.runelite.api.events.PlayerMenuOptionsChanged;
 import net.runelite.api.events.WidgetMenuOptionClicked;
+import net.runelite.api.events.WidgetPressed;
+import net.runelite.api.util.Text;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.eventbus.EventBus;
-import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.util.Text;
+import static net.runelite.client.menus.ComparableEntries.newBaseComparableEntry;
 
 @Singleton
 @Slf4j
@@ -76,7 +75,6 @@ public class MenuManager
 	 */
 	private static final int IDX_LOWER = 4;
 	private static final int IDX_UPPER = 8;
-	static final Pattern LEVEL_PATTERN = Pattern.compile("\\(level-[0-9]*\\)");
 
 	private final Client client;
 	private final EventBus eventBus;
@@ -86,23 +84,33 @@ public class MenuManager
 	//Used to manage custom non-player menu options
 	private final Multimap<Integer, WidgetMenuOption> managedMenuOptions = HashMultimap.create();
 	private final Set<String> npcMenuOptions = new HashSet<>();
-
-	private final HashSet<ComparableEntry> priorityEntries = new HashSet<>();
-	private HashMap<MenuEntry, ComparableEntry> currentPriorityEntries = new HashMap<>();
-	private final ConcurrentHashMap<MenuEntry, ComparableEntry> safeCurrentPriorityEntries = new ConcurrentHashMap<>();
-	private final HashSet<ComparableEntry> hiddenEntries = new HashSet<>();
-	private HashSet<MenuEntry> currentHiddenEntries = new HashSet<>();
-	private final HashMap<ComparableEntry, ComparableEntry> swaps = new HashMap<>();
-
-	private final LinkedHashSet<MenuEntry> entries = Sets.newLinkedHashSet();
+	private final Set<AbstractComparableEntry> priorityEntries = new HashSet<>();
+	private final Map<MenuEntry, AbstractComparableEntry> currentPriorityEntries = new LinkedHashMap<>();
+	private final Set<AbstractComparableEntry> hiddenEntries = new HashSet<>();
+	private final Map<AbstractComparableEntry, AbstractComparableEntry> swaps = new HashMap<>();
 
 	private MenuEntry leftClickEntry = null;
+
+	private int playerAttackIdx = -1;
 
 	@Inject
 	private MenuManager(Client client, EventBus eventBus)
 	{
 		this.client = client;
 		this.eventBus = eventBus;
+
+
+		eventBus.subscribe(MenuOpened.class, this, this::onMenuOpened);
+		eventBus.subscribe(MenuEntryAdded.class, this, this::onMenuEntryAdded);
+		eventBus.subscribe(PlayerMenuOptionsChanged.class, this, this::onPlayerMenuOptionsChanged);
+		eventBus.subscribe(NpcActionChanged.class, this, this::onNpcActionChanged);
+		eventBus.subscribe(WidgetPressed.class, this, this::onWidgetPressed);
+		eventBus.subscribe(MenuOptionClicked.class, this, this::onMenuOptionClicked);
+
+		// Make sure last tick's entry gets cleared
+		eventBus.subscribe(ClientTick.class, this, tick -> leftClickEntry = null);
+		// Rebuild left click menu for top left entry
+		eventBus.subscribe(BeforeRender.class, this, br -> rebuildLeftClickMenu());
 	}
 
 	/**
@@ -142,8 +150,7 @@ public class MenuManager
 		return false;
 	}
 
-	@Subscribe
-	public void onMenuOpened(MenuOpened event)
+	private void onMenuOpened(MenuOpened event)
 	{
 		currentPriorityEntries.clear();
 
@@ -152,31 +159,20 @@ public class MenuManager
 
 		leftClickEntry = null;
 
-		client.sortMenuEntries();
-
 		List<MenuEntry> newEntries = Lists.newArrayList(oldEntries);
 
 		boolean shouldDeprioritize = false;
 
-		prioritizer: for (MenuEntry entry : oldEntries)
+		prioritizer:
+		for (MenuEntry entry : oldEntries)
 		{
-			// Remove hidden entries from menus
-			for (ComparableEntry p : hiddenEntries)
-			{
-				if (p.matches(entry))
-				{
-					newEntries.remove(entry);
-					continue prioritizer;
-				}
-			}
-
-			for (ComparableEntry p : priorityEntries)
+			for (AbstractComparableEntry p : priorityEntries)
 			{
 				// Create list of priority entries, and remove from menus
 				if (p.matches(entry))
 				{
 					// Other entries need to be deprioritized if their types are lower than 1000
-					if (entry.getType() >= 1000 && !shouldDeprioritize)
+					if (entry.getOpcode() >= 1000 && !shouldDeprioritize)
 					{
 						shouldDeprioritize = true;
 					}
@@ -189,7 +185,7 @@ public class MenuManager
 			if (newEntries.size() > 0)
 			{
 				// Swap first matching entry to top
-				for (ComparableEntry src : swaps.keySet())
+				for (AbstractComparableEntry src : swaps.keySet())
 				{
 					if (!src.matches(entry))
 					{
@@ -198,7 +194,7 @@ public class MenuManager
 
 					MenuEntry swapFrom = null;
 
-					ComparableEntry from = swaps.get(src);
+					AbstractComparableEntry from = swaps.get(src);
 
 					for (MenuEntry e : newEntries)
 					{
@@ -212,8 +208,8 @@ public class MenuManager
 					// Do not need to swap with itself or if the swapFrom is already the first entry
 					if (swapFrom != null && swapFrom != entry && swapFrom != Iterables.getLast(newEntries))
 					{
-						// Deprioritize entries if the swaps are not in similar type groups
-						if ((swapFrom.getType() >= 1000 && entry.getType() < 1000) || (entry.getType() >= 1000 && swapFrom.getType() < 1000) && !shouldDeprioritize)
+						// Deprioritize entries if the swaps are not in similar opcode groups
+						if ((swapFrom.getOpcode() >= 1000 && entry.getOpcode() < 1000) || (entry.getOpcode() >= 1000 && swapFrom.getOpcode() < 1000) && !shouldDeprioritize)
 						{
 							shouldDeprioritize = true;
 						}
@@ -231,9 +227,9 @@ public class MenuManager
 		{
 			for (MenuEntry entry : newEntries)
 			{
-				if (entry.getType() <= MENU_ACTION_DEPRIORITIZE_OFFSET)
+				if (entry.getOpcode() <= MENU_ACTION_DEPRIORITIZE_OFFSET)
 				{
-					entry.setType(entry.getType() + MENU_ACTION_DEPRIORITIZE_OFFSET);
+					entry.setOpcode(entry.getOpcode() + MENU_ACTION_DEPRIORITIZE_OFFSET);
 				}
 			}
 		}
@@ -250,83 +246,83 @@ public class MenuManager
 
 		// Need to set the event entries to prevent conflicts
 		event.setMenuEntries(arrayEntries);
-		client.setMenuEntries(arrayEntries);
+		event.setModified();
 	}
 
-	@Subscribe
-	public void onMenuEntryAdded(MenuEntryAdded event)
+	private void onMenuEntryAdded(MenuEntryAdded event)
 	{
-		int widgetId = event.getActionParam1();
-		Collection<WidgetMenuOption> options = managedMenuOptions.get(widgetId);
-		MenuEntry[] menuEntries = client.getMenuEntries();
-
-		for (WidgetMenuOption currentMenu : options)
+		if (client.isSpellSelected())
 		{
-			if (!menuContainsCustomMenu(currentMenu))//Don't add if we have already added it to this widget
+			return;
+		}
+
+		for (AbstractComparableEntry e : hiddenEntries)
+		{
+			if (e.matches(event))
 			{
-				menuEntries = Arrays.copyOf(menuEntries, menuEntries.length + 1);
+				client.setMenuOptionCount(client.getMenuOptionCount() - 1);
+				return;
+			}
+		}
 
-				MenuEntry menuEntry = menuEntries[menuEntries.length - 1] = new MenuEntry();
-				menuEntry.setOption(currentMenu.getMenuOption());
-				menuEntry.setParam1(widgetId);
-				menuEntry.setTarget(currentMenu.getMenuTarget());
-				menuEntry.setType(MenuAction.RUNELITE.getId());
+		int widgetId = event.getParam1();
+		if (managedMenuOptions.containsKey(widgetId))
+		{
+			Collection<WidgetMenuOption> options = managedMenuOptions.get(widgetId);
 
-				client.setMenuEntries(menuEntries);
+			for (WidgetMenuOption currentMenu : options)
+			{
+				if (!menuContainsCustomMenu(currentMenu))//Don't add if we have already added it to this widget
+				{
+					client.insertMenuItem(
+						currentMenu.getMenuOption(),
+						currentMenu.getMenuTarget(),
+						MenuOpcode.RUNELITE.getId(),
+						0,
+						0,
+						widgetId,
+						false
+					);
+				}
 			}
 		}
 	}
 
-	@Subscribe
-	public void onBeforeRender(BeforeRender event)
+	private void rebuildLeftClickMenu()
 	{
 		leftClickEntry = null;
-
 		if (client.isMenuOpen())
 		{
 			return;
 		}
 
-		rebuildLeftClickMenu();
-	}
-
-	private void rebuildLeftClickMenu()
-	{
-		entries.clear();
-		entries.addAll(Arrays.asList(client.getMenuEntries()));
-
-		if (entries.size() < 2)
+		int menuOptionCount = client.getMenuOptionCount();
+		if (menuOptionCount <= 2)
 		{
 			return;
 		}
 
-		if (!hiddenEntries.isEmpty())
-		{
-			currentHiddenEntries.clear();
-			indexHiddenEntries(entries);
-
-			if (!currentHiddenEntries.isEmpty())
-			{
-				entries.removeAll(currentHiddenEntries);
-			}
-		}
+		MenuEntry[] entries = new MenuEntry[menuOptionCount + priorityEntries.size()];
+		System.arraycopy(client.getMenuEntries(), 0, entries, 0, menuOptionCount);
 
 		if (!priorityEntries.isEmpty())
 		{
-			indexPriorityEntries(entries);
+			indexPriorityEntries(entries, menuOptionCount);
 		}
 
 		if (leftClickEntry == null && !swaps.isEmpty())
 		{
-			indexSwapEntries(entries);
+			indexSwapEntries(entries, menuOptionCount);
 		}
 
-		if (leftClickEntry != null)
+
+		if (leftClickEntry == null)
 		{
-			entries.remove(leftClickEntry);
-			entries.add(leftClickEntry);
-			client.setMenuEntries(entries.toArray(new MenuEntry[0]));
+			// stop being null smh
+			leftClickEntry = entries[menuOptionCount - 1];
 		}
+
+		client.setMenuEntries(entries);
 	}
 
 	public void addPlayerMenuItem(String menuText)
@@ -355,8 +351,7 @@ public class MenuManager
 		}
 	}
 
-	@Subscribe
-	public void onPlayerMenuOptionsChanged(PlayerMenuOptionsChanged event)
+	private void onPlayerMenuOptionsChanged(PlayerMenuOptionsChanged event)
 	{
 		int idx = event.getIndex();
 
@@ -380,8 +375,7 @@ public class MenuManager
 		addPlayerMenuItem(newIdx, menuText);
 	}
 
-	@Subscribe
-	public void onNpcActionChanged(NpcActionChanged event)
+	private void onNpcActionChanged(NpcActionChanged event)
 	{
 		NPCDefinition composition = event.getNpcDefinition();
 		for (String npcOption : npcMenuOptions)
@@ -430,12 +424,21 @@ public class MenuManager
 		}
 	}
 
-	@Subscribe
-	public void onMenuOptionClicked(MenuOptionClicked event)
+	private void onWidgetPressed(WidgetPressed event)
 	{
-		if (!client.isMenuOpen())
+		rebuildLeftClickMenu();
+		client.setTempMenuEntry(leftClickEntry);
+	}
+
+	private void onMenuOptionClicked(MenuOptionClicked event)
+	{
+		// option and target will be the same if this one came from "tempMenuAction"
+		if (!client.isMenuOpen() && !event.getOption().equals(event.getTarget()) && event.isAuthentic())
 		{
-			rebuildLeftClickMenu();
+			if (!event.equals(leftClickEntry))
+			{
+				rebuildLeftClickMenu();
+			}
 
 			if (leftClickEntry != null)
 			{
@@ -444,12 +447,12 @@ public class MenuManager
 			}
 		}
 
-		if (event.getMenuAction() != MenuAction.RUNELITE)
+		if (event.getMenuOpcode() != MenuOpcode.RUNELITE)
 		{
 			return; // not a player menu
 		}
 
-		int widgetId = event.getActionParam1();
+		int widgetId = event.getParam1();
 		Collection<WidgetMenuOption> options = managedMenuOptions.get(widgetId);
 
 		for (WidgetMenuOption curMenuOption : options)
@@ -461,29 +464,25 @@ public class MenuManager
 				customMenu.setMenuOption(event.getOption());
 				customMenu.setMenuTarget(event.getTarget());
 				customMenu.setWidget(curMenuOption.getWidget());
-				eventBus.post(customMenu);
+				eventBus.post(WidgetMenuOptionClicked.class, customMenu);
 				return; // don't continue because it's not a player option
 			}
 		}
 
-		String target = event.getTarget();
-
-		// removes tags and level from player names for example:
-		// <col=ffffff>username<col=40ff00>  (level-42) or <col=ffffff><img=2>username</col>
-		String username = Text.removeTags(target).split("[(]")[0].trim();
+		String username = Text.removeTags(event.getTarget(), true);
 
 		PlayerMenuOptionClicked playerMenuOptionClicked = new PlayerMenuOptionClicked();
 		playerMenuOptionClicked.setMenuOption(event.getOption());
 		playerMenuOptionClicked.setMenuTarget(username);
 
-		eventBus.post(playerMenuOptionClicked);
+		eventBus.post(PlayerMenuOptionClicked.class, playerMenuOptionClicked);
 	}
 
 	private void addPlayerMenuItem(int playerOptionIndex, String menuText)
 	{
 		client.getPlayerOptions()[playerOptionIndex] = menuText;
 		client.getPlayerOptionsPriorities()[playerOptionIndex] = true;
-		client.getPlayerMenuTypes()[playerOptionIndex] = MenuAction.RUNELITE.getId();
+		client.getPlayerMenuTypes()[playerOptionIndex] = MenuOpcode.RUNELITE.getId();
 
 		playerMenuIndexMap.put(playerOptionIndex, menuText);
 	}
@@ -510,15 +509,38 @@ public class MenuManager
 		return index;
 	}
 
+	public int getPlayerAttackOpcode()
+	{
+		final String[] playerMenuOptions = client.getPlayerOptions();
+
+		if (playerAttackIdx != -1 && playerMenuOptions[playerAttackIdx].equals("Attack"))
+		{
+			return client.getPlayerMenuTypes()[playerAttackIdx];
+		}
+
+		playerAttackIdx = -1;
+
+		for (int i = IDX_LOWER; i < IDX_UPPER; i++)
+		{
+			if ("Attack".equals(playerMenuOptions[i]))
+			{
+				playerAttackIdx = i;
+				break;
+			}
+		}
+
+		return playerAttackIdx >= 0 ? client.getPlayerMenuTypes()[playerAttackIdx] : -1;
+	}
+
 	/**
 	 * Adds to the set of menu entries which when present, will remove all entries except for this one
 	 */
-	public ComparableEntry addPriorityEntry(String option, String target)
+	public AbstractComparableEntry addPriorityEntry(String option, String target)
 	{
-		option = Text.standardize(option);
+		option = option.trim().toLowerCase();
 		target = Text.standardize(target);
 
-		ComparableEntry entry = new ComparableEntry(option, target);
+		AbstractComparableEntry entry = newBaseComparableEntry(option, target);
 
 		priorityEntries.add(entry);
 
@@ -527,12 +549,12 @@ public class MenuManager
 
 	public void removePriorityEntry(String option, String target)
 	{
-		option = Text.standardize(option);
+		option = option.trim().toLowerCase();
 		target = Text.standardize(target);
 
-		ComparableEntry entry = new ComparableEntry(option, target);
+		AbstractComparableEntry entry = newBaseComparableEntry(option, target);
 
-		priorityEntries.removeIf(entry::equals);
+		priorityEntries.remove(entry);
 	}
 
 
@@ -540,24 +562,68 @@ public class MenuManager
 	 * Adds to the set of menu entries which when present, will remove all entries except for this one
 	 * This method will add one with strict option, but not-strict target (contains for target, equals for option)
 	 */
-	public ComparableEntry addPriorityEntry(String option)
+	public AbstractComparableEntry addPriorityEntry(String option)
 	{
-		option = Text.standardize(option);
+		option = option.trim().toLowerCase();
 
-		ComparableEntry entry = new ComparableEntry(option, "", false);
+		AbstractComparableEntry entry = newBaseComparableEntry(option, "", false);
 
 		priorityEntries.add(entry);
 
 		return entry;
 	}
 
+	public AbstractComparableEntry addPriorityEntry(String option, boolean strictOption)
+	{
+		option = option.trim().toLowerCase();
+
+		AbstractComparableEntry entry =
+			newBaseComparableEntry(option, "", -1, -1, false, strictOption);
+
+		priorityEntries.add(entry);
+
+		return entry;
+	}
+
+	public AbstractComparableEntry addPriorityEntry(AbstractComparableEntry entry)
+	{
+		priorityEntries.add(entry);
+
+		return entry;
+	}
+
+	public void removePriorityEntry(AbstractComparableEntry entry)
+	{
+		priorityEntries.remove(entry);
+	}
+
 	public void removePriorityEntry(String option)
 	{
-		option = Text.standardize(option);
+		option = option.trim().toLowerCase();
 
-		ComparableEntry entry = new ComparableEntry(option, "", false);
+		AbstractComparableEntry entry = newBaseComparableEntry(option, "", false);
 
-		priorityEntries.removeIf(entry::equals);
+		priorityEntries.remove(entry);
+	}
+
+	public void removePriorityEntry(String option, boolean strictOption)
+	{
+		option = option.trim().toLowerCase();
+
+		AbstractComparableEntry entry =
+			newBaseComparableEntry(option, "", -1, -1, false, strictOption);
+
+		priorityEntries.remove(entry);
+	}
+
+	public void addPriorityEntries(Collection<AbstractComparableEntry> entries)
+	{
+		priorityEntries.addAll(entries);
+	}
+
+	public void removePriorityEntries(Collection<AbstractComparableEntry> entries)
+	{
+		priorityEntries.removeAll(entries);
 	}
 
 	/**
@@ -576,16 +642,16 @@ public class MenuManager
 	/**
 	 * Adds to the map of swaps.
 	 */
-	public void addSwap(String option, String target, String option2, String target2, boolean strictOption, boolean strictTarget)
+	private void addSwap(String option, String target, String option2, String target2, boolean strictOption, boolean strictTarget)
 	{
-		option = Text.standardize(option);
+		option = option.trim().toLowerCase();
 		target = Text.standardize(target);
 
-		option2 = Text.standardize(option2);
+		option2 = option2.trim().toLowerCase();
 		target2 = Text.standardize(target2);
 
-		ComparableEntry swapFrom = new ComparableEntry(option, target, -1, -1, strictOption, strictTarget);
-		ComparableEntry swapTo = new ComparableEntry(option2, target2, -1, -1, strictOption, strictTarget);
+		AbstractComparableEntry swapFrom = newBaseComparableEntry(option, target, -1, -1, strictOption, strictTarget);
+		AbstractComparableEntry swapTo = newBaseComparableEntry(option2, target2, -1, -1, strictOption, strictTarget);
 
 		if (swapTo.equals(swapFrom))
 		{
@@ -597,16 +663,16 @@ public class MenuManager
 	}
 
 
-	public void removeSwap(String option, String target, String option2, String target2, boolean strictOption, boolean strictTarget)
+	private void removeSwap(String option, String target, String option2, String target2, boolean strictOption, boolean strictTarget)
 	{
-		option = Text.standardize(option);
+		option = option.trim().toLowerCase();
 		target = Text.standardize(target);
 
-		option2 = Text.standardize(option2);
+		option2 = option2.trim().toLowerCase();
 		target2 = Text.standardize(target2);
 
-		ComparableEntry swapFrom = new ComparableEntry(option, target, -1, -1, strictOption, strictTarget);
-		ComparableEntry swapTo = new ComparableEntry(option2, target2, -1, -1, strictOption, strictTarget);
+		AbstractComparableEntry swapFrom = newBaseComparableEntry(option, target, -1, -1, strictOption, strictTarget);
+		AbstractComparableEntry swapTo = newBaseComparableEntry(option2, target2, -1, -1, strictOption, strictTarget);
 
 		removeSwap(swapFrom, swapTo);
 	}
@@ -627,7 +693,7 @@ public class MenuManager
 	/**
 	 * Adds to the map of swaps - Pre-baked entry
 	 */
-	public void addSwap(ComparableEntry swapFrom, ComparableEntry swapTo)
+	public void addSwap(AbstractComparableEntry swapFrom, AbstractComparableEntry swapTo)
 	{
 		if (swapTo.equals(swapFrom))
 		{
@@ -639,19 +705,19 @@ public class MenuManager
 	}
 
 	/**
-	 * Adds to the map of swaps - Non-strict option/target, but with type & id
+	 * Adds to the map of swaps - Non-strict option/target, but with opcode & id
 	 * ID's of -1 are ignored in matches()!
 	 */
 	public void addSwap(String option, String target, int id, int type, String option2, String target2, int id2, int type2)
 	{
-		option = Text.standardize(option);
+		option = option.trim().toLowerCase();
 		target = Text.standardize(target);
 
-		option2 = Text.standardize(option2);
+		option2 = option2.trim().toLowerCase();
 		target2 = Text.standardize(target2);
 
-		ComparableEntry swapFrom = new ComparableEntry(option, target, id, type, false, false);
-		ComparableEntry swapTo = new ComparableEntry(option2, target2, id2, type2, false, false);
+		AbstractComparableEntry swapFrom = newBaseComparableEntry(option, target, id, type, false, false);
+		AbstractComparableEntry swapTo = newBaseComparableEntry(option2, target2, id2, type2, false, false);
 
 		if (swapTo.equals(swapFrom))
 		{
@@ -664,19 +730,19 @@ public class MenuManager
 
 	public void removeSwap(String option, String target, int id, int type, String option2, String target2, int id2, int type2)
 	{
-		option = Text.standardize(option);
+		option = option.trim().toLowerCase();
 		target = Text.standardize(target);
 
-		option2 = Text.standardize(option2);
+		option2 = option2.trim().toLowerCase();
 		target2 = Text.standardize(target2);
 
-		ComparableEntry swapFrom = new ComparableEntry(option, target, id, type, false, false);
-		ComparableEntry swapTo = new ComparableEntry(option2, target2, id2, type2, false, false);
+		AbstractComparableEntry swapFrom = newBaseComparableEntry(option, target, id, type, false, false);
+		AbstractComparableEntry swapTo = newBaseComparableEntry(option2, target2, id2, type2, false, false);
 
 		swaps.entrySet().removeIf(e -> e.getKey().equals(swapFrom) && e.getValue().equals(swapTo));
 	}
 
-	public void removeSwap(ComparableEntry swapFrom, ComparableEntry swapTo)
+	public void removeSwap(AbstractComparableEntry swapFrom, AbstractComparableEntry swapTo)
 	{
 		swaps.entrySet().removeIf(e -> e.getKey().equals(swapFrom) && e.getValue().equals(swapTo));
 	}
@@ -684,11 +750,15 @@ public class MenuManager
 	/**
 	 * Removes all swaps with target
 	 */
-	public void removeSwaps(String withTarget)
+	public void removeSwaps(String... fromTarget)
 	{
-		final String target = Text.standardize(withTarget);
-
-		swaps.keySet().removeIf(e -> e.getTarget().equals(target));
+		for (String target : fromTarget)
+		{
+			final String s = Text.standardize(target);
+			swaps.keySet().removeIf(e -> e.getTarget() != null && e.getTarget().equals(s));
+			priorityEntries.removeIf(e -> e.getTarget() != null && e.getTarget().equals(s));
+			hiddenEntries.removeIf(e -> e.getTarget() != null && e.getTarget().equals(s));
+		}
 	}
 
 	/**
@@ -696,20 +766,20 @@ public class MenuManager
 	 */
 	public void addHiddenEntry(String option, String target)
 	{
-		option = Text.standardize(option);
+		option = option.trim().toLowerCase();
 		target = Text.standardize(target);
 
-		ComparableEntry entry = new ComparableEntry(option, target);
+		AbstractComparableEntry entry = newBaseComparableEntry(option, target);
 
 		hiddenEntries.add(entry);
 	}
 
 	public void removeHiddenEntry(String option, String target)
 	{
-		option = Text.standardize(option);
+		option = option.trim().toLowerCase();
 		target = Text.standardize(target);
 
-		ComparableEntry entry = new ComparableEntry(option, target);
+		AbstractComparableEntry entry = newBaseComparableEntry(option, target);
 
 		hiddenEntries.removeIf(entry::equals);
 	}
@@ -720,18 +790,18 @@ public class MenuManager
 	 */
 	public void addHiddenEntry(String option)
 	{
-		option = Text.standardize(option);
+		option = option.trim().toLowerCase();
 
-		ComparableEntry entry = new ComparableEntry(option, "", false);
+		AbstractComparableEntry entry = newBaseComparableEntry(option, "", false);
 
 		hiddenEntries.add(entry);
 	}
 
 	public void removeHiddenEntry(String option)
 	{
-		option = Text.standardize(option);
+		option = option.trim().toLowerCase();
 
-		ComparableEntry entry = new ComparableEntry(option, "", false);
+		AbstractComparableEntry entry = newBaseComparableEntry(option, "", false);
 
 		hiddenEntries.removeIf(entry::equals);
 	}
@@ -741,20 +811,20 @@ public class MenuManager
 	 */
 	public void addHiddenEntry(String option, String target, boolean strictOption, boolean strictTarget)
 	{
-		option = Text.standardize(option);
+		option = option.trim().toLowerCase();
 		target = Text.standardize(target);
 
-		ComparableEntry entry = new ComparableEntry(option, target, -1, -1, strictOption, strictTarget);
+		AbstractComparableEntry entry = newBaseComparableEntry(option, target, -1, -1, strictOption, strictTarget);
 
 		hiddenEntries.add(entry);
 	}
 
 	public void removeHiddenEntry(String option, String target, boolean strictOption, boolean strictTarget)
 	{
-		option = Text.standardize(option);
+		option = option.trim().toLowerCase();
 		target = Text.standardize(target);
 
-		ComparableEntry entry = new ComparableEntry(option, target, -1, -1, strictOption, strictTarget);
+		AbstractComparableEntry entry = newBaseComparableEntry(option, target, -1, -1, strictOption, strictTarget);
 
 		hiddenEntries.remove(entry);
 	}
@@ -762,67 +832,114 @@ public class MenuManager
 	/**
 	 * Adds to the set of hidden entries - Pre-baked Comparable entry
 	 */
-	public void addHiddenEntry(ComparableEntry entry)
+	public void addHiddenEntry(AbstractComparableEntry entry)
 	{
 		hiddenEntries.add(entry);
 	}
 
-	public void removeHiddenEntry(ComparableEntry entry)
+	public void removeHiddenEntry(AbstractComparableEntry entry)
 	{
 		hiddenEntries.remove(entry);
 	}
 
-	private void indexHiddenEntries(Set<MenuEntry> entries)
-	{
-		currentHiddenEntries = entries.parallelStream().filter(entry ->
-		{
-			for (ComparableEntry p : hiddenEntries)
-			{
-				if (p.matches(entry))
-				{
-					return true;
-				}
-			}
-			return false;
-		}).collect(Collectors.toCollection(HashSet::new));
-	}
-
 	// This could use some optimization
-	private void indexPriorityEntries(Set<MenuEntry> entries)
+	private void indexPriorityEntries(MenuEntry[] entries, int menuOptionCount)
 	{
-		safeCurrentPriorityEntries.clear();
-		entries.parallelStream().forEach(entry ->
-		{
-			for (ComparableEntry p : priorityEntries)
-			{
-				if (p.matches(entry))
-				{
-					safeCurrentPriorityEntries.put(entry, p);
-					break;
-				}
-			}
-		});
+		// create a array of priority entries so we can sort those
+		final SortMapping[] prios = new SortMapping[entries.length - menuOptionCount];
 
-		leftClickEntry = Iterables.getLast(safeCurrentPriorityEntries.entrySet().stream()
-			.sorted(Comparator.comparingInt(e -> e.getValue().getPriority()))
-			.map(Map.Entry::getKey)
-			.collect(Collectors.toList()), null);
+		int prioAmt = 0;
+		for (int i = 0; i < menuOptionCount; i++)
+		{
+			final MenuEntry entry = entries[i];
+			for (AbstractComparableEntry prio : priorityEntries)
+			{
+				if (!prio.matches(entry))
+				{
+					continue;
+				}
+
+				final SortMapping map = new SortMapping(prio.getPriority(), entry);
+				prios[prioAmt++] = map;
+				entries[i] = null;
+				break;
+			}
+		}
+
+		if (prioAmt == 0)
+		{
+			return;
+		}
+
+		// Sort em!
+		Arrays.sort(prios, 0, prioAmt);
+		int i;
+
+		// Just place them after the standard entries. clientmixin ignores null entries
+		for (i = 0; i < prioAmt; i++)
+		{
+			entries[menuOptionCount + i] = prios[i].entry;
+		}
+
+		leftClickEntry = entries[menuOptionCount + i - 1];
+
 	}
 
-	private void indexSwapEntries(Set<MenuEntry>  entries)
+	private void indexSwapEntries(MenuEntry[] entries, int menuOptionCount)
 	{
-		MenuEntry first = Iterables.getLast(entries);
-
-		leftClickEntry = entries.parallelStream().filter(entry ->
+		// firstEntry was null, so it's the entry at count - 1
+		final MenuEntry first = entries[menuOptionCount - 1];
+		if (first == null)
 		{
-			for (Map.Entry<ComparableEntry, ComparableEntry> p : swaps.entrySet())
+			log.debug("First entry is null");
+			return;
+		}
+
+		Set<AbstractComparableEntry> values = new HashSet<>();
+
+		for (Map.Entry<AbstractComparableEntry, AbstractComparableEntry> pair : swaps.entrySet())
+		{
+			if (pair.getKey().matches(first))
 			{
-				if (p.getKey().matches(first) && p.getValue().matches(entry))
-				{
-					return true;
-				}
+				values.add(pair.getValue());
 			}
-			return false;
-		}).findFirst().orElse(null);
+		}
+
+		if (values.isEmpty())
+		{
+			return;
+		}
+
+		// Backwards so we swap with the otherwise highest one
+		// Count - 2 so we don't compare the entry against itself
+		for (int i = menuOptionCount - 2; i > 0; i--)
+		{
+			final MenuEntry entry = entries[i];
+			for (AbstractComparableEntry swap : values)
+			{
+				if (!swap.matches(entry))
+				{
+					continue;
+				}
+
+				entries[i] = first;
+				entries[menuOptionCount - 1] = entry;
+				leftClickEntry = entry;
+				return;
+			}
+		}
+	}
+
+	@AllArgsConstructor
+	private static class SortMapping implements Comparable<SortMapping>
+	{
+		private final int priority;
+		private final MenuEntry entry;
+
+		@Override
+		public int compareTo(@Nonnull SortMapping mapping)
+		{
+			return Integer.compare(this.priority, mapping.priority);
+		}
 	}
 }

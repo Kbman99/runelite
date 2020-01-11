@@ -47,18 +47,8 @@ public class SpecBarPlugin extends Plugin
 	@Inject
 	private Client client;
 
-	@Override
-	protected void startUp() throws Exception
-	{
-	}
-
-	@Override
-	protected void shutDown() throws Exception
-	{
-	}
-
 	@Subscribe
-	public void onScriptCallbackEvent(ScriptCallbackEvent event)
+	private void onScriptCallbackEvent(ScriptCallbackEvent event)
 	{
 		if (!"drawSpecbarAnyway".equals(event.getEventName()))
 		{

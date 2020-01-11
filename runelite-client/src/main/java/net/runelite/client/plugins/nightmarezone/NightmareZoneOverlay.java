@@ -30,7 +30,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.runelite.api.Client;
 import net.runelite.api.ItemID;
-import static net.runelite.api.MenuAction.RUNELITE_OVERLAY_CONFIG;
+import static net.runelite.api.MenuOpcode.RUNELITE_OVERLAY_CONFIG;
 import net.runelite.api.VarPlayer;
 import net.runelite.api.Varbits;
 import net.runelite.api.widgets.Widget;
@@ -45,7 +45,7 @@ import net.runelite.client.ui.overlay.components.PanelComponent;
 import net.runelite.client.ui.overlay.components.table.TableAlignment;
 import net.runelite.client.ui.overlay.components.table.TableComponent;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
-import net.runelite.client.util.StackFormatter;
+import net.runelite.client.util.QuantityFormatter;
 
 @Singleton
 class NightmareZoneOverlay extends Overlay
@@ -102,16 +102,21 @@ class NightmareZoneOverlay extends Overlay
 
 		renderAbsorptionCounter();
 
+		final int currentPoints = client.getVar(Varbits.NMZ_POINTS);
+		final int totalPoints = currentPoints + client.getVar(VarPlayer.NMZ_REWARD_POINTS);
+
 		panelComponent.getChildren().clear();
+
 		TableComponent tableComponent = new TableComponent();
 		tableComponent.setColumnAlignments(TableAlignment.LEFT, TableAlignment.RIGHT);
-		tableComponent.addRow("Points:", StackFormatter.formatNumber(client.getVar(Varbits.NMZ_POINTS)));
-		
+		tableComponent.addRow("Points:", QuantityFormatter.formatNumber(currentPoints));
+		tableComponent.addRow("Points/Hour:", QuantityFormatter.formatNumber(plugin.getPointsPerHour()));
+
 		if (plugin.isShowtotalpoints())
 		{
-			tableComponent.addRow("Total:", StackFormatter.formatNumber(client.getVar(VarPlayer.NMZ_REWARD_POINTS) + client.getVar(Varbits.NMZ_POINTS)));
+			tableComponent.addRow("Total:", QuantityFormatter.formatNumber(totalPoints));
 		}
-		
+
 		panelComponent.getChildren().add(tableComponent);
 
 		return panelComponent.render(graphics);

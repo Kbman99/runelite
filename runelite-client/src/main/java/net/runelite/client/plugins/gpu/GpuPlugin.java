@@ -56,26 +56,27 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.BufferProvider;
 import net.runelite.api.Client;
 import net.runelite.api.Constants;
+import net.runelite.api.Entity;
 import net.runelite.api.GameState;
 import net.runelite.api.Model;
 import net.runelite.api.NodeCache;
 import net.runelite.api.Perspective;
-import net.runelite.api.Renderable;
 import net.runelite.api.Scene;
-import net.runelite.api.SceneTileModel;
-import net.runelite.api.SceneTilePaint;
 import net.runelite.api.Texture;
 import net.runelite.api.TextureProvider;
-import net.runelite.api.events.ConfigChanged;
+import net.runelite.api.TileModel;
+import net.runelite.api.TilePaint;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.hooks.DrawCallbacks;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginInstantiationException;
 import net.runelite.client.plugins.PluginManager;
+import net.runelite.client.plugins.PluginType;
 import static net.runelite.client.plugins.gpu.GLUtil.*;
 import net.runelite.client.plugins.gpu.config.AnisotropicFilteringMode;
 import net.runelite.client.plugins.gpu.config.AntiAliasingMode;
@@ -87,7 +88,8 @@ import net.runelite.client.util.OSType;
 	name = "GPU",
 	description = "Utilizes the GPU",
 	enabledByDefault = false,
-	tags = {"fog", "draw distance"}
+	tags = {"fog", "draw distance"},
+	type = PluginType.MISCELLANEOUS
 )
 @Slf4j
 @Singleton
@@ -212,6 +214,8 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 
 	private int centerX;
 	private int centerY;
+	private int yaw;
+	private int pitch;
 
 	// Uniforms
 	private int uniUseFog;
@@ -239,7 +243,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	private int fogDensity;
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (event.getGroup().equals("gpu"))
 		{
@@ -262,6 +266,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	protected void startUp()
 	{
 		updateConfig();
+
 		clientThread.invoke(() ->
 		{
 			try
@@ -269,15 +274,21 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 				bufferId = uvBufferId = uniformBufferId = -1;
 				unorderedModels = smallModels = largeModels = 0;
 
+				canvas = client.getCanvas();
+
+				if (!canvas.isDisplayable())
+				{
+					return false;
+				}
+
+				canvas.setIgnoreRepaint(true);
+
 				vertexBuffer = new GpuIntBuffer();
 				uvBuffer = new GpuFloatBuffer();
 
 				modelBufferUnordered = new GpuIntBuffer();
 				modelBufferSmall = new GpuIntBuffer();
 				modelBuffer = new GpuIntBuffer();
-
-				canvas = client.getCanvas();
-				canvas.setIgnoreRepaint(true);
 
 				GLProfile.initSingleton();
 
@@ -355,7 +366,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 
 				shutDown();
 			}
-
+			return true;
 		});
 	}
 
@@ -734,6 +745,8 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	{
 		centerX = client.getCenterX();
 		centerY = client.getCenterY();
+		yaw = client.getCameraYaw();
+		pitch = client.getCameraPitch();
 
 		final Scene scene = client.getScene();
 		final int drawDistance = Math.max(0, Math.min(MAX_DISTANCE, this.drawDistance));
@@ -741,7 +754,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	}
 
 	public void drawScenePaint(int orientation, int pitchSin, int pitchCos, int yawSin, int yawCos, int x, int y, int z,
-							SceneTilePaint paint, int tileZ, int tileX, int tileY,
+							TilePaint paint, int tileZ, int tileX, int tileY,
 							int zoom, int centerX, int centerY)
 	{
 		if (paint.getBufferLen() > 0)
@@ -767,7 +780,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	}
 
 	public void drawSceneModel(int orientation, int pitchSin, int pitchCos, int yawSin, int yawCos, int x, int y, int z,
-							SceneTileModel model, int tileZ, int tileX, int tileY,
+							TileModel model, int tileZ, int tileX, int tileY,
 							int zoom, int centerX, int centerY)
 	{
 		if (model.getBufferLen() > 0)
@@ -800,8 +813,14 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 			// We inject code in the game engine mixin to prevent the client from doing canvas replacement,
 			// so this should not ever be hit
 			log.warn("Canvas invalidated!");
-			shutDown();
-			startUp();
+			try
+			{
+				shutDown();
+				startUp();
+			}
+			catch (Exception ignored)
+			{
+			}
 			return;
 		}
 
@@ -841,7 +860,8 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 			// Re-create fbo
 			if (lastStretchedCanvasWidth != stretchedCanvasWidth
 				|| lastStretchedCanvasHeight != stretchedCanvasHeight
-				|| lastAntiAliasingMode != antiAliasingMode)
+				|| (lastAntiAliasingMode != null
+				&& !lastAntiAliasingMode.equals(antiAliasingMode)))
 			{
 				shutdownSceneFbo();
 
@@ -926,8 +946,8 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		gl.glBindBuffer(gl.GL_UNIFORM_BUFFER, uniformBufferId);
 		uniformBuffer.clear();
 		uniformBuffer
-			.put(client.getCameraYaw())
-			.put(client.getCameraPitch())
+			.put(yaw)
+			.put(pitch)
 			.put(centerX)
 			.put(centerY)
 			.put(client.getScale())
@@ -1012,7 +1032,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 			final AnisotropicFilteringMode anisotropicFilteringMode = this.anisotropicFilteringMode;
 			final boolean afEnabled = anisotropicFilteringMode != AnisotropicFilteringMode.DISABLED;
 
-			if (lastAnisotropicFilteringMode != anisotropicFilteringMode)
+			if (lastAnisotropicFilteringMode != null && !lastAnisotropicFilteringMode.equals(anisotropicFilteringMode))
 			{
 				if (afEnabled)
 				{
@@ -1160,7 +1180,14 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		// Texture on UI
 		drawUi(canvasHeight, canvasWidth);
 
-		glDrawable.swapBuffers();
+		try
+		{
+			glDrawable.swapBuffers();
+		}
+		catch (GLException ignored)
+		{
+			// Ignore
+		}
 
 		drawManager.processDrawComplete(this::screenshot);
 	}
@@ -1282,7 +1309,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged)
+	private void onGameStateChanged(GameStateChanged gameStateChanged)
 	{
 		if (gameStateChanged.getGameState() != GameState.LOGGED_IN)
 		{
@@ -1375,9 +1402,9 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	}
 
 	/**
-	 * Draw a renderable in the scene
+	 * Draw a entity in the scene
 	 *
-	 * @param renderable
+	 * @param entity
 	 * @param orientation
 	 * @param pitchSin
 	 * @param pitchCos
@@ -1389,12 +1416,12 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	 * @param hash
 	 */
 	@Override
-	public void draw(Renderable renderable, int orientation, int pitchSin, int pitchCos, int yawSin, int yawCos, int x, int y, int z, long hash)
+	public void draw(Entity entity, int orientation, int pitchSin, int pitchCos, int yawSin, int yawCos, int x, int y, int z, long hash)
 	{
 		// Model may be in the scene buffer
-		if (renderable instanceof Model && ((Model) renderable).getSceneId() == sceneUploader.sceneId)
+		if (entity instanceof Model && ((Model) entity).getSceneId() == sceneUploader.sceneId)
 		{
-			Model model = (Model) renderable;
+			Model model = (Model) entity;
 
 			model.calculateBoundsCylinder();
 			model.calculateExtreme(orientation);
@@ -1454,10 +1481,10 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		else
 		{
 			// Temporary model (animated or otherwise not a static Model on the scene)
-			Model model = renderable instanceof Model ? (Model) renderable : renderable.getModel();
+			Model model = entity instanceof Model ? (Model) entity : entity.getModel();
 			if (model != null)
 			{
-				// Apply height to renderable from the model
+				// Apply height to entity from the model
 				model.setModelHeight(model.getModelHeight());
 
 				model.calculateBoundsCylinder();

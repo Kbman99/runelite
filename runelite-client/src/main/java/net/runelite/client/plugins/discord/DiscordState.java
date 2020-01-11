@@ -46,7 +46,7 @@ import static net.runelite.client.ws.PartyService.PARTY_MAX;
 class DiscordState
 {
 	@Data
-	private class EventWithTime
+	private static class EventWithTime
 	{
 		private final DiscordGameEventType type;
 		private final Instant start;
@@ -57,17 +57,15 @@ class DiscordState
 	private final List<EventWithTime> events = new ArrayList<>();
 	private final DiscordService discordService;
 	private final DiscordPlugin plugin;
-	private PartyService party;
-	private final RuneLiteProperties properties;
+	private final PartyService party;
 	private DiscordPresence lastPresence;
 
 	@Inject
-	private DiscordState(final DiscordService discordService, final DiscordPlugin plugin, final PartyService party, final RuneLiteProperties properties)
+	private DiscordState(final DiscordService discordService, final DiscordPlugin plugin, final PartyService party)
 	{
 		this.discordService = discordService;
 		this.plugin = plugin;
 		this.party = party;
-		this.properties = properties;
 	}
 
 	/**
@@ -173,12 +171,12 @@ class DiscordState
 		}
 
 		// Replace snapshot with + to make tooltip shorter (so it will span only 1 line)
-		final String versionShortHand = properties.getVersion().replace("-SNAPSHOT", "+");
+		final String versionShortHand = RuneLiteProperties.getVersion().replace("-SNAPSHOT", "+");
 
 		final DiscordPresence.DiscordPresenceBuilder presenceBuilder = DiscordPresence.builder()
 			.state(MoreObjects.firstNonNull(state, ""))
 			.details(MoreObjects.firstNonNull(details, ""))
-			.largeImageText(properties.getTitle() + " v" + versionShortHand)
+			.largeImageText(RuneLiteProperties.getTitle() + " v" + versionShortHand)
 			.startTimestamp(event.getStart())
 			.smallImageKey(imageKey)
 			.partyMax(PARTY_MAX)

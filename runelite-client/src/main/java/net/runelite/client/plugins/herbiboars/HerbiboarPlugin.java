@@ -38,6 +38,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import net.runelite.api.Client;
+import net.runelite.api.NPC;
+import net.runelite.api.NpcID;
 import static net.runelite.api.ObjectID.DRIFTWOOD_30523;
 import static net.runelite.api.ObjectID.MUSHROOM_30520;
 import static net.runelite.api.ObjectID.ROCK_30519;
@@ -47,7 +49,7 @@ import net.runelite.api.Tile;
 import net.runelite.api.TileObject;
 import net.runelite.api.Varbits;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.ConfigChanged;
+import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.GameObjectChanged;
 import net.runelite.api.events.GameObjectDespawned;
 import net.runelite.api.events.GameObjectSpawned;
@@ -58,14 +60,17 @@ import net.runelite.api.events.GroundObjectSpawned;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @PluginDescriptor(
 	name = "Herbiboar",
 	description = "Highlight starting rocks, trails, and the objects to search at the end of each trail",
-	tags = {"herblore", "hunter", "skilling", "overlay"}
+	tags = {"herblore", "hunter", "skilling", "overlay"},
+	type = PluginType.SKILLING
 )
 @Singleton
 public class HerbiboarPlugin extends Plugin
@@ -144,9 +149,19 @@ public class HerbiboarPlugin extends Plugin
 	private int finishId;
 
 	@Getter(AccessLevel.PACKAGE)
-	private boolean isStartShown;
+	@Setter(AccessLevel.PACKAGE)
+	private Set<Integer> previousShownTrailIds;
+
 	@Getter(AccessLevel.PACKAGE)
-	private boolean showClickBoxes;
+	@Setter(AccessLevel.PACKAGE)
+	private Integer previousTrailId = null;
+
+	@Getter(AccessLevel.PACKAGE)
+	@Setter(AccessLevel.PACKAGE)
+	private boolean herbiboarRendered = false;
+
+	@Getter(AccessLevel.PACKAGE)
+	private boolean isStartShown;
 	@Getter(AccessLevel.PACKAGE)
 	private Color getStartColor;
 	@Getter(AccessLevel.PACKAGE)
@@ -161,6 +176,12 @@ public class HerbiboarPlugin extends Plugin
 	private boolean isTrailShown;
 	@Getter(AccessLevel.PACKAGE)
 	private Color getTrailColor;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean isOnlyCurrentTrailShown;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean showOutlines;
+	@Getter(AccessLevel.PACKAGE)
+	private RenderStyle outlineStyle;
 
 	@Provides
 	HerbiboarConfig getConfig(ConfigManager configManager)
@@ -169,7 +190,7 @@ public class HerbiboarPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 
@@ -179,7 +200,7 @@ public class HerbiboarPlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
 		overlayManager.remove(minimapOverlay);
@@ -223,6 +244,44 @@ public class HerbiboarPlugin extends Plugin
 		{
 			resetTrailData();
 		}
+
+	}
+
+	public Set<Integer> getCurrentTrailIds()
+	{
+		Set<Integer> shownTrailIds;
+		if (currentTrail == null)
+		{
+			if (finishId <= 0)
+			{
+				previousTrailId = null;
+				shownTrailIds = new HashSet<>();
+			}
+			else
+			{
+				shownTrailIds = new HashSet<>();
+				shownTrailIds.add(previousTrailId);
+				shownTrailIds.add(previousTrailId + 1);
+			}
+		}
+		else if (previousTrailId == null)
+		{
+			previousTrailId = currentTrail.getTrailId();
+			shownTrailIds = getShownTrails();
+		}
+		else if (currentTrail.getTrailId() == previousTrailId)
+		{
+			shownTrailIds = previousShownTrailIds;
+		}
+		else
+		{
+			shownTrailIds = new HashSet<>();
+			shownTrailIds.add(previousTrailId);
+			shownTrailIds.add(previousTrailId + 1);
+			previousTrailId = currentTrail.getTrailId();
+		}
+		previousShownTrailIds = shownTrailIds;
+		return shownTrailIds;
 	}
 
 	private void resetTrailData()
@@ -242,7 +301,7 @@ public class HerbiboarPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		switch (event.getGameState())
 		{
@@ -260,7 +319,7 @@ public class HerbiboarPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onVarbitChanged(VarbitChanged event)
+	private void onVarbitChanged(VarbitChanged event)
 	{
 		if (isInHerbiboarArea())
 		{
@@ -269,37 +328,63 @@ public class HerbiboarPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameObjectSpawned(GameObjectSpawned event)
+	private void onGameObjectSpawned(GameObjectSpawned event)
 	{
 		onGameObject(event.getTile(), null, event.getGameObject());
 	}
 
 	@Subscribe
-	public void onGameObjectChanged(GameObjectChanged event)
+	public void onAnimationChanged(AnimationChanged event)
+	{
+		if (!(event.getActor() instanceof NPC))
+		{
+			return;
+		}
+
+		NPC npc = (NPC) event.getActor();
+		// Herbiboar spawns
+		if (npc.getId() == NpcID.HERBIBOAR_7786 && npc.getAnimation() == 7687)
+		{
+			herbiboarRendered = true;
+		}
+		// Herbiboar is stunned
+		else if (npc.getId() == NpcID.HERBIBOAR && npc.getAnimation() == 7689)
+		{
+			herbiboarRendered = true;
+		}
+		// Herbiboar is harvested
+		else if (npc.getId() == NpcID.HERBIBOAR_7786 && npc.getAnimation() == 7690)
+		{
+			herbiboarRendered = false;
+		}
+	}
+
+	@Subscribe
+	private void onGameObjectChanged(GameObjectChanged event)
 	{
 		onGameObject(event.getTile(), event.getPrevious(), event.getGameObject());
 	}
 
 	@Subscribe
-	public void onGameObjectDespawned(GameObjectDespawned event)
+	private void onGameObjectDespawned(GameObjectDespawned event)
 	{
 		onGameObject(event.getTile(), event.getGameObject(), null);
 	}
 
 	@Subscribe
-	public void onGroundObjectSpawned(GroundObjectSpawned event)
+	private void onGroundObjectSpawned(GroundObjectSpawned event)
 	{
-		onGroundObject( null, event.getGroundObject());
+		onGroundObject(null, event.getGroundObject());
 	}
 
 	@Subscribe
-	public void onGroundObjectChanged(GroundObjectChanged event)
+	private void onGroundObjectChanged(GroundObjectChanged event)
 	{
 		onGroundObject(event.getPrevious(), event.getGroundObject());
 	}
 
 	@Subscribe
-	public void onGroundObjectDespawned(GroundObjectDespawned event)
+	private void onGroundObjectDespawned(GroundObjectDespawned event)
 	{
 		onGroundObject(event.getGroundObject(), null);
 	}
@@ -383,7 +468,7 @@ public class HerbiboarPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (event.getGroup().equals("herbiboar"))
 		{
@@ -394,7 +479,6 @@ public class HerbiboarPlugin extends Plugin
 	private void updateConfig()
 	{
 		this.isStartShown = config.isStartShown();
-		this.showClickBoxes = config.showClickBoxes();
 		this.getStartColor = config.getStartColor();
 		this.isTunnelShown = config.isTunnelShown();
 		this.getTunnelColor = config.getTunnelColor();
@@ -402,5 +486,8 @@ public class HerbiboarPlugin extends Plugin
 		this.getObjectColor = config.getObjectColor();
 		this.isTrailShown = config.isTrailShown();
 		this.getTrailColor = config.getTrailColor();
+		this.isOnlyCurrentTrailShown = config.isOnlyCurrentTrailShown();
+		this.showOutlines = config.showOutlines();
+		this.outlineStyle = config.outlineStyle();
 	}
 }

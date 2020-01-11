@@ -75,7 +75,7 @@ public class MaterialTabGroup extends JPanel
 	public MaterialTab getTab(int index)
 	{
 
-		if (tabs == null || tabs.isEmpty())
+		if (tabs.isEmpty())
 		{
 			return null;
 		}
@@ -87,6 +87,18 @@ public class MaterialTabGroup extends JPanel
 	{
 		tabs.add(tab);
 		add(tab, BorderLayout.NORTH);
+
+		invalidate();
+		repaint();
+	}
+
+	public void removeTab(MaterialTab tab)
+	{
+		tabs.remove(tab);
+		remove(tab);
+
+		invalidate();
+		repaint();
 	}
 
 	/***

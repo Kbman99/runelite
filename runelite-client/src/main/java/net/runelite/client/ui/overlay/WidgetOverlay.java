@@ -46,6 +46,7 @@ public class WidgetOverlay extends Overlay
 		.put(WidgetInfo.FOSSIL_ISLAND_OXYGENBAR, OverlayPosition.TOP_LEFT)
 		.put(WidgetInfo.EXPERIENCE_TRACKER_WIDGET, OverlayPosition.TOP_RIGHT)
 		.put(WidgetInfo.RAIDS_POINTS_INFOBOX, OverlayPosition.TOP_RIGHT)
+		.put(WidgetInfo.GWD_KC, OverlayPosition.TOP_RIGHT)
 		.put(WidgetInfo.TITHE_FARM, OverlayPosition.TOP_RIGHT)
 		.put(WidgetInfo.PEST_CONTROL_BOAT_INFO, OverlayPosition.TOP_LEFT)
 		.put(WidgetInfo.PEST_CONTROL_INFO, OverlayPosition.TOP_LEFT)
@@ -57,6 +58,8 @@ public class WidgetOverlay extends Overlay
 		.put(WidgetInfo.MULTICOMBAT_FIXED, OverlayPosition.BOTTOM_RIGHT)
 		.put(WidgetInfo.MULTICOMBAT_RESIZEABLE, OverlayPosition.CANVAS_TOP_RIGHT)
 		.put(WidgetInfo.PYRAMID_PLUNDER_DATA, OverlayPosition.TOP_CENTER)
+		.put(WidgetInfo.LMS_INFO, OverlayPosition.TOP_CENTER)
+		.put(WidgetInfo.LMS_KDA, OverlayPosition.TOP_CENTER)
 		.put(WidgetInfo.THEATRE_OF_BLOOD_HEALTH_ORBS, OverlayPosition.TOP_LEFT)
 		.build();
 

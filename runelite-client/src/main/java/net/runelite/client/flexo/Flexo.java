@@ -26,7 +26,7 @@
  */
 
 /*
-Modified java.awt.Robot for use with RuneLitePlus. Hopefully we can make it stand far apart.
+Modified java.awt.Robot for use with openosrs. Hopefully we can make it stand far apart.
 Uses
 https://github.com/JoonasVali/NaturalMouseMotion
 for mouse motion.
@@ -51,6 +51,20 @@ import java.awt.peer.RobotPeer;
 import javax.inject.Inject;
 import java.util.Random;
 import java.util.logging.Logger;
+import com.github.joonasvali.naturalmouse.api.MouseMotionFactory;
+import java.awt.AWTException;
+import java.awt.Color;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+import java.awt.Point;
+import java.awt.Robot;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+import java.util.Random;
+import java.util.logging.Logger;
+import net.runelite.api.Client;
+import net.runelite.api.Constants;
+import net.runelite.client.ui.ClientUI;
 
 public class Flexo extends Robot
 {
@@ -67,8 +81,10 @@ public class Flexo extends Robot
 	public static MouseMotionFactory currentMouseMotionFactory;
 	public static MouseMotion mouseMotion;
 	public boolean pausedIndefinitely = false;
+
 	private Thread holdKeyThread;
-	private RobotPeer peer;
+
+	private Robot peer;
 
 	@Inject
 	private ConfigManager configManager;
@@ -89,38 +105,21 @@ public class Flexo extends Robot
 			.getDefaultScreenDevice());
 	}
 
-	private void init(GraphicsDevice screen) throws AWTException
+	private void init(GraphicsDevice screen)
 	{
-		Toolkit toolkit = Toolkit.getDefaultToolkit();
-		if (toolkit instanceof ComponentFactory)
+		try
 		{
-			peer = ((ComponentFactory) toolkit).createRobot(this, screen);
-			RobotDisposer disposer = new RobotDisposer(peer);
-			sun.java2d.Disposer.addRecord(anchor, disposer);
+			peer = new Robot();
+		}
+		catch (Exception e)
+		{
+			client.getLogger().error("Flexo not supported on this system configuration.");
 		}
 	}
 
 	private transient Object anchor = new Object();
 
-	static class RobotDisposer implements sun.java2d.DisposerRecord
-	{
-		private final RobotPeer peer;
-
-		private RobotDisposer(RobotPeer peer)
-		{
-			this.peer = peer;
-		}
-
-		public void dispose()
-		{
-			if (peer != null)
-			{
-				peer.dispose();
-			}
-		}
-	}
-
-	public void pauseMS(int delayMS)
+	private void pauseMS(int delayMS)
 	{
 		long initialMS = System.currentTimeMillis();
 		while (System.currentTimeMillis() < initialMS + delayMS)
@@ -387,11 +386,9 @@ public class Flexo extends Robot
 		this.delay(getMinDelay());
 	}
 
-	@Override
 	public Color getPixelColor(int x, int y)
 	{
-		Color color = new Color(peer.getRGBPixel(x, y));
-		return color;
+		return peer.getPixelColor(x, y);
 	}
 
 	@Override

@@ -29,6 +29,7 @@ import com.google.inject.Inject;
 import com.google.inject.testing.fieldbinder.Bind;
 import com.google.inject.testing.fieldbinder.BoundFieldModule;
 import java.util.EnumSet;
+import net.runelite.api.Actor;
 import net.runelite.api.AnimationID;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -38,25 +39,27 @@ import net.runelite.api.NPCDefinition;
 import net.runelite.api.Player;
 import net.runelite.api.VarPlayer;
 import net.runelite.api.WorldType;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.InteractingChanged;
 import net.runelite.client.Notifier;
+import net.runelite.client.config.OpenOSRSConfig;
 import net.runelite.client.game.SoundManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Matchers;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Mock;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class IdleNotifierPluginTest
@@ -79,6 +82,10 @@ public class IdleNotifierPluginTest
 	@Bind
 	private Notifier notifier;
 
+	@Mock
+	@Bind
+	private OpenOSRSConfig openOSRSConfig;
+
 	@Inject
 	private IdleNotifierPlugin plugin;
 
@@ -97,13 +104,13 @@ public class IdleNotifierPluginTest
 		Guice.createInjector(BoundFieldModule.of(this)).injectMembers(this);
 
 		// Mock monster
-		final String[] monsterActions = new String[] { "Attack", "Examine" };
+		final String[] monsterActions = new String[]{"Attack", "Examine"};
 		final NPCDefinition monsterComp = mock(NPCDefinition.class);
 		when(monsterComp.getActions()).thenReturn(monsterActions);
 		when(monster.getDefinition()).thenReturn(monsterComp);
 
 		// Mock random event
-		final String[] randomEventActions = new String[] { "Talk-to", "Dismiss", "Examine" };
+		final String[] randomEventActions = new String[]{"Talk-to", "Dismiss", "Examine"};
 		final NPCDefinition randomEventComp = mock(NPCDefinition.class);
 		when(randomEventComp.getActions()).thenReturn(randomEventActions);
 		when(randomEvent.getDefinition()).thenReturn(randomEventComp);
@@ -201,13 +208,11 @@ public class IdleNotifierPluginTest
 	@Test
 	public void checkCombatReset()
 	{
-		when(player.getInteracting()).thenReturn(monster);
+		when(player.getInteracting()).thenReturn(mock(Actor.class));
 		plugin.onInteractingChanged(new InteractingChanged(player, monster));
 		plugin.onGameTick(GameTick.INSTANCE);
-		when(player.getInteracting()).thenReturn(randomEvent);
 		plugin.onInteractingChanged(new InteractingChanged(player, randomEvent));
 		plugin.onGameTick(GameTick.INSTANCE);
-		when(player.getInteracting()).thenReturn(null);
 		plugin.onInteractingChanged(new InteractingChanged(player, null));
 		plugin.onGameTick(GameTick.INSTANCE);
 		verify(notifier, times(0)).notify(any());
@@ -217,7 +222,7 @@ public class IdleNotifierPluginTest
 	public void checkCombatLogout()
 	{
 		plugin.onInteractingChanged(new InteractingChanged(player, monster));
-		when(player.getInteracting()).thenReturn(monster);
+		when(player.getInteracting()).thenReturn(mock(Actor.class));
 		plugin.onGameTick(GameTick.INSTANCE);
 
 		// Logout
@@ -232,7 +237,6 @@ public class IdleNotifierPluginTest
 		plugin.onGameStateChanged(gameStateChanged);
 
 		// Tick
-		when(player.getInteracting()).thenReturn(null);
 		plugin.onInteractingChanged(new InteractingChanged(player, null));
 		plugin.onGameTick(GameTick.INSTANCE);
 		verify(notifier, times(0)).notify(any());
@@ -272,12 +276,27 @@ public class IdleNotifierPluginTest
 	{
 		plugin.setGetSpecEnergyThreshold(50);
 
-		when(client.getVar(Matchers.eq(VarPlayer.SPECIAL_ATTACK_PERCENT))).thenReturn(400); // 40%
+		when(client.getVar(eq(VarPlayer.SPECIAL_ATTACK_PERCENT))).thenReturn(400); // 40%
 		plugin.onGameTick(GameTick.INSTANCE); // once to set lastSpecEnergy to 400
 		verify(notifier, never()).notify(any());
 
-		when(client.getVar(Matchers.eq(VarPlayer.SPECIAL_ATTACK_PERCENT))).thenReturn(500); // 50%
+		when(client.getVar(eq(VarPlayer.SPECIAL_ATTACK_PERCENT))).thenReturn(500); // 50%
 		plugin.onGameTick(GameTick.INSTANCE);
-		verify(notifier).notify(Matchers.eq("[" + PLAYER_NAME + "] has restored spec energy!"));
+		verify(notifier).notify(eq("[" + PLAYER_NAME + "] has restored spec energy!"));
+	}
+
+	@Test
+	public void testMovementIdle()
+	{
+		plugin.setMovementIdle(true);
+
+		when(player.getWorldLocation()).thenReturn(new WorldPoint(0, 0, 0));
+		plugin.onGameTick(GameTick.INSTANCE);
+		when(player.getWorldLocation()).thenReturn(new WorldPoint(1, 0, 0));
+		plugin.onGameTick(GameTick.INSTANCE);
+		// No movement here
+		plugin.onGameTick(GameTick.INSTANCE);
+
+		verify(notifier).notify(eq("[" + PLAYER_NAME + "] has stopped moving!"));
 	}
 }

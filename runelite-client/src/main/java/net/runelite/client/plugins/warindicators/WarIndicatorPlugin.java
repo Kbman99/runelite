@@ -31,24 +31,13 @@ import javax.inject.Singleton;
 import lombok.AccessLevel;
 import lombok.Getter;
 import net.runelite.api.Client;
-import static net.runelite.api.MenuAction.FOLLOW;
-import static net.runelite.api.MenuAction.ITEM_USE_ON_PLAYER;
-import static net.runelite.api.MenuAction.PLAYER_EIGTH_OPTION;
-import static net.runelite.api.MenuAction.PLAYER_FIFTH_OPTION;
-import static net.runelite.api.MenuAction.PLAYER_FIRST_OPTION;
-import static net.runelite.api.MenuAction.PLAYER_FOURTH_OPTION;
-import static net.runelite.api.MenuAction.PLAYER_SECOND_OPTION;
-import static net.runelite.api.MenuAction.PLAYER_SEVENTH_OPTION;
-import static net.runelite.api.MenuAction.PLAYER_SIXTH_OPTION;
-import static net.runelite.api.MenuAction.PLAYER_THIRD_OPTION;
-import static net.runelite.api.MenuAction.SPELL_CAST_ON_PLAYER;
-import static net.runelite.api.MenuAction.TRADE;
 import net.runelite.api.MenuEntry;
+import static net.runelite.api.MenuOpcode.*;
 import net.runelite.api.Player;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginType;
@@ -108,7 +97,7 @@ public class WarIndicatorPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 
@@ -117,16 +106,16 @@ public class WarIndicatorPlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(warIndicatorOverlay);
 		overlayManager.remove(warIndicatorMiniMapOverlay);
 	}
 
 	@Subscribe
-	public void onMenuEntryAdded(MenuEntryAdded onMenuEntryAdded)
+	private void onMenuEntryAdded(MenuEntryAdded onMenuEntryAdded)
 	{
-		int type = onMenuEntryAdded.getType();
+		int type = onMenuEntryAdded.getOpcode();
 
 		if (type >= 2000)
 		{
@@ -196,7 +185,7 @@ public class WarIndicatorPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (event.getGroup().equals("warIndicators"))
 		{

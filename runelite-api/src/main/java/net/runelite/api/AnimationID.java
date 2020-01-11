@@ -44,6 +44,7 @@ public final class AnimationID
 	public static final int WOODCUTTING_DRAGON = 2846;
 	public static final int WOODCUTTING_INFERNAL = 2117;
 	public static final int WOODCUTTING_3A_AXE = 7264;
+	public static final int WOODCUTTING_CRYSTAL = 8324;
 	public static final int CONSUMING = 829; // consuming consumables
 	public static final int FIREMAKING = 733;
 	public static final int DEATH = 836;
@@ -70,6 +71,8 @@ public final class AnimationID
 	public static final int FLETCHING_STRING_YEW_LONGBOW = 6688;
 	public static final int FLETCHING_STRING_MAGIC_SHORTBOW = 6683;
 	public static final int FLETCHING_STRING_MAGIC_LONGBOW = 6689;
+	public static final int FLETCHING_ATTACH_FEATHERS_TO_ARROWSHAFT = 8481;
+	public static final int FLETCHING_ATTACH_HEADS = 8480;
 	public static final int GEM_CUTTING_OPAL = 890;
 	public static final int GEM_CUTTING_JADE = 891;
 	public static final int GEM_CUTTING_REDTOPAZ = 892;
@@ -94,6 +97,16 @@ public final class AnimationID
 	public static final int FISHING_BARBTAIL_HARPOON = 5108;
 	public static final int FISHING_DRAGON_HARPOON = 7401;
 	public static final int FISHING_INFERNAL_HARPOON = 7402;
+	public static final int FISHING_CRYSTAL_HARPOON = 8336;
+	public static final int CRYSTALLINE_RAT_DEATH = 8334;
+	public static final int CRYSTALLINE_BAT_DEATH = 4917;
+	public static final int CRYSTALLINE_WOLF_DEATH = 8335;
+	public static final int CRYSTALLINE_SPIDER_DEATH = 8338;
+	public static final int CRYSTALLINE_UNICORN_DEATH = 6377;
+	public static final int CRYSTALLINE_DRAGON_DEATH = 92;
+	public static final int CRYSTALLINE_BEAR_DEATH = 4929;
+	public static final int CRYSTALLINE_DARK_BEAST_DEATH = 2733;
+	public static final int CORRUPTED_SCORPION_DEATH = 6256;
 	public static final int FISHING_OILY_ROD = 622;
 	public static final int FISHING_KARAMBWAN = 1193;
 	public static final int FISHING_CRUSHING_INFERNAL_EELS = 7553;
@@ -107,9 +120,11 @@ public final class AnimationID
 	public static final int MINING_ADAMANT_PICKAXE = 628;
 	public static final int MINING_RUNE_PICKAXE = 624;
 	public static final int MINING_DRAGON_PICKAXE = 7139;
-	public static final int MINING_DRAGON_PICKAXE_ORN = 642;
+	public static final int MINING_DRAGON_PICKAXE_UPGRADED = 642;
+	public static final int MINING_DRAGON_PICKAXE_OR = 8346;
 	public static final int MINING_INFERNAL_PICKAXE = 4482;
 	public static final int MINING_3A_PICKAXE = 7283;
+	public static final int MINING_CRYSTAL_PICKAXE = 8347;
 	public static final int MINING_MOTHERLODE_BRONZE = 6753;
 	public static final int MINING_MOTHERLODE_IRON = 6754;
 	public static final int MINING_MOTHERLODE_STEEL = 6755;
@@ -118,9 +133,11 @@ public final class AnimationID
 	public static final int MINING_MOTHERLODE_ADAMANT = 6756;
 	public static final int MINING_MOTHERLODE_RUNE = 6752;
 	public static final int MINING_MOTHERLODE_DRAGON = 6758;
-	public static final int MINING_MOTHERLODE_DRAGON_ORN = 335;
+	public static final int MINING_MOTHERLODE_DRAGON_UPGRADED = 335;
+	public static final int MINING_MOTHERLODE_DRAGON_OR = 8344;
 	public static final int MINING_MOTHERLODE_INFERNAL = 4481;
 	public static final int MINING_MOTHERLODE_3A = 7282;
+	public static final int MINING_MOTHERLODE_CRYSTAL = 8345;
 	public static final int DENSE_ESSENCE_CHIPPING = 7201;
 	public static final int DENSE_ESSENCE_CHISELING = 7202;
 	public static final int HERBLORE_POTIONMAKING = 363; //used for both herb and secondary
@@ -164,6 +181,7 @@ public final class AnimationID
 	public static final int BLOCK_SHIELD = 1156;
 	public static final int BLOCK_SWORD = 388;
 	public static final int BLOCK_UNARMED = 424; // Same Animation as failed pickpocked
+	public static final int DRAGONFIRE_SHIELD_SPECIAL = 6696;
 
 	// NPC animations
 	public static final int TZTOK_JAD_RANGE_ATTACK = 2652;
@@ -196,6 +214,7 @@ public final class AnimationID
 	public static final int FARMING_PLANT_SEED = 2291;
 	public static final int FARMING_HARVEST_FLOWER = 2292;
 	public static final int FARMING_MIX_ULTRACOMPOST = 7699;
+	public static final int FARMING_HARVEST_ALLOTMENT = 830;
 
 	// Lunar spellbook
 	public static final int ENERGY_TRANSFER_VENGEANCE_OTHER = 4411;
@@ -263,6 +282,7 @@ public final class AnimationID
 	// INFERNO animations
 	public static final int JAL_NIB = 7574;
 	public static final int JAL_MEJRAH = 7578;
+	public static final int JAL_MEJRAH_STAND = 7577;
 	public static final int JAL_AK_RANGE_ATTACK = 7581;
 	public static final int JAL_AK_MELEE_ATTACK = 7582;
 	public static final int JAL_AK_MAGIC_ATTACK = 7583;
@@ -312,4 +332,36 @@ public final class AnimationID
 	public static final int DAG_REX = 2853;
 	public static final int DAG_PRIME = 2854;
 	public static final int DAG_SUPREME = 2855;
+
+	// Lizardman shaman
+	public static final int LIZARDMAN_SHAMAN_SPAWN = 7157;
+	public static final int LIZARDMAN_SHAMAN_SPAWN_EXPLOSION = 7159;
+
+	// Combat counter
+	public static final int BARRAGE_ANIMATION = 1979;
+	public static final int BLITZ_ANIMATION = 1978;
+	public static final int CHIN_ANIMATION = 7618;
+
+	// Gauntlet Hunleff
+	public static final int HUNLEFF_TRAMPLE = 8420;
+	public static final int HUNLEFF_ATTACK = 8419;
+	public static final int HUNLEFF_TORNADO = 8418;
+
+	//Zalcano
+	public static final int ZALCANO_KNOCKED_DOWN = 8437;
+	public static final int ZALCANO_WAKEUP = 8439;
+	public static final int ZALCANO_ROCK_GLOWING = 8448;
+
+	//Supplies Tracker
+	public static final int ONEHAND_SLASH_SWORD_ANIMATION = 390;
+	public static final int ONEHAND_STAB_SWORD_ANIMATION = 386;
+	public static final int SCYTHE_OF_VITUR_ANIMATION = 8056;
+	public static final int LOW_LEVEL_STANDARD_SPELLS = 711;
+	public static final int WAVE_SPELL_ANIMATION = 727;
+	public static final int SURGE_SPELL_ANIMATION = 7855;
+	public static final int HIGH_ALCH_ANIMATION = 713;
+	public static final int LUNAR_HUMIDIFY = 6294;
+	public static final int PRAY_AT_ALTAR = 645;
+	public static final int ENSOULED_HEADS_ANIMATION = 7198;
+
 }

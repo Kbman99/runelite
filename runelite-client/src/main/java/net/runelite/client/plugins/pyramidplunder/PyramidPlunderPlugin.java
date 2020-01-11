@@ -38,25 +38,14 @@ import lombok.Getter;
 import net.runelite.api.Client;
 import static net.runelite.api.Constants.GAME_TICK_LENGTH;
 import static net.runelite.api.ItemID.PHARAOHS_SCEPTRE;
-import static net.runelite.api.ObjectID.GRAND_GOLD_CHEST;
-import static net.runelite.api.ObjectID.OPENED_GOLD_CHEST;
-import static net.runelite.api.ObjectID.SARCOPHAGUS_21255;
-import static net.runelite.api.ObjectID.SARCOPHAGUS_21256;
 import static net.runelite.api.ObjectID.SPEARTRAP_21280;
 import static net.runelite.api.ObjectID.TOMB_DOOR_20948;
 import static net.runelite.api.ObjectID.TOMB_DOOR_20949;
-import static net.runelite.api.ObjectID.URN_21261;
-import static net.runelite.api.ObjectID.URN_21262;
-import static net.runelite.api.ObjectID.URN_21263;
-import static net.runelite.api.ObjectID.URN_21265;
-import static net.runelite.api.ObjectID.URN_21266;
-import static net.runelite.api.ObjectID.URN_21267;
 import net.runelite.api.Player;
 import net.runelite.api.Tile;
 import net.runelite.api.TileObject;
 import net.runelite.api.Varbits;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameObjectChanged;
 import net.runelite.api.events.GameObjectDespawned;
 import net.runelite.api.events.GameObjectSpawned;
@@ -67,6 +56,7 @@ import net.runelite.api.events.WallObjectDespawned;
 import net.runelite.api.events.WallObjectSpawned;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -78,7 +68,7 @@ import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 	name = "PyramidPlunder",
 	description = "Highlights doors and spear traps in pyramid plunder and adds a numerical timer",
 	tags = {"pyramidplunder", "pyramid", "plunder", "overlay", "skilling", "thieving"},
-	type = PluginType.UTILITY,
+	type = PluginType.MINIGAME,
 	enabledByDefault = false
 )
 @Singleton
@@ -90,21 +80,21 @@ public class PyramidPlunderPlugin extends Plugin
 	static final int CLOSED_DOOR = TOMB_DOOR_20948;
 	static final int OPENED_DOOR = TOMB_DOOR_20949;
 
-	// Next 2 are in here for anyone who wants to spend more time on this
-	private static final Set<Integer> LOOTABLE = ImmutableSet.of(
-		GRAND_GOLD_CHEST,
-		SARCOPHAGUS_21255,
-		URN_21261,
-		URN_21262,
-		URN_21263
-	);
-	private static final Set<Integer> LOOTED = ImmutableSet.of(
-		OPENED_GOLD_CHEST,
-		SARCOPHAGUS_21256,
-		URN_21265,
-		URN_21266,
-		URN_21267
-	);
+	//	// Next 2 are in here for anyone who wants to spend more time on this
+//	private static final Set<Integer> LOOTABLE = ImmutableSet.of(
+//		GRAND_GOLD_CHEST,
+//		SARCOPHAGUS_21255,
+//		URN_21261,
+//		URN_21262,
+//		URN_21263
+//	);
+//	private static final Set<Integer> LOOTED = ImmutableSet.of(
+//		OPENED_GOLD_CHEST,
+//		SARCOPHAGUS_21256,
+//		URN_21265,
+//		URN_21266,
+//		URN_21267
+//	);
 	private static final Set<Integer> DOOR_WALL_IDS = ImmutableSet.of(
 		26618, 26619, 26620, 26621
 	);
@@ -154,13 +144,13 @@ public class PyramidPlunderPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(pyramidPlunderOverlay);
 		highlighted.clear();
@@ -168,7 +158,7 @@ public class PyramidPlunderPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!"pyramidplunder".equals(event.getGroup()))
 		{
@@ -218,7 +208,7 @@ public class PyramidPlunderPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		switch (event.getGameState())
 		{
@@ -252,7 +242,7 @@ public class PyramidPlunderPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onVarbitChanged(VarbitChanged event)
+	private void onVarbitChanged(VarbitChanged event)
 	{
 		int lastValue = pyramidTimer;
 		pyramidTimer = client.getVar(Varbits.PYRAMID_PLUNDER_TIMER);
@@ -287,37 +277,37 @@ public class PyramidPlunderPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameObjectSpawned(GameObjectSpawned event)
+	private void onGameObjectSpawned(GameObjectSpawned event)
 	{
 		onTileObject(event.getTile(), null, event.getGameObject());
 	}
 
 	@Subscribe
-	public void onGameObjectChanged(GameObjectChanged event)
+	private void onGameObjectChanged(GameObjectChanged event)
 	{
 		onTileObject(event.getTile(), event.getPrevious(), event.getGameObject());
 	}
 
 	@Subscribe
-	public void onGameObjectDespawned(GameObjectDespawned event)
+	private void onGameObjectDespawned(GameObjectDespawned event)
 	{
 		onTileObject(event.getTile(), event.getGameObject(), null);
 	}
 
 	@Subscribe
-	public void onWallObjectSpawned(WallObjectSpawned event)
+	private void onWallObjectSpawned(WallObjectSpawned event)
 	{
 		onTileObject(event.getTile(), null, event.getWallObject());
 	}
 
 	@Subscribe
-	public void onWallObjectChanged(WallObjectChanged event)
+	private void onWallObjectChanged(WallObjectChanged event)
 	{
 		onTileObject(event.getTile(), event.getPrevious(), event.getWallObject());
 	}
 
 	@Subscribe
-	public void onWallObjectDespawned(WallObjectDespawned event)
+	private void onWallObjectDespawned(WallObjectDespawned event)
 	{
 		onTileObject(event.getTile(), event.getWallObject(), null);
 	}

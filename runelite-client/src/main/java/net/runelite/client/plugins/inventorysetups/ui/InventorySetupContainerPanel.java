@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2018-2019, Ethan <https://github.com/Wea1thRS/>
- * Copyright (c) 2018, https://runelitepl.us
+ * Copyright (c) 2018, https://openosrs.com
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,21 +27,21 @@ package net.runelite.client.plugins.inventorysetups.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.util.ArrayList;
+import java.util.List;
 import javax.inject.Singleton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.ItemVariationMapping;
 import net.runelite.client.plugins.inventorysetups.InventorySetupItem;
 import net.runelite.client.plugins.inventorysetups.InventorySetupPlugin;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.util.AsyncBufferedImage;
 
 @Singleton
-public abstract class InventorySetupContainerPanel extends JPanel
+abstract class InventorySetupContainerPanel extends JPanel
 {
-	protected ItemManager itemManager;
+	private final ItemManager itemManager;
 
 	private final InventorySetupPlugin plugin;
 
@@ -73,7 +73,7 @@ public abstract class InventorySetupContainerPanel extends JPanel
 
 	void setContainerSlot(int index,
 						final InventorySetupSlot containerSlot,
-						final ArrayList<InventorySetupItem> items)
+						final List<InventorySetupItem> items)
 	{
 		if (index >= items.size() || items.get(index).getId() == -1)
 		{
@@ -127,5 +127,5 @@ public abstract class InventorySetupContainerPanel extends JPanel
 		containerSlot.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 	}
 
-	abstract public void setupContainerPanel(final JPanel containerSlotsPanel);
+	protected abstract void setupContainerPanel(final JPanel containerSlotsPanel);
 }

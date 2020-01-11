@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, https://runelitepl.us
+ * Copyright (c) 2018, https://openosrs.com
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -42,21 +42,21 @@ import javax.swing.border.EmptyBorder;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ItemDefinition;
 import net.runelite.api.kit.KitType;
-import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
+import net.runelite.client.util.AsyncBufferedImage;
 
 @Slf4j
 @Singleton
-public class EquipmentInspectorPanel extends PluginPanel
+class EquipmentInspectorPanel extends PluginPanel
 {
 	private final static String NO_PLAYER_SELECTED = "No player selected";
 
-	private GridBagConstraints c;
-	private JPanel equipmentPanels;
-	private JPanel header;
-	private JLabel nameLabel;
+	private final GridBagConstraints c;
+	private final JPanel equipmentPanels;
+	private final JPanel header;
+	private final JLabel nameLabel;
 
 	@Inject
 	private ItemManager itemManager;

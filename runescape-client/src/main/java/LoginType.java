@@ -1,91 +1,98 @@
+import net.runelite.mapping.Export;
 import net.runelite.mapping.Implements;
 import net.runelite.mapping.ObfuscatedGetter;
 import net.runelite.mapping.ObfuscatedName;
 import net.runelite.mapping.ObfuscatedSignature;
 
-@ObfuscatedName("lx")
+@ObfuscatedName("ll")
 @Implements("LoginType")
 public class LoginType {
-   @ObfuscatedName("m")
-   @ObfuscatedSignature(
-      signature = "Llx;"
-   )
-   public static final LoginType field479;
-   @ObfuscatedName("f")
-   @ObfuscatedSignature(
-      signature = "Llx;"
-   )
-   static final LoginType field480;
-   @ObfuscatedName("q")
-   @ObfuscatedSignature(
-      signature = "Llx;"
-   )
-   static final LoginType field481;
-   @ObfuscatedName("w")
-   @ObfuscatedSignature(
-      signature = "Llx;"
-   )
-   static final LoginType field482;
-   @ObfuscatedName("o")
-   @ObfuscatedSignature(
-      signature = "Llx;"
-   )
-   static final LoginType field483;
-   @ObfuscatedName("u")
-   @ObfuscatedSignature(
-      signature = "Llx;"
-   )
-   static final LoginType field484;
-   @ObfuscatedName("g")
-   @ObfuscatedSignature(
-      signature = "Llx;"
-   )
-   static final LoginType field485;
-   @ObfuscatedName("l")
-   @ObfuscatedSignature(
-      signature = "Llx;"
-   )
-   static final LoginType field486;
-   @ObfuscatedName("e")
-   @ObfuscatedSignature(
-      signature = "Llx;"
-   )
-   public static final LoginType field487;
-   @ObfuscatedName("x")
-   @ObfuscatedGetter(
-      intValue = -1916729379
-   )
-   public final int field488;
-   @ObfuscatedName("d")
-   final String field489;
+	@ObfuscatedName("f")
+	@ObfuscatedSignature(
+		signature = "Lll;"
+	)
+	@Export("oldscape")
+	public static final LoginType oldscape;
+	@ObfuscatedName("i")
+	@ObfuscatedSignature(
+		signature = "Lll;"
+	)
+	static final LoginType field4023;
+	@ObfuscatedName("y")
+	@ObfuscatedSignature(
+		signature = "Lll;"
+	)
+	static final LoginType field4025;
+	@ObfuscatedName("w")
+	@ObfuscatedSignature(
+		signature = "Lll;"
+	)
+	static final LoginType field4026;
+	@ObfuscatedName("p")
+	@ObfuscatedSignature(
+		signature = "Lll;"
+	)
+	static final LoginType field4028;
+	@ObfuscatedName("b")
+	@ObfuscatedSignature(
+		signature = "Lll;"
+	)
+	static final LoginType field4024;
+	@ObfuscatedName("e")
+	@ObfuscatedSignature(
+		signature = "Lll;"
+	)
+	static final LoginType field4027;
+	@ObfuscatedName("x")
+	@ObfuscatedSignature(
+		signature = "Lll;"
+	)
+	static final LoginType field4030;
+	@ObfuscatedName("a")
+	@ObfuscatedSignature(
+		signature = "Lll;"
+	)
+	public static final LoginType field4031;
+	@ObfuscatedName("lb")
+	@ObfuscatedSignature(
+		signature = "Lcq;"
+	)
+	@Export("tempMenuAction")
+	static MenuAction tempMenuAction;
+	@ObfuscatedName("d")
+	@ObfuscatedGetter(
+		intValue = -1388330399
+	)
+	public final int field4029;
+	@ObfuscatedName("c")
+	final String field4033;
 
-   LoginType(int var1, int var2, String var3, String var4) {
-      this.field488 = var1;
-      this.field489 = var4;
-   }
+	static {
+		oldscape = new LoginType(6, 0, "", "");
+		field4023 = new LoginType(2, 1, "", "");
+		field4025 = new LoginType(3, 2, "", "");
+		field4026 = new LoginType(8, 3, "", "");
+		field4028 = new LoginType(1, 4, "", "");
+		field4024 = new LoginType(4, 5, "", "");
+		field4027 = new LoginType(5, 6, "", "");
+		field4030 = new LoginType(0, 7, "", "");
+		field4031 = new LoginType(7, -1, "", "", true, new LoginType[]{oldscape, field4023, field4025, field4028, field4026});
+	}
 
-   @ObfuscatedSignature(
-      signature = "(IILjava/lang/String;Ljava/lang/String;Z[Llx;)V"
-   )
-   LoginType(int var1, int var2, String var3, String var4, boolean var5, LoginType[] var6) {
-      this.field488 = var1;
-      this.field489 = var4;
-   }
+	LoginType(int var1, int var2, String var3, String var4) {
+		this.field4029 = var1;
+		this.field4033 = var4;
+	}
 
-   @ObfuscatedName("toString")
-   public String method166() {
-      return this.field489;
-   }
+	@ObfuscatedSignature(
+		signature = "(IILjava/lang/String;Ljava/lang/String;Z[Lll;)V"
+	)
+	LoginType(int var1, int var2, String var3, String var4, boolean var5, LoginType[] var6) {
+		this.field4029 = var1;
+		this.field4033 = var4;
+	}
 
-   static {
-      field479 = new LoginType(8, 0, "", "");
-      field480 = new LoginType(3, 1, "", "");
-      field481 = new LoginType(2, 2, "", "");
-      field482 = new LoginType(6, 3, "", "");
-      field483 = new LoginType(4, 4, "", "");
-      field484 = new LoginType(7, 5, "", "");
-      field485 = new LoginType(1, 6, "", "");
-      field486 = new LoginType(5, 7, "", "");
-      field487 = new LoginType(0, -1, "", "", true, new LoginType[]{field479, field480, field481, field483, field482});
-   }
+	public String toString() {
+		return this.field4033;
+	}
 }

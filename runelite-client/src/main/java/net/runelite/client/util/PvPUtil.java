@@ -21,7 +21,6 @@ import net.runelite.api.Varbits;
 import net.runelite.api.WorldType;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.game.ItemManager;
-import static net.runelite.client.util.StackFormatter.quantityToRSDecimalStack;
 import org.apache.commons.lang3.ArrayUtils;
 
 /**
@@ -56,10 +55,19 @@ public class PvPUtil
 	public static boolean isAttackable(Client client, Player player)
 	{
 		int wildernessLevel = 0;
-		if (!(client.getVar(Varbits.IN_WILDERNESS) == 1 || WorldType.isPvpWorld(client.getWorldType())))
+		
+		if (!(client.getVar(Varbits.IN_WILDERNESS) == 1
+			|| WorldType.isPvpWorld(client.getWorldType())
+			|| WorldType.isDeadmanWorld(client.getWorldType())))
 		{
 			return false;
 		}
+		
+		if (WorldType.isDeadmanWorld(client.getWorldType()))
+		{
+			return true;
+		}
+		
 		if (WorldType.isPvpWorld(client.getWorldType()))
 		{
 			if (client.getVar(Varbits.IN_WILDERNESS) != 1)
@@ -106,7 +114,7 @@ public class PvPUtil
 			}
 			wealth += value;
 		}
-		return Integer.parseInt(quantityToRSDecimalStack(priceMap.keySet().stream().mapToInt(Integer::intValue).sum()));
+		return Integer.parseInt(QuantityFormatter.quantityToRSDecimalStack(priceMap.keySet().stream().mapToInt(Integer::intValue).sum()));
 
 	}
 }

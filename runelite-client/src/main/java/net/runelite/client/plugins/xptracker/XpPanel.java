@@ -37,7 +37,6 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
-import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
 import net.runelite.api.Skill;
@@ -49,7 +48,6 @@ import net.runelite.client.ui.components.PluginErrorPanel;
 import net.runelite.client.util.LinkBrowser;
 import okhttp3.HttpUrl;
 
-@Slf4j
 class XpPanel extends PluginPanel
 {
 	private final Map<Skill, XpInfoBox> infoBoxes = new HashMap<>();
@@ -113,8 +111,8 @@ class XpPanel extends PluginPanel
 		overallInfo.setLayout(new GridLayout(2, 1));
 		overallInfo.setBorder(new EmptyBorder(0, 10, 0, 0));
 
-		overallExpGained.setFont(FontManager.getSmallFont(getFont()));
-		overallExpHour.setFont(FontManager.getSmallFont(getFont()));
+		overallExpGained.setFont(FontManager.getRunescapeSmallFont());
+		overallExpHour.setFont(FontManager.getRunescapeSmallFont());
 
 		overallInfo.add(overallExpGained);
 		overallInfo.add(overallExpHour);

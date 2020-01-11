@@ -1,21 +1,24 @@
 package net.runelite.client.plugins.clanmanmode;
 
 import com.google.inject.Provides;
+import java.awt.Color;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import lombok.AccessLevel;
+import lombok.Getter;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.Player;
 import net.runelite.api.Varbits;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginType;
@@ -31,6 +34,13 @@ import net.runelite.client.ui.overlay.OverlayManager;
 @Singleton
 public class ClanManModePlugin extends Plugin
 {
+	final Map<String, Integer> clan = new HashMap<>();
+	int wildernessLevel;
+	int clanmin;
+	int clanmax;
+	int inwildy;
+	int ticks;
+
 	@Inject
 	private OverlayManager overlayManager;
 
@@ -49,29 +59,55 @@ public class ClanManModePlugin extends Plugin
 	@Inject
 	private Client client;
 
+	@Getter(AccessLevel.PACKAGE)
+	private boolean highlightAttackable;
+	@Getter(AccessLevel.PACKAGE)
+	private Color getAttackableColor;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean highlightAttacked;
+	@Getter(AccessLevel.PACKAGE)
+	private Color getClanAttackableColor;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean drawTiles;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean drawOverheadPlayerNames;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean drawMinimapNames;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean showAttackers;
+	@Getter(AccessLevel.PACKAGE)
+	private Color getAttackerColor;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean ShowBold;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean hideAttackable;
+	@Getter(AccessLevel.PACKAGE)
+	private int hideTime;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean CalcSelfCB;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean PersistentClan;
+	@Getter(AccessLevel.PACKAGE)
+	private Color getClanMemberColor;
+
 	@Provides
 	ClanManModeConfig provideConfig(ConfigManager configManager)
 	{
 		return configManager.getConfig(ClanManModeConfig.class);
 	}
 
-	int wildernessLevel;
-	int clanmin;
-	int clanmax;
-	int inwildy;
-	int ticks;
-	Map<String, Integer> clan = new HashMap<>();
-
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
+		updateConfig();
+
 		overlayManager.add(ClanManModeOverlay);
 		overlayManager.add(ClanManModeTileOverlay);
 		overlayManager.add(ClanManModeMinimapOverlay);
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(ClanManModeOverlay);
 		overlayManager.remove(ClanManModeTileOverlay);
@@ -91,10 +127,12 @@ public class ClanManModePlugin extends Plugin
 		{
 			return;
 		}
+
+		updateConfig();
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged)
+	private void onGameStateChanged(GameStateChanged gameStateChanged)
 	{
 		if (gameStateChanged.getGameState() == GameState.LOGIN_SCREEN || gameStateChanged.getGameState() == GameState.HOPPING)
 		{
@@ -103,7 +141,7 @@ public class ClanManModePlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick event)
+	private void onGameTick(GameTick event)
 	{
 		ticks++;
 		final Player localPlayer = client.getLocalPlayer();
@@ -121,5 +159,24 @@ public class ClanManModePlugin extends Plugin
 			clanmin = Collections.min(clan.values());
 			clanmax = Collections.max(clan.values());
 		}
+	}
+
+	private void updateConfig()
+	{
+		this.highlightAttackable = config.highlightAttackable();
+		this.getAttackableColor = config.getAttackableColor();
+		this.highlightAttacked = config.highlightAttacked();
+		this.getClanAttackableColor = config.getClanAttackableColor();
+		this.drawTiles = config.drawTiles();
+		this.drawOverheadPlayerNames = config.drawOverheadPlayerNames();
+		this.drawMinimapNames = config.drawMinimapNames();
+		this.showAttackers = config.showAttackers();
+		this.getAttackerColor = config.getAttackerColor();
+		this.ShowBold = config.ShowBold();
+		this.hideAttackable = config.hideAttackable();
+		this.hideTime = config.hideTime();
+		this.CalcSelfCB = config.CalcSelfCB();
+		this.PersistentClan = config.PersistentClan();
+		this.getClanMemberColor = config.getClanMemberColor();
 	}
 }

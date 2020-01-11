@@ -34,6 +34,7 @@ import net.runelite.api.GraphicID;
 import net.runelite.api.Player;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.SpotAnimationChanged;
+import net.runelite.client.config.OpenOSRSConfig;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
@@ -42,12 +43,12 @@ import static org.junit.Assert.assertNotNull;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import org.mockito.Mock;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CookingPluginTest
@@ -88,6 +89,10 @@ public class CookingPluginTest
 	@Mock
 	@Bind
 	OverlayManager overlayManager;
+
+	@Mock
+	@Bind
+	private OpenOSRSConfig openOSRSConfig;
 
 	@Before
 	public void before()

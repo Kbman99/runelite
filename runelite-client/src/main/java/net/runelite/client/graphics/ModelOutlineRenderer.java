@@ -37,13 +37,13 @@ import net.runelite.api.Client;
 import net.runelite.api.DecorativeObject;
 import net.runelite.api.GameObject;
 import net.runelite.api.GroundObject;
-import net.runelite.api.ItemLayer;
 import net.runelite.api.MainBufferProvider;
 import net.runelite.api.Model;
 import net.runelite.api.NPC;
 import net.runelite.api.NPCDefinition;
 import net.runelite.api.Perspective;
 import net.runelite.api.Player;
+import net.runelite.api.TileItemPile;
 import net.runelite.api.TileObject;
 import net.runelite.api.WallObject;
 import net.runelite.api.coords.LocalPoint;
@@ -948,7 +948,7 @@ public class ModelOutlineRenderer
 
 			drawModelOutline(npc.getModel(), lp.getX(), lp.getY(),
 				Perspective.getTileHeight(client, northEastLp, client.getPlane()),
-				npc.getOrientation(), outlineWidth, innerColor, outerColor);
+				npc.getCurrentOrientation(), outlineWidth, innerColor, outerColor);
 		}
 	}
 
@@ -964,11 +964,11 @@ public class ModelOutlineRenderer
 		{
 			drawModelOutline(player.getModel(), lp.getX(), lp.getY(),
 				Perspective.getTileHeight(client, lp, client.getPlane()),
-				player.getOrientation(), outlineWidth, innerColor, outerColor);
+				player.getCurrentOrientation(), outlineWidth, innerColor, outerColor);
 		}
 	}
 
-	private void drawOutline(GameObject gameObject, int outlineWidth, Color innerColor, Color outerColor)
+	public void drawOutline(GameObject gameObject, int outlineWidth, Color innerColor, Color outerColor)
 	{
 		LocalPoint lp = gameObject.getLocalLocation();
 		if (lp != null)
@@ -979,7 +979,7 @@ public class ModelOutlineRenderer
 		}
 	}
 
-	private void drawOutline(GroundObject groundObject,  int outlineWidth, Color innerColor, Color outerColor)
+	public void drawOutline(GroundObject groundObject, int outlineWidth, Color innerColor, Color outerColor)
 	{
 		LocalPoint lp = groundObject.getLocalLocation();
 		if (lp != null)
@@ -990,32 +990,32 @@ public class ModelOutlineRenderer
 		}
 	}
 
-	private void drawOutline(ItemLayer itemLayer, int outlineWidth, Color innerColor, Color outerColor)
+	private void drawOutline(TileItemPile tileItemPile, int outlineWidth, Color innerColor, Color outerColor)
 	{
-		LocalPoint lp = itemLayer.getLocalLocation();
+		LocalPoint lp = tileItemPile.getLocalLocation();
 		if (lp != null)
 		{
-			Model model = itemLayer.getModelBottom();
+			Model model = tileItemPile.getModelBottom();
 			if (model != null)
 			{
 				drawModelOutline(model, lp.getX(), lp.getY(),
-					Perspective.getTileHeight(client, lp, itemLayer.getPlane()),
+					Perspective.getTileHeight(client, lp, tileItemPile.getPlane()),
 					0, outlineWidth, innerColor, outerColor);
 			}
 
-			model = itemLayer.getModelMiddle();
+			model = tileItemPile.getModelMiddle();
 			if (model != null)
 			{
 				drawModelOutline(model, lp.getX(), lp.getY(),
-					Perspective.getTileHeight(client, lp, itemLayer.getPlane()),
+					Perspective.getTileHeight(client, lp, tileItemPile.getPlane()),
 					0, outlineWidth, innerColor, outerColor);
 			}
 
-			model = itemLayer.getModelTop();
+			model = tileItemPile.getModelTop();
 			if (model != null)
 			{
 				drawModelOutline(model, lp.getX(), lp.getY(),
-					Perspective.getTileHeight(client, lp, itemLayer.getPlane()),
+					Perspective.getTileHeight(client, lp, tileItemPile.getPlane()),
 					0, outlineWidth, innerColor, outerColor);
 			}
 		}
@@ -1086,9 +1086,9 @@ public class ModelOutlineRenderer
 		{
 			drawOutline((GroundObject) tileObject, outlineWidth, innerColor, outerColor);
 		}
-		else if (tileObject instanceof ItemLayer)
+		else if (tileObject instanceof TileItemPile)
 		{
-			drawOutline((ItemLayer) tileObject, outlineWidth, innerColor, outerColor);
+			drawOutline((TileItemPile) tileObject, outlineWidth, innerColor, outerColor);
 		}
 		else if (tileObject instanceof DecorativeObject)
 		{

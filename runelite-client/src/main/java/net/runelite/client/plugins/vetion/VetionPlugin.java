@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import lombok.AccessLevel;
 import lombok.Getter;
 import net.runelite.api.Actor;
 import net.runelite.api.AnimationID;
@@ -56,12 +57,13 @@ public class VetionPlugin extends Plugin
 	@Inject
 	private VetionOverlay overlay;
 
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private Map<Actor, Instant> vetions;
 
 	@Override
 	protected void startUp()
 	{
+
 		vetions = new HashMap<>();
 		overlayManager.add(overlay);
 	}
@@ -73,9 +75,8 @@ public class VetionPlugin extends Plugin
 		vetions = null;
 	}
 
-
 	@Subscribe
-	public void onAnimationChanged(AnimationChanged event)
+	private void onAnimationChanged(AnimationChanged event)
 	{
 		if (event.getActor().getAnimation() == AnimationID.VETION_EARTHQUAKE)
 		{

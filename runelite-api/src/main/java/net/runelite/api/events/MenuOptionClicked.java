@@ -24,8 +24,9 @@
  */
 package net.runelite.api.events;
 
-import lombok.Data;
-import net.runelite.api.MenuAction;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 import net.runelite.api.MenuEntry;
 
 /**
@@ -39,84 +40,31 @@ import net.runelite.api.MenuEntry;
  * By default, when there is no action performed when left-clicking,
  * it seems that this event still triggers with the "Cancel" action.
  */
-@Data
-public class MenuOptionClicked
+@Getter
+public class MenuOptionClicked extends MenuEntry implements Event
 {
-	public MenuOptionClicked(MenuEntry entry)
+	public MenuOptionClicked(String option, String target, int identifier, int opcode, int param0, int param1, boolean forceLeftClick)
 	{
-		menuEntry = entry;
+		super(option, target, identifier, opcode, param0, param1, forceLeftClick);
+		authentic = true;
 	}
 
-	/**
-	 * The actual MenuEntry object representing what was clicked
-	 */
-	private MenuEntry menuEntry;
-
-	/**
-	 * The option text added to the menu.
-	 */
-	public String getOption()
+	public MenuOptionClicked(String option, String target, int identifier, int opcode, int param0, int param1, boolean forceLeftClick, boolean authentic, int mouseButton)
 	{
-		return menuEntry.getOption();
-	}
-
-	/**
-	 * The target of the action.
-	 */
-	public String getTarget()
-	{
-		return menuEntry.getTarget();
-	}
-
-	/**
-	 * MenuAction but int-ish
-	 */
-	public int getType()
-	{
-		return menuEntry.getType();
-	}
-
-	/**
-	 * The ID of the object, actor, or item that the interaction targets.
-	 */
-	public int getIdentifier()
-	{
-		return menuEntry.getIdentifier();
-	}
-
-	/**
-	 * The action parameter used in the click.
-	 */
-	public int getActionParam0()
-	{
-		return menuEntry.getParam0();
-	}
-
-	/**
-	 * shit docs
-	 */
-	public int getActionParam1()
-	{
-		return menuEntry.getParam1();
-	}
-
-	public boolean isForceLeftClick()
-	{
-		return menuEntry.isForceLeftClick();
-	}
-
-	/**
-	 * The action performed.
-	 */
-	public MenuAction getMenuAction()
-	{
-		return MenuAction.of(getType());
+		super(option, target, identifier, opcode, param0, param1, forceLeftClick);
+		this.authentic = authentic;
+		this.mouseButton = mouseButton;
 	}
 
 	/**
 	 * Whether or not the event has been consumed by a subscriber.
 	 */
 	private boolean consumed;
+
+	/**
+	 * The mouse button will be 1 if a non draggable widget was clicked,
+	 */
+	private int mouseButton;
 
 	/**
 	 * Marks the event as having been consumed.
@@ -128,5 +76,22 @@ public class MenuOptionClicked
 	public void consume()
 	{
 		this.consumed = true;
+	}
+
+	/**
+	 * Whether or not the event is authentic.
+	 */
+	@Setter(AccessLevel.NONE)
+	private final boolean authentic;
+
+	public void setMenuEntry(MenuEntry e)
+	{
+		setOption(e.getOption());
+		setTarget(e.getTarget());
+		setIdentifier(e.getIdentifier());
+		setOpcode(e.getOpcode());
+		setParam0(e.getParam0());
+		setParam1(e.getParam1());
+		setForceLeftClick(e.isForceLeftClick());
 	}
 }

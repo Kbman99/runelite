@@ -32,7 +32,7 @@ import net.runelite.client.input.MouseAdapter;
 import net.runelite.client.input.MouseWheelListener;
 
 @Singleton
-public class SpellbookMouseListener extends MouseAdapter implements MouseWheelListener
+class SpellbookMouseListener extends MouseAdapter implements MouseWheelListener
 {
 	private final SpellbookPlugin plugin;
 
@@ -42,16 +42,16 @@ public class SpellbookMouseListener extends MouseAdapter implements MouseWheelLi
 	}
 
 	@Override
-	public MouseEvent mouseClicked(MouseEvent event)
+	public MouseEvent mouseClicked(final MouseEvent event)
 	{
-		if (plugin.isNotOnSpellWidget(event.getPoint()))
+		if (plugin.isNotOnSpellWidget())
 		{
 			return event;
 		}
 
 		if (SwingUtilities.isMiddleMouseButton(event))
 		{
-			plugin.resetZoom(event.getPoint());
+			plugin.resetSize();
 		}
 
 		event.consume();
@@ -59,21 +59,24 @@ public class SpellbookMouseListener extends MouseAdapter implements MouseWheelLi
 	}
 
 	@Override
-	public MouseEvent mousePressed(MouseEvent event)
+	public MouseEvent mousePressed(final MouseEvent event)
 	{
-		if (!SwingUtilities.isLeftMouseButton(event) || plugin.isNotOnSpellWidget(event.getPoint()) || plugin.isDragging())
+		if (SwingUtilities.isRightMouseButton(event))
 		{
+			plugin.resetLocation();
 			return event;
 		}
+		else if (SwingUtilities.isLeftMouseButton(event) && !plugin.isNotOnSpellWidget() && !plugin.isDragging())
+		{
+			plugin.startDragging(event.getPoint());
+			event.consume();
+		}
 
-		plugin.startDragging(event.getPoint());
-
-		event.consume();
 		return event;
 	}
 
 	@Override
-	public MouseEvent mouseReleased(MouseEvent event)
+	public MouseEvent mouseReleased(final MouseEvent event)
 	{
 		if (!SwingUtilities.isLeftMouseButton(event) || !plugin.isDragging())
 		{
@@ -87,22 +90,22 @@ public class SpellbookMouseListener extends MouseAdapter implements MouseWheelLi
 	}
 
 	@Override
-	public MouseWheelEvent mouseWheelMoved(MouseWheelEvent event)
+	public MouseWheelEvent mouseWheelMoved(final MouseWheelEvent event)
 	{
-		if (plugin.isNotOnSpellWidget(event.getPoint()))
+		if (plugin.isNotOnSpellWidget())
 		{
 			return event;
 		}
 
-		int direction = event.getWheelRotation();
+		final int direction = event.getWheelRotation();
 
 		if (direction > 0)
 		{
-			plugin.increaseSize(event.getPoint());
+			plugin.increaseSize();
 		}
 		else
 		{
-			plugin.decreaseSize(event.getPoint());
+			plugin.decreaseSize();
 		}
 
 		event.consume();

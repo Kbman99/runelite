@@ -25,6 +25,7 @@
 package net.runelite.client.plugins;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.graph.Graph;
@@ -54,6 +55,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -68,13 +70,13 @@ import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.config.RuneLiteConfig;
 import net.runelite.client.eventbus.EventBus;
-import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.PluginChanged;
 import net.runelite.client.events.SessionClose;
 import net.runelite.client.events.SessionOpen;
 import net.runelite.client.task.Schedule;
 import net.runelite.client.task.ScheduledMethod;
 import net.runelite.client.task.Scheduler;
+import net.runelite.client.ui.RuneLiteSplashScreen;
 import net.runelite.client.util.GameEventManager;
 
 @Singleton
@@ -98,7 +100,7 @@ public class PluginManager
 		.getAnnotation(ConfigGroup.class).value();
 
 	@Inject
-	PluginWatcher pluginWatcher;
+	ExternalPluginLoader externalPluginLoader;
 
 	@Setter
 	boolean isOutdated;
@@ -119,21 +121,20 @@ public class PluginManager
 		this.configManager = configManager;
 		this.executor = executor;
 		this.sceneTileManager = sceneTileManager;
+
+		if (eventBus != null)
+		{
+			eventBus.subscribe(SessionOpen.class, this, this::onSessionOpen);
+			eventBus.subscribe(SessionClose.class, this, this::onSessionClose);
+		}
 	}
 
-	public void watch()
-	{
-		pluginWatcher.start();
-	}
-
-	@Subscribe
-	public void onSessionOpen(SessionOpen event)
+	private void onSessionOpen(SessionOpen event)
 	{
 		refreshPlugins();
 	}
 
-	@Subscribe
-	public void onSessionClose(SessionClose event)
+	private void onSessionClose(SessionClose event)
 	{
 		refreshPlugins();
 	}
@@ -153,7 +154,7 @@ public class PluginManager
 				}
 				catch (PluginInstantiationException e)
 				{
-					log.warn("Error during starting/stopping plugin {}. {}", plugin.getClass().getSimpleName(), e);
+					log.warn("Error during starting/stopping plugin {}", plugin.getClass().getSimpleName(), e);
 				}
 			}));
 	}
@@ -174,7 +175,7 @@ public class PluginManager
 		return null;
 	}
 
-	public List<Config> getPluginConfigProxies()
+	private List<Config> getPluginConfigProxies()
 	{
 		List<Injector> injectors = new ArrayList<>();
 		injectors.add(RuneLite.getInjector());
@@ -205,30 +206,49 @@ public class PluginManager
 		}
 	}
 
+	public void loadExternalPlugins()
+	{
+		externalPluginLoader.scanAndLoad();
+	}
+
 	public void loadCorePlugins() throws IOException
 	{
-		plugins.addAll(scanAndInstantiate(getClass().getClassLoader(), PLUGIN_PACKAGE));
+		plugins.addAll(scanAndInstantiate(getClass().getClassLoader(), PLUGIN_PACKAGE, false));
 	}
 
 	public void startCorePlugins()
 	{
 		List<Plugin> scannedPlugins = new ArrayList<>(plugins);
+		int loaded = 0, started = 0;
+
+		final Stopwatch timer = Stopwatch.createStarted();
 		for (Plugin plugin : scannedPlugins)
 		{
 			try
 			{
-				startPlugin(plugin);
+				if (startPlugin(plugin))
+				{
+					++started;
+				}
 			}
 			catch (PluginInstantiationException ex)
 			{
-				log.warn("Unable to start plugin {}. {}", plugin.getClass().getSimpleName(), ex);
+				log.warn("Unable to start plugin {}", plugin.getClass().getSimpleName(), ex);
 				plugins.remove(plugin);
 			}
+
+			loaded++;
+
+			RuneLiteSplashScreen.stage(.80, 1, "Starting plugins", loaded, scannedPlugins.size());
 		}
+
+		log.debug("Started {}/{} plugins in {}", started, loaded, timer);
 	}
 
-	List<Plugin> scanAndInstantiate(ClassLoader classLoader, String packageName) throws IOException
+	@SuppressWarnings("unchecked")
+	List<Plugin> scanAndInstantiate(ClassLoader classLoader, String packageName, boolean external) throws IOException
 	{
+		RuneLiteSplashScreen.stage(.59, "Loading plugins");
 		MutableGraph<Class<? extends Plugin>> graph = GraphBuilder
 			.directed()
 			.build();
@@ -259,6 +279,12 @@ public class PluginManager
 				continue;
 			}
 
+			if (external && pluginDescriptor.type() != PluginType.EXTERNAL)
+			{
+				log.error("Class {} is using the external plugin loader but doesn't have PluginType.EXTERNAL", clazz);
+				continue;
+			}
+
 			if (!pluginDescriptor.loadWhenOutdated() && isOutdated)
 			{
 				continue;
@@ -269,7 +295,7 @@ public class PluginManager
 				continue;
 			}
 
-			Class<Plugin> pluginClass = (Class<Plugin>) clazz;
+			@SuppressWarnings("unchecked") Class<Plugin> pluginClass = (Class<Plugin>) clazz;
 			graph.addNode(pluginClass);
 		}
 
@@ -291,6 +317,7 @@ public class PluginManager
 
 		List<List<Class<? extends Plugin>>> sortedPlugins = topologicalGroupSort(graph);
 		sortedPlugins = Lists.reverse(sortedPlugins);
+		AtomicInteger loaded = new AtomicInteger();
 
 		final long start = System.currentTimeMillis();
 
@@ -308,13 +335,17 @@ public class PluginManager
 					try
 					{
 						plugin = instantiate(scannedPlugins, (Class<Plugin>) pluginClazz);
+						scannedPlugins.add(plugin);
 					}
 					catch (PluginInstantiationException e)
 					{
 						log.warn("Error instantiating plugin!", e);
 						return;
 					}
-					scannedPlugins.add(plugin);
+
+					loaded.getAndIncrement();
+
+					RuneLiteSplashScreen.stage(.60, .70, "Loading plugins", loaded.get(), scannedPlugins.size());
 				})));
 			curGroup.forEach(future ->
 			{
@@ -358,6 +389,8 @@ public class PluginManager
 				}
 			});
 
+			plugin.addAnnotatedSubscriptions(eventBus);
+
 			log.debug("Plugin {} is now running", plugin.getClass().getSimpleName());
 			if (!isOutdated && sceneTileManager != null)
 			{
@@ -368,9 +401,8 @@ public class PluginManager
 				}
 			}
 
-			eventBus.register(plugin);
 			schedule(plugin);
-			eventBus.post(new PluginChanged(plugin, true));
+			eventBus.post(PluginChanged.class, new PluginChanged(plugin, true));
 		}
 		catch (InterruptedException | InvocationTargetException | IllegalArgumentException ex)
 		{
@@ -392,7 +424,6 @@ public class PluginManager
 		try
 		{
 			unschedule(plugin);
-			eventBus.unregister(plugin);
 
 			// plugins always stop in the event thread
 			SwingUtilities.invokeAndWait(() ->
@@ -407,8 +438,10 @@ public class PluginManager
 				}
 			});
 
+			plugin.removeAnnotatedSubscriptions(eventBus);
+
 			log.debug("Plugin {} is now stopped", plugin.getClass().getSimpleName());
-			eventBus.post(new PluginChanged(plugin, false));
+			eventBus.post(PluginChanged.class, new PluginChanged(plugin, false));
 
 		}
 		catch (InterruptedException | InvocationTargetException ex)
@@ -432,13 +465,14 @@ public class PluginManager
 
 		if (value != null)
 		{
-			return Boolean.valueOf(value);
+			return Boolean.parseBoolean(value);
 		}
 
 		final PluginDescriptor pluginDescriptor = plugin.getClass().getAnnotation(PluginDescriptor.class);
 		return pluginDescriptor == null || pluginDescriptor.enabledByDefault();
 	}
 
+	@SuppressWarnings("unchecked")
 	private Plugin instantiate(List<Plugin> scannedPlugins, Class<Plugin> clazz) throws PluginInstantiationException
 	{
 		PluginDependency[] pluginDependencies = clazz.getAnnotationsByType(PluginDependency.class);
@@ -549,6 +583,7 @@ public class PluginManager
 	 * Plugins in group 2 has dependents in group 1, etc.
 	 * This allows for loading dependent groups serially, starting from the last group,
 	 * while loading plugins within each group in parallel.
+	 *
 	 * @param graph
 	 * @param <T>
 	 * @return

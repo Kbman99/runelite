@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, https://runelitepl.us
+ * Copyright (c) 2018, https://openosrs.com
  * Copyright (c) 2019, Infinitay <https://github.com/Infinitay>
  *
  * All rights reserved.
@@ -38,22 +38,11 @@ public class Vorkath
 	static final int FIRE_BALL_ATTACKS = 25;
 
 	private NPC vorkath;
-
 	private VorkathAttack lastAttack;
-
 	private Phase currentPhase;
 	private Phase nextPhase;
 	private Phase lastPhase;
-
 	private int attacksLeft;
-
-	enum Phase
-	{
-		UNKNOWN,
-		ACID,
-		FIRE_BALL,
-		SPAWN
-	}
 
 	public Vorkath(NPC vorkath)
 	{
@@ -106,5 +95,13 @@ public class Vorkath
 
 		log.debug("[Vorkath] Update! Last Phase: {}->{}, Current Phase: {}->{}, Next Phase: {}->{}, Attacks: {}->{}",
 			oldLastPhase, this.lastPhase, oldCurrentPhase, this.currentPhase, oldNextPhase, this.nextPhase, oldAttacksLeft, this.attacksLeft);
+	}
+
+	enum Phase
+	{
+		UNKNOWN,
+		ACID,
+		FIRE_BALL,
+		SPAWN
 	}
 }

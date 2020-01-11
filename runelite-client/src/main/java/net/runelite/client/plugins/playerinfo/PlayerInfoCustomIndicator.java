@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, https://runelitepl.us
+ * Copyright (c) 2018, https://openosrs.com
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,7 +25,7 @@
 package net.runelite.client.plugins.playerinfo;
 
 import java.awt.Color;
-import java.awt.Image;
+import java.awt.image.BufferedImage;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -54,7 +54,7 @@ public class PlayerInfoCustomIndicator extends InfoBox
 	private final Client client;
 	private final IndicatorType type;
 
-	PlayerInfoCustomIndicator(final Image image, final PlayerInfoPlugin plugin, final Client client, final IndicatorType type)
+	PlayerInfoCustomIndicator(final BufferedImage image, final PlayerInfoPlugin plugin, final Client client, final IndicatorType type)
 	{
 		super(image, plugin);
 		this.plugin = plugin;

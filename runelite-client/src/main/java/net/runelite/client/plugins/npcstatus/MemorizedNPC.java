@@ -29,11 +29,11 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import net.runelite.api.Actor;
 import net.runelite.api.NPC;
 import net.runelite.api.coords.WorldArea;
-import net.runelite.api.Actor;
 
-@Getter
+@Getter(AccessLevel.PACKAGE)
 class MemorizedNPC
 {
 	private NPC npc;
@@ -52,8 +52,6 @@ class MemorizedNPC
 	private WorldArea lastnpcarea;
 	@Setter(AccessLevel.PACKAGE)
 	private Actor lastinteracted;
-	@Setter(AccessLevel.PACKAGE)
-	private int lastspotanimation;
 
 	MemorizedNPC(final NPC npc, final int attackSpeed, final WorldArea worldArea)
 	{
@@ -67,7 +65,6 @@ class MemorizedNPC
 		this.status = Status.OUT_OF_COMBAT;
 		this.lastnpcarea = worldArea;
 		this.lastinteracted = null;
-		this.lastspotanimation = -1;
 	}
 
 	@Getter(AccessLevel.PACKAGE)

@@ -4,125 +4,119 @@ import net.runelite.mapping.ObfuscatedGetter;
 import net.runelite.mapping.ObfuscatedName;
 import net.runelite.mapping.ObfuscatedSignature;
 
-@ObfuscatedName("jw")
+@ObfuscatedName("ik")
 @Implements("EnumDefinition")
 public class EnumDefinition extends DualNode {
-   @ObfuscatedName("m")
-   @ObfuscatedSignature(
-      signature = "Lir;"
-   )
-   @Export("EnumDefinition_indexCache")
-   public static AbstractIndexCache EnumDefinition_indexCache;
-   @ObfuscatedName("f")
-   @ObfuscatedSignature(
-      signature = "Ler;"
-   )
-   @Export("EnumDefinition_cached")
-   static EvictingDualNodeHashTable EnumDefinition_cached;
-   @ObfuscatedName("q")
-   @Export("keyType")
-   public char keyType;
-   @ObfuscatedName("w")
-   @Export("valType")
-   public char valType;
-   @ObfuscatedName("o")
-   @Export("defaultString")
-   public String defaultString;
-   @ObfuscatedName("u")
-   @ObfuscatedGetter(
-      intValue = 1948115527
-   )
-   @Export("defaultInt")
-   public int defaultInt;
-   @ObfuscatedName("g")
-   @ObfuscatedGetter(
-      intValue = -12324053
-   )
-   @Export("size0")
-   public int size0;
-   @ObfuscatedName("l")
-   @Export("keys")
-   public int[] keys;
-   @ObfuscatedName("e")
-   @Export("intVals")
-   public int[] intVals;
-   @ObfuscatedName("x")
-   @Export("stringVals")
-   public String[] stringVals;
+	@ObfuscatedName("i")
+	@ObfuscatedSignature(
+		signature = "Leb;"
+	)
+	@Export("EnumDefinition_cached")
+	static EvictingDualNodeHashTable EnumDefinition_cached;
+	@ObfuscatedName("y")
+	@Export("inputType")
+	public char inputType;
+	@ObfuscatedName("w")
+	@Export("outputType")
+	public char outputType;
+	@ObfuscatedName("p")
+	@Export("defaultStr")
+	public String defaultStr;
+	@ObfuscatedName("b")
+	@ObfuscatedGetter(
+		intValue = 1935496033
+	)
+	@Export("defaultInt")
+	public int defaultInt;
+	@ObfuscatedName("e")
+	@ObfuscatedGetter(
+		intValue = 2015380105
+	)
+	@Export("outputCount")
+	public int outputCount;
+	@ObfuscatedName("x")
+	@Export("keys")
+	public int[] keys;
+	@ObfuscatedName("a")
+	@Export("intVals")
+	public int[] intVals;
+	@ObfuscatedName("d")
+	@Export("strVals")
+	public String[] strVals;
 
-   EnumDefinition() {
-      this.defaultString = "null";
-      this.size0 = 0;
-   }
+	static {
+		EnumDefinition_cached = new EvictingDualNodeHashTable(64);
+	}
 
-   @ObfuscatedName("f")
-   @ObfuscatedSignature(
-      signature = "(Lgr;I)V",
-      garbageValue = "-230039710"
-   )
-   @Export("read")
-   void read(Buffer var1) {
-      while (true) {
-         int var2 = var1.readUnsignedByte();
-         if (var2 == 0) {
-            return;
-         }
+	EnumDefinition() {
+		this.defaultStr = "null";
+		this.outputCount = 0;
+	}
 
-         this.readNext(var1, var2);
-      }
-   }
+	@ObfuscatedName("y")
+	@ObfuscatedSignature(
+		signature = "(Lkq;I)V",
+		garbageValue = "-1351538350"
+	)
+	@Export("decode")
+	void decode(Buffer var1) {
+		while (true) {
+			int var2 = var1.readUnsignedByte();
+			if (var2 == 0) {
+				return;
+			}
 
-   @ObfuscatedName("q")
-   @ObfuscatedSignature(
-      signature = "(Lgr;II)V",
-      garbageValue = "-1255400805"
-   )
-   @Export("readNext")
-   void readNext(Buffer var1, int var2) {
-      if (var2 == 1) {
-         this.keyType = (char)var1.readUnsignedByte();
-      } else if (var2 == 2) {
-         this.valType = (char)var1.readUnsignedByte();
-      } else if (var2 == 3) {
-         this.defaultString = var1.readStringCp1252NullTerminated();
-      } else if (var2 == 4) {
-         this.defaultInt = var1.readInt();
-      } else {
-         int var3;
-         if (var2 == 5) {
-            this.size0 = var1.method43();
-            this.keys = new int[this.size0];
-            this.stringVals = new String[this.size0];
+			this.decodeNext(var1, var2);
+		}
+	}
 
-            for (var3 = 0; var3 < this.size0; ++var3) {
-               this.keys[var3] = var1.readInt();
-               this.stringVals[var3] = var1.readStringCp1252NullTerminated();
-            }
-         } else if (var2 == 6) {
-            this.size0 = var1.method43();
-            this.keys = new int[this.size0];
-            this.intVals = new int[this.size0];
+	@ObfuscatedName("w")
+	@ObfuscatedSignature(
+		signature = "(Lkq;II)V",
+		garbageValue = "789591005"
+	)
+	@Export("decodeNext")
+	void decodeNext(Buffer var1, int var2) {
+		if (var2 == 1) {
+			this.inputType = (char)var1.readUnsignedByte();
+		} else if (var2 == 2) {
+			this.outputType = (char)var1.readUnsignedByte();
+		} else if (var2 == 3) {
+			this.defaultStr = var1.readStringCp1252NullTerminated();
+		} else if (var2 == 4) {
+			this.defaultInt = var1.readInt();
+		} else {
+			int var3;
+			if (var2 == 5) {
+				this.outputCount = var1.readUnsignedShort();
+				this.keys = new int[this.outputCount];
+				this.strVals = new String[this.outputCount];
 
-            for (var3 = 0; var3 < this.size0; ++var3) {
-               this.keys[var3] = var1.readInt();
-               this.intVals[var3] = var1.readInt();
-            }
-         }
-      }
+				for (var3 = 0; var3 < this.outputCount; ++var3) {
+					this.keys[var3] = var1.readInt();
+					this.strVals[var3] = var1.readStringCp1252NullTerminated();
+				}
+			} else if (var2 == 6) {
+				this.outputCount = var1.readUnsignedShort();
+				this.keys = new int[this.outputCount];
+				this.intVals = new int[this.outputCount];
 
-   }
+				for (var3 = 0; var3 < this.outputCount; ++var3) {
+					this.keys[var3] = var1.readInt();
+					this.intVals[var3] = var1.readInt();
+				}
+			}
+		}
 
-   @ObfuscatedName("w")
-   @ObfuscatedSignature(
-      signature = "(B)I",
-      garbageValue = "1"
-   )
-   @Export("size")
-   public int size() {
-      return this.size0;
-   }
+	}
 
-   static {
-      EnumDefinition_cached = new EvictingDualNodeHashTable(64);
-   }
+	@ObfuscatedName("p")
+	@ObfuscatedSignature(
+		signature = "(I)I",
+		garbageValue = "-1025007031"
+	)
+	@Export("size")
+	public int size() {
+		return this.outputCount;
+	}
 }

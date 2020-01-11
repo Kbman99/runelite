@@ -45,14 +45,13 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
-import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
+import net.runelite.api.MenuOpcode;
 import net.runelite.api.Skill;
 import net.runelite.api.SoundEffectID;
 import net.runelite.api.Tile;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.CommandExecuted;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.FocusChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.MenuOptionClicked;
@@ -62,12 +61,14 @@ import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.OverlayMenuClicked;
 import net.runelite.client.events.PartyChanged;
 import net.runelite.client.input.KeyListener;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.plugins.party.data.PartyData;
 import net.runelite.client.plugins.party.data.PartyTilePingData;
 import net.runelite.client.plugins.party.messages.LocationUpdate;
@@ -87,7 +88,8 @@ import net.runelite.http.api.ws.messages.party.UserSync;
 
 @PluginDescriptor(
 	name = "Party",
-	description = "Shows useful information about current party"
+	description = "Shows useful information about current party",
+	type = PluginType.MISCELLANEOUS
 )
 @Slf4j
 @Singleton
@@ -155,7 +157,7 @@ public class PartyPlugin extends Plugin implements KeyListener
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 
@@ -169,7 +171,7 @@ public class PartyPlugin extends Plugin implements KeyListener
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		partyDataMap.clear();
 		pendingTilePings.clear();
@@ -192,9 +194,9 @@ public class PartyPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onOverlayMenuClicked(OverlayMenuClicked event)
+	private void onOverlayMenuClicked(OverlayMenuClicked event)
 	{
-		if (event.getEntry().getMenuAction() == MenuAction.RUNELITE_OVERLAY &&
+		if (event.getEntry().getMenuOpcode() == MenuOpcode.RUNELITE_OVERLAY &&
 			event.getEntry().getTarget().equals("Party") &&
 			event.getEntry().getOption().equals("Leave"))
 		{
@@ -218,7 +220,7 @@ public class PartyPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onMenuOptionClicked(MenuOptionClicked event)
+	private void onMenuOptionClicked(MenuOptionClicked event)
 	{
 		if (!hotkeyDown || client.isMenuOpen() || party.getMembers().isEmpty() || !this.pings)
 		{
@@ -243,6 +245,7 @@ public class PartyPlugin extends Plugin implements KeyListener
 			if ("walk here".equalsIgnoreCase(menuEntry.getOption()))
 			{
 				isOnCanvas = true;
+				break;
 			}
 		}
 
@@ -258,7 +261,7 @@ public class PartyPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onTilePing(TilePing event)
+	private void onTilePing(TilePing event)
 	{
 		if (this.pings)
 		{
@@ -304,7 +307,7 @@ public class PartyPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onGameTick(final GameTick event)
+	private void onGameTick(final GameTick event)
 	{
 		if (sendAlert && client.getGameState() == GameState.LOGGED_IN)
 		{
@@ -350,7 +353,7 @@ public class PartyPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onSkillUpdate(final SkillUpdate event)
+	private void onSkillUpdate(final SkillUpdate event)
 	{
 		final PartyData partyData = getPartyData(event.getMemberId());
 
@@ -372,7 +375,7 @@ public class PartyPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onLocationUpdate(final LocationUpdate event)
+	private void onLocationUpdate(final LocationUpdate event)
 	{
 		final PartyData partyData = getPartyData(event.getMemberId());
 
@@ -385,7 +388,7 @@ public class PartyPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onUserJoin(final UserJoin event)
+	private void onUserJoin(final UserJoin event)
 	{
 		final PartyData partyData = getPartyData(event.getMemberId());
 
@@ -414,7 +417,7 @@ public class PartyPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onUserSync(final UserSync event)
+	private void onUserSync(final UserSync event)
 	{
 		final int currentHealth = client.getBoostedSkillLevel(Skill.HITPOINTS);
 		final int currentPrayer = client.getBoostedSkillLevel(Skill.PRAYER);
@@ -435,7 +438,7 @@ public class PartyPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onUserPart(final UserPart event)
+	private void onUserPart(final UserPart event)
 	{
 		final PartyData removed = partyDataMap.remove(event.getMemberId());
 
@@ -460,7 +463,7 @@ public class PartyPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onPartyChanged(final PartyChanged event)
+	private void onPartyChanged(final PartyChanged event)
 	{
 		// Reset party
 		partyDataMap.clear();
@@ -469,7 +472,7 @@ public class PartyPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onCommandExecuted(CommandExecuted commandExecuted)
+	private void onCommandExecuted(CommandExecuted commandExecuted)
 	{
 		if (!developerMode || !commandExecuted.getCommand().equals("partyinfo"))
 		{
@@ -516,7 +519,7 @@ public class PartyPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onFocusChanged(FocusChanged event)
+	private void onFocusChanged(FocusChanged event)
 	{
 		if (!event.isFocused())
 		{
@@ -562,7 +565,7 @@ public class PartyPlugin extends Plugin implements KeyListener
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("party"))
 		{

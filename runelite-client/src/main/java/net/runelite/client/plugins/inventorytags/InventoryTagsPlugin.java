@@ -31,29 +31,30 @@ import java.awt.Color;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import net.runelite.api.Client;
-import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
-import net.runelite.api.events.ConfigChanged;
+import net.runelite.api.MenuOpcode;
 import net.runelite.api.events.MenuOpened;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.WidgetMenuOptionClicked;
+import net.runelite.api.util.Text;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.menus.MenuManager;
 import net.runelite.client.menus.WidgetMenuOption;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ColorUtil;
-import net.runelite.client.util.Text;
 
 @PluginDescriptor(
 	name = "Inventory Tags",
 	description = "Add the ability to tag items in your inventory",
 	tags = {"highlight", "items", "overlay", "tagging"},
-	enabledByDefault = false
+	enabledByDefault = false,
+	type = PluginType.UTILITY
 )
 @Singleton
 public class InventoryTagsPlugin extends Plugin
@@ -64,6 +65,11 @@ public class InventoryTagsPlugin extends Plugin
 	private static final String SETNAME_GROUP_2 = "Group 2";
 	private static final String SETNAME_GROUP_3 = "Group 3";
 	private static final String SETNAME_GROUP_4 = "Group 4";
+	private static final String SETNAME_GROUP_5 = "Group 5";
+	private static final String SETNAME_GROUP_6 = "Group 6";
+	private static final String SETNAME_GROUP_7 = "Group 7";
+	private static final String SETNAME_GROUP_8 = "Group 8";
+
 
 	private static final String CONFIGURE = "Configure";
 	private static final String SAVE = "Save";
@@ -84,10 +90,8 @@ public class InventoryTagsPlugin extends Plugin
 	private static final WidgetMenuOption RESIZABLE_BOTTOM_LINE_INVENTORY_TAB_SAVE = new WidgetMenuOption(SAVE,
 		MENU_TARGET, WidgetInfo.RESIZABLE_VIEWPORT_BOTTOM_LINE_INVENTORY_TAB);
 
-	private static final List<String> GROUPS = ImmutableList.of(SETNAME_GROUP_4, SETNAME_GROUP_3, SETNAME_GROUP_2, SETNAME_GROUP_1);
-
-	@Inject
-	private Client client;
+	private static final List<String> GROUPS = ImmutableList.of(SETNAME_GROUP_8, SETNAME_GROUP_7, SETNAME_GROUP_6,
+		SETNAME_GROUP_5, SETNAME_GROUP_4, SETNAME_GROUP_3, SETNAME_GROUP_2, SETNAME_GROUP_1);
 
 	@Inject
 	private ConfigManager configManager;
@@ -106,10 +110,15 @@ public class InventoryTagsPlugin extends Plugin
 
 	private boolean editorMode;
 
+	private InventoryTagsConfig.amount amount;
 	private Color group1Color;
 	private Color group2Color;
 	private Color group3Color;
 	private Color group4Color;
+	private Color group5Color;
+	private Color group6Color;
+	private Color group7Color;
+	private Color group8Color;
 
 	@Provides
 	InventoryTagsConfig provideConfig(ConfigManager configManager)
@@ -139,15 +148,16 @@ public class InventoryTagsPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
+
 		refreshInventoryMenuOptions();
 		overlayManager.add(overlay);
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		removeInventoryMenuOptions();
 		overlayManager.remove(overlay);
@@ -155,7 +165,7 @@ public class InventoryTagsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onWidgetMenuOptionClicked(final WidgetMenuOptionClicked event)
+	private void onWidgetMenuOptionClicked(final WidgetMenuOptionClicked event)
 	{
 		if (event.getWidget() == WidgetInfo.FIXED_VIEWPORT_INVENTORY_TAB
 			|| event.getWidget() == WidgetInfo.RESIZABLE_VIEWPORT_INVENTORY_TAB
@@ -167,9 +177,9 @@ public class InventoryTagsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onMenuOptionClicked(final MenuOptionClicked event)
+	private void onMenuOptionClicked(final MenuOptionClicked event)
 	{
-		if (event.getMenuAction() != MenuAction.RUNELITE)
+		if (event.getMenuOpcode() != MenuOpcode.RUNELITE)
 		{
 			return;
 		}
@@ -187,7 +197,7 @@ public class InventoryTagsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onMenuOpened(final MenuOpened event)
+	private void onMenuOpened(final MenuOpened event)
 	{
 		final MenuEntry firstEntry = event.getFirstEntry();
 
@@ -208,13 +218,15 @@ public class InventoryTagsPlugin extends Plugin
 				return;
 			}
 
-			MenuEntry[] menuList = new MenuEntry[GROUPS.size() + 1];
+			MenuEntry[] menuList = new MenuEntry[amount.toInt() + 1];
 			int num = 0;
 
 			// preserve the 'Cancel' option as the client will reuse the first entry for Cancel and only resets option/action
 			menuList[num++] = event.getMenuEntries()[0];
 
-			for (final String groupName : GROUPS)
+			List<String> groups = GROUPS.subList(Math.max(GROUPS.size() - amount.toInt(), 0), GROUPS.size());
+
+			for (final String groupName : groups)
 			{
 				final String group = getTag(itemId);
 				final MenuEntry newMenu = new MenuEntry();
@@ -223,11 +235,13 @@ public class InventoryTagsPlugin extends Plugin
 				newMenu.setTarget(ColorUtil.prependColorTag(groupName, MoreObjects.firstNonNull(color, Color.WHITE)));
 				newMenu.setIdentifier(itemId);
 				newMenu.setParam1(widgetId);
-				newMenu.setType(MenuAction.RUNELITE.getId());
+				newMenu.setOpcode(MenuOpcode.RUNELITE.getId());
 				menuList[num++] = newMenu;
 			}
 
-			client.setMenuEntries(menuList);
+			// Need to set the event entries to prevent conflicts
+			event.setMenuEntries(menuList);
+			event.setModified();
 		}
 	}
 
@@ -243,8 +257,15 @@ public class InventoryTagsPlugin extends Plugin
 				return this.group3Color;
 			case SETNAME_GROUP_4:
 				return this.group4Color;
+			case SETNAME_GROUP_5:
+				return this.group5Color;
+			case SETNAME_GROUP_6:
+				return this.group6Color;
+			case SETNAME_GROUP_7:
+				return this.group7Color;
+			case SETNAME_GROUP_8:
+				return this.group8Color;
 		}
-
 		return null;
 	}
 
@@ -276,7 +297,7 @@ public class InventoryTagsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (event.getGroup().equals("inventorytags"))
 		{
@@ -286,9 +307,14 @@ public class InventoryTagsPlugin extends Plugin
 
 	private void updateConfig()
 	{
+		this.amount = config.getAmount();
 		this.group1Color = config.getGroup1Color();
 		this.group2Color = config.getGroup2Color();
 		this.group3Color = config.getGroup3Color();
 		this.group4Color = config.getGroup4Color();
+		this.group5Color = config.getGroup5Color();
+		this.group6Color = config.getGroup6Color();
+		this.group7Color = config.getGroup7Color();
+		this.group8Color = config.getGroup8Color();
 	}
 }

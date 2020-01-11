@@ -1,221 +1,214 @@
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.util.Calendar;
+import java.lang.management.GarbageCollectorMXBean;
 import net.runelite.mapping.Export;
 import net.runelite.mapping.Implements;
 import net.runelite.mapping.ObfuscatedGetter;
 import net.runelite.mapping.ObfuscatedName;
 import net.runelite.mapping.ObfuscatedSignature;
 
-@ObfuscatedName("bv")
+@ObfuscatedName("bt")
 @Implements("Interpreter")
 public class Interpreter {
-   @ObfuscatedName("w")
-   @Export("Interpreter_stringLocals")
-   static String[] Interpreter_stringLocals;
-   @ObfuscatedName("o")
-   @Export("Interpreter_arrayLengths")
-   static int[] Interpreter_arrayLengths;
-   @ObfuscatedName("u")
-   @Export("Interpreter_arrays")
-   static int[][] Interpreter_arrays;
-   @ObfuscatedName("g")
-   @Export("Interpreter_intStack")
-   static int[] Interpreter_intStack;
-   @ObfuscatedName("e")
-   @Export("Interpreter_stringStack")
-   static String[] Interpreter_stringStack;
-   @ObfuscatedName("x")
-   @ObfuscatedGetter(
-      intValue = -114766123
-   )
-   @Export("Interpreter_stringStackSize")
-   static int Interpreter_stringStackSize;
-   @ObfuscatedName("d")
-   @ObfuscatedGetter(
-      intValue = 545127349
-   )
-   @Export("Interpreter_frameDepth")
-   static int Interpreter_frameDepth;
-   @ObfuscatedName("k")
-   @ObfuscatedSignature(
-      signature = "[Lbn;"
-   )
-   @Export("Interpreter_frames")
-   static ScriptFrame[] Interpreter_frames;
-   @ObfuscatedName("a")
-   @Export("Interpreter_calendar")
-   static Calendar Interpreter_calendar;
-   @ObfuscatedName("z")
-   static final String[] field422;
-   @ObfuscatedName("s")
-   static boolean field423;
-   @ObfuscatedName("t")
-   static boolean field424;
-   @ObfuscatedName("y")
-   @ObfuscatedGetter(
-      intValue = -1019558835
-   )
-   static int field425;
-   @ObfuscatedName("r")
-   static final double field426;
+	@ObfuscatedName("sn")
+	@ObfuscatedSignature(
+		signature = "Lbf;"
+	)
+	@Export("clientPreferences")
+	static ClientPreferences clientPreferences;
+	@ObfuscatedName("y")
+	@Export("Interpreter_intLocals")
+	static int[] Interpreter_intLocals;
+	@ObfuscatedName("p")
+	@Export("Interpreter_arrayLengths")
+	static int[] Interpreter_arrayLengths;
+	@ObfuscatedName("b")
+	@Export("Interpreter_arrays")
+	static int[][] Interpreter_arrays;
+	@ObfuscatedName("e")
+	@Export("Interpreter_intStack")
+	static int[] Interpreter_intStack;
+	@ObfuscatedName("x")
+	@Export("ByteArrayPool_altSizeArrayCounts")
+	static int[] ByteArrayPool_altSizeArrayCounts;
+	@ObfuscatedName("a")
+	@Export("Interpreter_stringStack")
+	static String[] Interpreter_stringStack;
+	@ObfuscatedName("c")
+	@ObfuscatedGetter(
+		intValue = -1511874989
+	)
+	@Export("Interpreter_frameDepth")
+	static int Interpreter_frameDepth;
+	@ObfuscatedName("o")
+	@ObfuscatedSignature(
+		signature = "[Lbk;"
+	)
+	@Export("Interpreter_frames")
+	static ScriptFrame[] Interpreter_frames;
+	@ObfuscatedName("s")
+	@Export("Interpreter_calendar")
+	static java.util.Calendar Interpreter_calendar;
+	@ObfuscatedName("l")
+	@Export("Interpreter_MONTHS")
+	static final String[] Interpreter_MONTHS;
+	@ObfuscatedName("j")
+	static boolean field1077;
+	@ObfuscatedName("n")
+	static boolean field1078;
+	@ObfuscatedName("u")
+	@ObfuscatedGetter(
+		intValue = -1660358445
+	)
+	static int field1079;
+	@ObfuscatedName("g")
+	static final double field1083;
+	@ObfuscatedName("at")
+	@Export("garbageCollector")
+	static GarbageCollectorMXBean garbageCollector;
 
-   @ObfuscatedName("m")
-   @ObfuscatedSignature(
-      signature = "(Lgs;Lhn;I)Lgg;",
-      garbageValue = "-370104720"
-   )
-   public static PacketBufferNode method1915(ClientPacket var0, IsaacCipher var1) {
-      PacketBufferNode var2;
-      if (PacketBufferNode.field668 == 0) {
-         var2 = new PacketBufferNode();
-      } else {
-         var2 = PacketBufferNode.packetBufferNodes[--PacketBufferNode.field668];
-      }
+	static {
+		Interpreter_arrayLengths = new int[5];
+		Interpreter_arrays = new int[5][5000];
+		Interpreter_intStack = new int[1000];
+		Interpreter_stringStack = new String[1000];
+		Interpreter_frameDepth = 0;
+		Interpreter_frames = new ScriptFrame[50];
+		Interpreter_calendar = java.util.Calendar.getInstance();
+		Interpreter_MONTHS = new String[]{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+		field1077 = false;
+		field1078 = false;
+		field1079 = 0;
+		field1083 = Math.log(2.0D);
+	}
 
-      var2.field669 = var0;
-      var2.field670 = var0.length;
-      if (var2.field670 == -1) {
-         var2.packetBuffer = new PacketBuffer(260);
-      } else if (var2.field670 == -2) {
-         var2.packetBuffer = new PacketBuffer(10000);
-      } else if (var2.field670 <= 18) {
-         var2.packetBuffer = new PacketBuffer(20);
-      } else if (var2.field670 <= 98) {
-         var2.packetBuffer = new PacketBuffer(100);
-      } else {
-         var2.packetBuffer = new PacketBuffer(260);
-      }
+	@ObfuscatedName("i")
+	@ObfuscatedSignature(
+		signature = "(CLgs;I)C",
+		garbageValue = "813318592"
+	)
+	@Export("standardizeChar")
+	static char standardizeChar(char var0, Language var1) {
+		if (var0 >= 192 && var0 <= 255) {
+			if (var0 >= 192 && var0 <= 198) {
+				return 'A';
+			}
 
-      var2.packetBuffer.setIsaacCipher(var1);
-      var2.packetBuffer.writeByteIsaac(var2.field669.id);
-      var2.field671 = 0;
-      return var2;
-   }
+			if (var0 == 199) {
+				return 'C';
+			}
 
-   @ObfuscatedName("m")
-   @ObfuscatedSignature(
-      signature = "(II)Ljw;",
-      garbageValue = "-1888252818"
-   )
-   @Export("getEnum")
-   public static EnumDefinition getEnum(int var0) {
-      EnumDefinition var1 = (EnumDefinition)EnumDefinition.EnumDefinition_cached.get((long)var0);
-      if (var1 != null) {
-         return var1;
-      } else {
-         byte[] var2 = EnumDefinition.EnumDefinition_indexCache.takeRecord(8, var0);
-         var1 = new EnumDefinition();
-         if (var2 != null) {
-            var1.read(new Buffer(var2));
-         }
+			if (var0 >= 200 && var0 <= 203) {
+				return 'E';
+			}
 
-         EnumDefinition.EnumDefinition_cached.put(var1, (long)var0);
-         return var1;
-      }
-   }
+			if (var0 >= 204 && var0 <= 207) {
+				return 'I';
+			}
 
-   @ObfuscatedName("f")
-   @ObfuscatedSignature(
-      signature = "(IIB)V",
-      garbageValue = "76"
-   )
-   @Export("changeWorldSelectSorting")
-   static void changeWorldSelectSorting(int var0, int var1) {
-      int[] var2 = new int[4];
-      int[] var3 = new int[4];
-      var2[0] = var0;
-      var3[0] = var1;
-      int var4 = 1;
+			if (var0 == 209 && var1 != Language.Language_ES) {
+				return 'N';
+			}
 
-      for (int var5 = 0; var5 < 4; ++var5) {
-         if (World.sortOption1[var5] != var0) {
-            var2[var4] = World.sortOption1[var5];
-            var3[var4] = World.sortOption2[var5];
-            ++var4;
-         }
-      }
+			if (var0 >= 210 && var0 <= 214) {
+				return 'O';
+			}
 
-      World.sortOption1 = var2;
-      World.sortOption2 = var3;
-      MilliClock.method3400(ItemContainer.worlds, 0, ItemContainer.worlds.length - 1, World.sortOption1, World.sortOption2);
-   }
+			if (var0 >= 217 && var0 <= 220) {
+				return 'U';
+			}
 
-   @ObfuscatedName("w")
-   @ObfuscatedSignature(
-      signature = "(B)V",
-      garbageValue = "80"
-   )
-   public static void method1976() {
-      try {
-         File var0 = new File(WorldMapSection1.userHomeDirectory, "random.dat");
-         int var1;
-         if (var0.exists()) {
-            class168.randomDat = new BufferedFile(new AccessFile(var0, "rw", 25L), 24, 0);
-         } else {
-            label34:
-            for (int var2 = 0; var2 < Canvas.field94.length; ++var2) {
-               for (var1 = 0; var1 < WorldMapSection2.cacheDirectoryLocations.length; ++var1) {
-                  File var3 = new File(WorldMapSection2.cacheDirectoryLocations[var1] + Canvas.field94[var2] + File.separatorChar + "random.dat");
-                  if (var3.exists()) {
-                     class168.randomDat = new BufferedFile(new AccessFile(var3, "rw", 25L), 24, 0);
-                     break label34;
-                  }
-               }
-            }
-         }
+			if (var0 == 221) {
+				return 'Y';
+			}
 
-         if (class168.randomDat == null) {
-            RandomAccessFile var5 = new RandomAccessFile(var0, "rw");
-            var1 = var5.read();
-            var5.seek(0L);
-            var5.write(var1);
-            var5.seek(0L);
-            var5.close();
-            class168.randomDat = new BufferedFile(new AccessFile(var0, "rw", 25L), 24, 0);
-         }
-      } catch (IOException var4) {
-      }
+			if (var0 == 223) {
+				return 's';
+			}
 
-   }
+			if (var0 >= 224 && var0 <= 230) {
+				return 'a';
+			}
 
-   @ObfuscatedName("iz")
-   @ObfuscatedSignature(
-      signature = "(IIIIIIIIB)V",
-      garbageValue = "-10"
-   )
-   @Export("drawWidgets")
-   static final void drawWidgets(int var0, int var1, int var2, int var3, int var4, int var5, int var6, int var7) {
-      if (GroundItemPile.loadWidgetGroup(var0)) {
-         class279.field1145 = null;
-         DevicePcmPlayerProvider.drawWidgetGroup(Widget.widgets[var0], -1, var1, var2, var3, var4, var5, var6, var7);
-         if (class279.field1145 != null) {
-            DevicePcmPlayerProvider.drawWidgetGroup(class279.field1145, -1412584499, var1, var2, var3, var4, class54.field1161, class157.field1114, var7);
-            class279.field1145 = null;
-         }
-      } else if (var7 != -1) {
-         Client.field100[var7] = true;
-      } else {
-         for (int var8 = 0; var8 < 100; ++var8) {
-            Client.field100[var8] = true;
-         }
-      }
+			if (var0 == 231) {
+				return 'c';
+			}
 
-   }
+			if (var0 >= 232 && var0 <= 235) {
+				return 'e';
+			}
 
-   static {
-      Interpreter_arrayLengths = new int[5];
-      Interpreter_arrays = new int[5][5000];
-      Interpreter_intStack = new int[1000];
-      Interpreter_stringStack = new String[1000];
-      Interpreter_frameDepth = 0;
-      Interpreter_frames = new ScriptFrame[50];
-      Interpreter_calendar = Calendar.getInstance();
-      field422 = new String[]{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-      field423 = false;
-      field424 = false;
-      field425 = 0;
-      field426 = Math.log(2.0D);
-   }
+			if (var0 >= 236 && var0 <= 239) {
+				return 'i';
+			}
+
+			if (var0 == 241 && var1 != Language.Language_ES) {
+				return 'n';
+			}
+
+			if (var0 >= 242 && var0 <= 246) {
+				return 'o';
+			}
+
+			if (var0 >= 249 && var0 <= 252) {
+				return 'u';
+			}
+
+			if (var0 == 253 || var0 == 255) {
+				return 'y';
+			}
+		}
+
+		if (var0 == 338) {
+			return 'O';
+		} else if (var0 == 339) {
+			return 'o';
+		} else if (var0 == 376) {
+			return 'Y';
+		} else {
+			return var0;
+		}
+	}
+
+	@ObfuscatedName("fl")
+	@ObfuscatedSignature(
+		signature = "(I)V",
+		garbageValue = "-2098747776"
+	)
+	static void method2020() {
+		Client.packetWriter.clearBuffer();
+		Client.packetWriter.packetBuffer.offset = 0;
+		Client.packetWriter.serverPacket = null;
+		Client.packetWriter.field1300 = null;
+		Client.packetWriter.field1301 = null;
+		Client.packetWriter.field1299 = null;
+		Client.packetWriter.serverPacketLength = 0;
+		Client.packetWriter.field1298 = 0;
+		Client.rebootTimer = 0;
+		WorldMapData_1.method708();
+		Client.minimapState = 0;
+		Client.destinationX = 0;
+
+		int var0;
+		for (var0 = 0; var0 < 2048; ++var0) {
+			Client.players[var0] = null;
+		}
+
+		Message.localPlayer = null;
+
+		for (var0 = 0; var0 < Client.npcs.length; ++var0) {
+			NPC var1 = Client.npcs[var0];
+			if (var1 != null) {
+				var1.targetIndex = -1;
+				var1.false0 = false;
+			}
+		}
+
+		ItemContainer.itemContainers = new NodeHashTable(32);
+		class195.updateGameState(30);
+
+		for (var0 = 0; var0 < 100; ++var0) {
+			Client.field833[var0] = true;
+		}
+
+		class219.method4076();
+	}
 }

@@ -28,7 +28,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.util.Map;
-import java.util.TreeSet;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.runelite.api.Client;
@@ -41,7 +41,6 @@ import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.ProgressPieComponent;
-import static net.runelite.client.util.ColorUtil.setAlphaComponent;
 
 /**
  * Represents the overlay that shows timers on traps that are placed by the
@@ -71,13 +70,6 @@ public class ChestOverlay extends Overlay
 	}
 
 	/**
-	 * Updates the timer colors.
-	 */
-	public void updateConfig()
-	{
-	}
-
-	/**
 	 * Iterates over all the traps that were placed by the local player, and
 	 * draws a circle or a timer on the trap, depending on the trap state.
 	 *
@@ -85,26 +77,24 @@ public class ChestOverlay extends Overlay
 	 */
 	private void drawChests(Graphics2D graphics)
 	{
-
 		for (Map.Entry<WorldPoint, ThievingChest> entry : plugin.getChests().entrySet())
 		{
 			ThievingChest chest = entry.getValue();
 			WorldPoint pos = entry.getKey();
 
-
 			if (chest != null)
 			{
-				if (!plugin.isBatsFound() && !chest.isEverOpened())
+				if (!plugin.isBatsFound() && !chest.isEverOpened() && shouldDrawChest(pos))
 				{
-					if (shouldDrawChest(pos))
-					{
-						Color drawColor = new Color(setAlphaComponent(plugin.getGetPotentialBatColor().getRGB(), getChestOpacity(pos)));
-						drawCircleOnTrap(graphics, chest, drawColor);
-					}
+					Color drawColor = new Color(plugin.getPotentialBatColor().getRed(),
+						plugin.getPotentialBatColor().getGreen(),
+						plugin.getPotentialBatColor().getBlue(),
+						getChestOpacity(pos));
+					drawCircleOnTrap(graphics, chest, drawColor);
 				}
 				if (chest.isPoison())
 				{
-					drawCircleOnTrap(graphics, chest, plugin.getGetPoisonTrapColor());
+					drawCircleOnTrap(graphics, chest, plugin.getPoisonTrapColor());
 				}
 			}
 		}
@@ -120,7 +110,7 @@ public class ChestOverlay extends Overlay
 		BatSolver solver = plugin.getSolver();
 		if (solver != null && chestId != -1)
 		{
-			TreeSet<Integer> matches = solver.matchSolutions();
+			Set<Integer> matches = solver.matchSolutions();
 			return matches.contains(chestId) || matches.size() == 0;
 		}
 		return true;
@@ -135,17 +125,18 @@ public class ChestOverlay extends Overlay
 	 */
 	private void drawCircleOnTrap(Graphics2D graphics, ThievingChest chest, Color fill)
 	{
-		if (chest.getLocalPoint().getPlane() != client.getPlane())
+		if (chest.getWorldPoint().getPlane() != client.getPlane())
 		{
 			return;
 		}
-		LocalPoint localLoc = LocalPoint.fromWorld(client, chest.getLocalPoint());
+
+		LocalPoint localLoc = LocalPoint.fromWorld(client, chest.getWorldPoint());
 		if (localLoc == null)
 		{
 			return;
 		}
-		Point loc = Perspective.localToCanvas(client, localLoc, chest.getLocalPoint().getPlane());
 
+		Point loc = Perspective.localToCanvas(client, localLoc, chest.getWorldPoint().getPlane());
 		ProgressPieComponent pie = new ProgressPieComponent();
 		pie.setFill(fill);
 		pie.setBorderColor(Color.BLACK);

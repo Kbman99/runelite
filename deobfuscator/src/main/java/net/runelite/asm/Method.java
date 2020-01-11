@@ -35,7 +35,7 @@ import net.runelite.asm.attributes.code.LocalVariable;
 import net.runelite.asm.attributes.code.Parameter;
 import net.runelite.asm.attributes.code.instruction.types.LVTInstruction;
 import net.runelite.asm.signature.Signature;
-import org.objectweb.asm.AnnotationVisitor;
+import net.runelite.deob.DeobAnnotations;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
@@ -46,7 +46,7 @@ import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import static org.objectweb.asm.Opcodes.ACC_SYNCHRONIZED;
 
-public class Method
+public class Method implements Annotated, Named
 {
 	public static final int ACCESS_MODIFIERS = ACC_PUBLIC | ACC_PRIVATE | ACC_PROTECTED;
 
@@ -91,8 +91,7 @@ public class Method
 
 		for (Annotation annotation : annotations.getAnnotations())
 		{
-			AnnotationVisitor av = visitor.visitAnnotation(annotation.getType().toString(), true);
-			annotation.accept(av);
+			annotation.accept(visitor.visitAnnotation(annotation.getType().toString(), true));
 		}
 
 		if (code != null)
@@ -191,6 +190,17 @@ public class Method
 	public void setDescriptor(Signature signature)
 	{
 		this.arguments = signature;
+	}
+
+	public Signature getObfuscatedSignature()
+	{
+		Signature sig = DeobAnnotations.getObfuscatedSignature(this);
+		if (sig == null)
+		{
+			sig = arguments;
+		}
+
+		return sig;
 	}
 
 	public boolean isNative()

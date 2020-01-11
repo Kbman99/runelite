@@ -55,7 +55,7 @@ public interface RaidsThievingConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 5,
+		position = 3,
 		keyName = "batNotify",
 		name = "Notify when found",
 		description = "Send notification if you see bats being found."

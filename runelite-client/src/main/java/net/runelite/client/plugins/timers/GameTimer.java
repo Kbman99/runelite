@@ -27,7 +27,6 @@
  */
 package net.runelite.client.plugins.timers;
 
-import java.awt.image.BufferedImage;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import lombok.AccessLevel;
@@ -35,9 +34,8 @@ import lombok.Getter;
 import net.runelite.api.GraphicID;
 import net.runelite.api.ItemID;
 import net.runelite.api.SpriteID;
-import net.runelite.client.game.ItemManager;
-import net.runelite.client.game.SpriteManager;
 
+@Getter(AccessLevel.PACKAGE)
 enum GameTimer
 {
 	STAMINA(ItemID.STAMINA_POTION4, GameTimerImageType.ITEM, "Stamina", 2, ChronoUnit.MINUTES, true),
@@ -52,16 +50,13 @@ enum GameTimer
 	DMM_HALFTB(SpriteID.SPELL_TELE_BLOCK, GameTimerImageType.SPRITE, "Deadman Mode Half Teleblock", 75, ChronoUnit.SECONDS, true),
 	SUPERANTIFIRE(ItemID.SUPER_ANTIFIRE_POTION4, GameTimerImageType.ITEM, "Super antifire", 3, ChronoUnit.MINUTES),
 	BIND(SpriteID.SPELL_BIND, GameTimerImageType.SPRITE, "Bind", GraphicID.BIND, 5, ChronoUnit.SECONDS, true),
-	HALFBIND(SpriteID.SPELL_BIND, GameTimerImageType.SPRITE, "Half Bind", GraphicID.BIND, 2500, ChronoUnit.MILLIS, true),
 	SNARE(SpriteID.SPELL_SNARE, GameTimerImageType.SPRITE, "Snare", GraphicID.SNARE, 10, ChronoUnit.SECONDS, true),
-	HALFSNARE(SpriteID.SPELL_SNARE, GameTimerImageType.SPRITE, "Half Snare", GraphicID.SNARE, 5, ChronoUnit.SECONDS, true),
 	ENTANGLE(SpriteID.SPELL_ENTANGLE, GameTimerImageType.SPRITE, "Entangle", GraphicID.ENTANGLE, 15, ChronoUnit.SECONDS, true),
-	HALFENTANGLE(SpriteID.SPELL_ENTANGLE, GameTimerImageType.SPRITE, "Half Entangle", GraphicID.ENTANGLE, 7500, ChronoUnit.MILLIS, true),
 	ICERUSH(SpriteID.SPELL_ICE_RUSH, GameTimerImageType.SPRITE, "Ice rush", GraphicID.ICE_RUSH, 5, ChronoUnit.SECONDS, true),
 	ICEBURST(SpriteID.SPELL_ICE_BURST, GameTimerImageType.SPRITE, "Ice burst", GraphicID.ICE_BURST, 10, ChronoUnit.SECONDS, true),
 	ICEBLITZ(SpriteID.SPELL_ICE_BLITZ, GameTimerImageType.SPRITE, "Ice blitz", GraphicID.ICE_BLITZ, 15, ChronoUnit.SECONDS, true),
 	ICEBARRAGE(SpriteID.SPELL_ICE_BARRAGE, GameTimerImageType.SPRITE, "Ice barrage", GraphicID.ICE_BARRAGE, 20, ChronoUnit.SECONDS, true),
-	IMBUEDHEART(ItemID.IMBUED_HEART, GameTimerImageType.ITEM, "Imbued heart", GraphicID.IMBUED_HEART, 420, ChronoUnit.SECONDS),
+	IMBUEDHEART(ItemID.IMBUED_HEART, GameTimerImageType.ITEM, "Imbued heart", GraphicID.IMBUED_HEART, 420, ChronoUnit.SECONDS, true),
 	VENGEANCE(SpriteID.SPELL_VENGEANCE, GameTimerImageType.SPRITE, "Vengeance", 30, ChronoUnit.SECONDS),
 	EXSUPERANTIFIRE(ItemID.EXTENDED_SUPER_ANTIFIRE4, GameTimerImageType.ITEM, "Extended Super AntiFire", 6, ChronoUnit.MINUTES),
 	OVERLOAD_RAID(ItemID.OVERLOAD_4_20996, GameTimerImageType.ITEM, "Overload", 5, ChronoUnit.MINUTES, true),
@@ -74,15 +69,18 @@ enum GameTimer
 	MINIGAME_TELEPORT(SpriteID.TAB_QUESTS_RED_MINIGAMES, GameTimerImageType.SPRITE, "Minigame Teleport", 20, ChronoUnit.MINUTES),
 	SKULL(SpriteID.PLAYER_KILLER_SKULL_523, GameTimerImageType.SPRITE, "Skull", 20, ChronoUnit.MINUTES),
 	ANTIPOISON(ItemID.ANTIPOISON4, GameTimerImageType.ITEM, "Antipoison"),
-	ANTIVENOM(ItemID.ANTIVENOM4, GameTimerImageType.ITEM, "Anti-venom");
+	ANTIVENOM(ItemID.ANTIVENOM4, GameTimerImageType.ITEM, "Anti-venom"),
+	DRAGON_FIRE_SHIELD(ItemID.DRAGONFIRE_SHIELD_11284, GameTimerImageType.ITEM, "Dragonfire Shield Special", 2, ChronoUnit.MINUTES),
+	DIVINE_SUPER_ATTACK(ItemID.DIVINE_SUPER_ATTACK_POTION4, GameTimerImageType.ITEM, "Divine Super Attack", 5, ChronoUnit.MINUTES),
+	DIVINE_SUPER_STRENGTH(ItemID.DIVINE_SUPER_STRENGTH_POTION4, GameTimerImageType.ITEM, "Divine Super Strength", 5, ChronoUnit.MINUTES),
+	DIVINE_SUPER_DEFENCE(ItemID.DIVINE_SUPER_DEFENCE_POTION4, GameTimerImageType.ITEM, "Divine Super Defence", 5, ChronoUnit.MINUTES),
+	DIVINE_SUPER_COMBAT(ItemID.DIVINE_SUPER_COMBAT_POTION4, GameTimerImageType.ITEM, "Divine Super Combat", 5, ChronoUnit.MINUTES),
+	DIVINE_RANGING(ItemID.DIVINE_RANGING_POTION4, GameTimerImageType.ITEM, "Divine Ranging", 5, ChronoUnit.MINUTES),
+	DIVINE_MAGIC(ItemID.DIVINE_MAGIC_POTION4, GameTimerImageType.ITEM, "Divine Magic", 5, ChronoUnit.MINUTES);
 
-	@Getter(AccessLevel.PACKAGE)
 	private final Duration duration;
-	@Getter(AccessLevel.PACKAGE)
 	private final Integer graphicId;
-	@Getter(AccessLevel.PACKAGE)
 	private final String description;
-	@Getter(AccessLevel.PACKAGE)
 	private final boolean removedOnDeath;
 
 	private final int imageId;
@@ -116,18 +114,5 @@ enum GameTimer
 	GameTimer(final int imageId, final GameTimerImageType idType, final String description)
 	{
 		this(imageId, idType, description, null, 1, ChronoUnit.MILLIS, false);
-	}
-
-	BufferedImage getImage(ItemManager itemManager, SpriteManager spriteManager)
-	{
-		switch (imageType)
-		{
-			case ITEM:
-				return itemManager.getImage(imageId);
-			case SPRITE:
-				return spriteManager.getSprite(imageId, 0);
-			default:
-				return null;
-		}
 	}
 }

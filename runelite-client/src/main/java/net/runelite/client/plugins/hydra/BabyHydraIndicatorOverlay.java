@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, https://runelitepl.us
+ * Copyright (c) 2018, https://openosrs.com
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -53,17 +53,14 @@ public class BabyHydraIndicatorOverlay extends Overlay
 	@Override
 	public Dimension render(Graphics2D graphics)
 	{
-		if (plugin.getHydra() != null)
+		if (plugin.getHydra() != null && plugin.getHydras().containsKey(plugin.getHydra().getIndex()))
 		{
-			if (plugin.getHydras().containsKey(plugin.getHydra().getIndex()))
+			int val = plugin.getHydras().get(plugin.getHydra().getIndex());
+			if (val != 0)
 			{
-				int val = plugin.getHydras().get(plugin.getHydra().getIndex());
-				if (val != 0)
-				{
-					panelComponent.getChildren().clear();
-					panelComponent.getChildren().add(LineComponent.builder().right(Integer.toString(val)).build());
-					return panelComponent.render(graphics);
-				}
+				panelComponent.getChildren().clear();
+				panelComponent.getChildren().add(LineComponent.builder().right(Integer.toString(val)).build());
+				return panelComponent.render(graphics);
 			}
 		}
 		return null;

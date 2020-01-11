@@ -38,11 +38,13 @@ import net.runelite.client.menus.MenuManager;
 import net.runelite.client.menus.WidgetMenuOption;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @PluginDescriptor(
 	name = "Instance Map",
-	description = "Add an instanced map, accessible by right-clicking the map button"
+	description = "Add an instanced map, accessible by right-clicking the map button",
+	type = PluginType.UTILITY
 )
 @Singleton
 public class InstanceMapPlugin extends Plugin
@@ -84,8 +86,9 @@ public class InstanceMapPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
+
 		overlayManager.add(overlay);
 		addCustomOptions();
 		keyManager.registerKeyListener(inputListener);
@@ -94,7 +97,7 @@ public class InstanceMapPlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlay.setShowMap(false);
 		overlayManager.remove(overlay);
@@ -105,7 +108,7 @@ public class InstanceMapPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		overlay.onGameStateChange(event);
 	}
@@ -116,7 +119,7 @@ public class InstanceMapPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onWidgetMenuOptionClicked(WidgetMenuOptionClicked event)
+	private void onWidgetMenuOptionClicked(WidgetMenuOptionClicked event)
 	{
 		if (event.getWidget() != WORLD_MAP_OPTION)
 		{

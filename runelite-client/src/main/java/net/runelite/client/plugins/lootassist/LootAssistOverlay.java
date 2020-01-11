@@ -22,8 +22,8 @@ import net.runelite.client.ui.overlay.OverlayUtil;
 @Singleton
 public class LootAssistOverlay extends Overlay
 {
-	private Client client;
-	private DecimalFormat d = new DecimalFormat("##.#");
+	private final Client client;
+	private final DecimalFormat d = new DecimalFormat("##.#");
 
 	@Inject
 	public LootAssistOverlay(final Client client)
@@ -79,19 +79,19 @@ public class LootAssistOverlay extends Overlay
 					Point timeLoc = Perspective.getCanvasTextLocation(client, graphics, lp,
 						timeOverlay, graphics.getFontMetrics().getHeight());
 					OverlayUtil.renderPolygon(graphics, poly, Color.WHITE);
-					if (timeRemaining < 5)
+					if (timeRemaining < 5 && timeRemaining > 0)
 					{
 						OverlayUtil.renderTextLocation(graphics, timeLoc, timeOverlay, Color.RED);
 						OverlayUtil.renderTextLocation(graphics, textLoc, nameOverlay, Color.RED);
 					}
-					if (timeRemaining < 2)
-					{
-						client.setHintArrow(WorldPoint.fromLocal(client, lp));
-					}
-					else
+					else if (timeRemaining <= 60)
 					{
 						OverlayUtil.renderTextLocation(graphics, timeLoc, timeOverlay, Color.WHITE);
 						OverlayUtil.renderTextLocation(graphics, textLoc, nameOverlay, Color.WHITE);
+					}
+					if (timeRemaining < 2)
+					{
+						client.setHintArrow(WorldPoint.fromLocal(client, lp));
 					}
 
 

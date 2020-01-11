@@ -37,12 +37,12 @@ public enum AoeProjectileInfo
 	LIZARDMAN_SHAMAN_AOE(ProjectileID.LIZARDMAN_SHAMAN_AOE, 5),
 	CRAZY_ARCHAEOLOGIST_AOE(ProjectileID.CRAZY_ARCHAEOLOGIST_AOE, 3),
 	ICE_DEMON_RANGED_AOE(ProjectileID.ICE_DEMON_RANGED_AOE, 3),
-	
+
 	/**
 	 * When you don't have pray range on ice demon does an ice barrage
 	 */
 	ICE_DEMON_ICE_BARRAGE_AOE(ProjectileID.ICE_DEMON_ICE_BARRAGE_AOE, 3),
-	
+
 	/**
 	 * The AOE when vasa first starts
 	 */
@@ -63,7 +63,7 @@ public enum AoeProjectileInfo
 	 */
 	GALVEK_MINE(ProjectileID.GALVEK_MINE, 3),
 	GALVEK_BOMB(ProjectileID.GALVEK_BOMB, 3),
-	
+
 	/**
 	 * the AOEs of Grotesque Guardians
 	 */
@@ -123,7 +123,12 @@ public enum AoeProjectileInfo
 	/**
 	 * Demonic gorilla
 	 */
-	DEMONIC_GORILLA_BOULDER(ProjectileID.DEMONIC_GORILLA_BOULDER, 1);
+	DEMONIC_GORILLA_BOULDER(ProjectileID.DEMONIC_GORILLA_BOULDER, 1),
+
+	/**
+	 * Marble gargoyle (Superior Gargoyle)
+	 */
+	MARBLE_GARGOYLE_AOE(ProjectileID.MARBLE_GARGOYLE_AOE, 1);
 
 	private static final Map<Integer, AoeProjectileInfo> map = new HashMap<>();
 

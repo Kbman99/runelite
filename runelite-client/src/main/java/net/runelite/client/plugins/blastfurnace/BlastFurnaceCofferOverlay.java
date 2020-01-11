@@ -29,7 +29,7 @@ import java.awt.Graphics2D;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.runelite.api.Client;
-import static net.runelite.api.MenuAction.RUNELITE_OVERLAY_CONFIG;
+import static net.runelite.api.MenuOpcode.RUNELITE_OVERLAY_CONFIG;
 import static net.runelite.api.Varbits.BLAST_FURNACE_COFFER;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
@@ -38,9 +38,9 @@ import static net.runelite.client.ui.overlay.OverlayManager.OPTION_CONFIGURE;
 import net.runelite.client.ui.overlay.OverlayMenuEntry;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.PanelComponent;
-import net.runelite.client.ui.overlay.components.table.TableComponent;
 import net.runelite.client.ui.overlay.components.table.TableAlignment;
-import net.runelite.client.util.StackFormatter;
+import net.runelite.client.ui.overlay.components.table.TableComponent;
+import net.runelite.client.util.QuantityFormatter;
 
 @Singleton
 class BlastFurnaceCofferOverlay extends Overlay
@@ -78,7 +78,7 @@ class BlastFurnaceCofferOverlay extends Overlay
 		{
 			sack.setHidden(true);
 
-			tableComponent.addRow("Coffer:", StackFormatter.quantityToStackSize(client.getVar(BLAST_FURNACE_COFFER)) + " gp");
+			tableComponent.addRow("Coffer:", QuantityFormatter.quantityToStackSize(client.getVar(BLAST_FURNACE_COFFER)) + " gp");
 		}
 
 		if (!tableComponent.isEmpty())

@@ -36,15 +36,15 @@ import lombok.Getter;
 public abstract class PluginPanel extends JPanel
 {
 	public static final int PANEL_WIDTH = 225;
-	private static final int SCROLLBAR_WIDTH = 17;
-	private static final int OFFSET = 6;
-	private static final EmptyBorder BORDER_PADDING = new EmptyBorder(OFFSET, OFFSET, OFFSET, OFFSET);
+	public static final int SCROLLBAR_WIDTH = 17;
+	public static final int BORDER_OFFSET = 6;
+	private static final EmptyBorder BORDER_PADDING = new EmptyBorder(BORDER_OFFSET, BORDER_OFFSET, BORDER_OFFSET, BORDER_OFFSET);
 	private static final Dimension OUTER_PREFERRED_SIZE = new Dimension(PluginPanel.PANEL_WIDTH + SCROLLBAR_WIDTH, 0);
 
 	@Getter(AccessLevel.PROTECTED)
 	private final JScrollPane scrollPane;
 
-	@Getter(AccessLevel.PACKAGE)
+	@Getter(AccessLevel.PUBLIC)
 	private final JPanel wrappedPanel;
 
 	protected PluginPanel()

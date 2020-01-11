@@ -27,26 +27,18 @@ package net.runelite.client.plugins.fps;
 import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import lombok.AccessLevel;
-import lombok.Getter;
-import net.runelite.api.Client;
-import net.runelite.api.GameState;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.FocusChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.DrawManager;
 import net.runelite.client.ui.overlay.OverlayManager;
-import net.runelite.client.util.ExecutorServiceExceptionLogger;
-import net.runelite.client.util.ping.Ping;
 
 /**
- * Performance has two primary areas, this plugin class just keeps those areas up to date and handles setup / teardown.
+ * FPS Control has two primary areas, this plugin class just keeps those areas up to date and handles setup / teardown.
  *
  * <p>Overlay paints the current FPS, the color depends on whether or not FPS is being enforced.
  * The overlay is lightweight and is merely and indicator.
@@ -54,24 +46,18 @@ import net.runelite.client.util.ping.Ping;
  * <p>Draw Listener, sleeps a calculated amount after each canvas paint operation.
  * This is the heart of the plugin, the amount of sleep taken is regularly adjusted to account varying
  * game and system load, it usually finds the sweet spot in about two seconds.
- *
- * <p>Pinging the world, when logged in and ping display is enabled, every 5 seconds the remote server
- * for the current world is pinged. A scheduled method in this class is responsible for that. When ping fails
- * or those conditions are not met, ping will have the value of -1.
  */
 @PluginDescriptor(
 	name = "Performance",
-	description = "Show current Ping and FPS or set an FPS limit",
-	tags = {"frames", "framerate", "limit", "overlay", "ping"},
-	enabledByDefault = false
+	description = "Show current FPS or set an FPS limit",
+	tags = {"frames", "framerate", "limit", "overlay"},
+	enabledByDefault = false,
+	type = PluginType.MISCELLANEOUS
 )
 @Singleton
 public class FpsPlugin extends Plugin
 {
 	static final String CONFIG_GROUP_KEY = "fpscontrol";
-
-	@Getter
-	private int ping;
 
 	@Inject
 	private OverlayManager overlayManager;
@@ -85,23 +71,6 @@ public class FpsPlugin extends Plugin
 	@Inject
 	private DrawManager drawManager;
 
-	@Inject
-	private Client client;
-
-	@Inject
-	private FpsConfig fpsConfig;
-
-	private final ScheduledExecutorService pingExecutorService = new ExecutorServiceExceptionLogger(Executors.newSingleThreadScheduledExecutor());
-
-	@Getter(AccessLevel.PACKAGE)
-	private FpsLimitMode limitMode;
-
-	@Getter(AccessLevel.PACKAGE)
-	private boolean drawFps;
-
-	@Getter(AccessLevel.PACKAGE)
-	private boolean drawPing;
-
 	@Provides
 	FpsConfig provideConfig(ConfigManager configManager)
 	{
@@ -109,54 +78,34 @@ public class FpsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (event.getGroup().equals(CONFIG_GROUP_KEY))
 		{
 			drawListener.reloadConfig();
-
-			limitMode = fpsConfig.limitMode();
-			drawFps = fpsConfig.drawFps();
-			drawPing = fpsConfig.drawPing();
 		}
 	}
 
 	@Subscribe
-	public void onFocusChanged(FocusChanged event)
+	private void onFocusChanged(FocusChanged event)
 	{
 		drawListener.onFocusChanged(event);
 		overlay.onFocusChanged(event);
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
-		limitMode = fpsConfig.limitMode();
-		drawFps = fpsConfig.drawFps();
-		drawPing = fpsConfig.drawPing();
 		overlayManager.add(overlay);
 		drawManager.registerEveryFrameListener(drawListener);
 		drawListener.reloadConfig();
-		pingExecutorService.scheduleAtFixedRate(this::getPingToCurrentWorld, 5, 5, TimeUnit.SECONDS);
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
 		drawManager.unregisterEveryFrameListener(drawListener);
-		pingExecutorService.shutdown();
 	}
 
-	private void getPingToCurrentWorld()
-	{
-		if (client.getGameState().equals(GameState.LOGGED_IN) && drawPing)
-		{
-			ping = Ping.ping(String.format("oldschool%d.runescape.com", client.getWorld() - 300));
-		}
-		else
-		{
-			ping = -1;
-		}
-	}
 }

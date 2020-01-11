@@ -30,9 +30,9 @@ import java.util.function.Predicate;
  * A query to search the game for objects that match.
  *
  * @param <EntityType> the returned object type
- * @param <QueryType> the query type
+ * @param <QueryType>  the query type
  */
-public abstract class Query<EntityType, QueryType>
+public abstract class Query<EntityType, QueryType, QR extends QueryResults>
 {
 	protected Predicate<EntityType> predicate = x -> true;
 
@@ -47,7 +47,7 @@ public abstract class Query<EntityType, QueryType>
 	 * @param client the game client
 	 * @return the matching objects
 	 */
-	public abstract EntityType[] result(Client client);
+	public abstract QR result(Client client);
 
 	/**
 	 * Constructs and returns a predicate that will evaluate {@link #predicate}

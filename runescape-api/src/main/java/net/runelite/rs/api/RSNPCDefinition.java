@@ -9,7 +9,7 @@ public interface RSNPCDefinition extends NPCDefinition
 	@Override
 	String getName();
 
-	@Import("archives")
+	@Import("models")
 	@Override
 	int[] getModels();
 
@@ -20,6 +20,10 @@ public interface RSNPCDefinition extends NPCDefinition
 	@Import("isClickable")
 	@Override
 	boolean isClickable();
+
+	@Import("isFollower")
+	@Override
+	boolean isFollower();
 
 	@Import("drawMapDot")
 	@Override

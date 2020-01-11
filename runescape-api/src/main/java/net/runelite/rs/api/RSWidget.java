@@ -73,6 +73,10 @@ public interface RSWidget extends Widget
 	@Override
 	int getModelId();
 
+	@Import("modelId")
+	@Override
+	void setModelId(int modelId);
+
 	@Import("itemIds")
 	int[] getItemIds();
 
@@ -107,11 +111,11 @@ public interface RSWidget extends Widget
 	@Override
 	void setTextColor(int textColor);
 
-	@Import("transparency")
+	@Import("transparencyTop")
 	@Override
 	int getOpacity();
 
-	@Import("transparency")
+	@Import("transparencyTop")
 	@Override
 	void setOpacity(int opacity);
 
@@ -160,14 +164,37 @@ public interface RSWidget extends Widget
 	@Import("childIndex")
 	void setIndex(int index);
 
-	//@Import("rotationX")
-	//int getRotationX();
+	@Import("modelAngleX")
+	@Override
+	int getRotationX();
 
-	//@Import("rotationY") --- All unused
-	//int getRotationY();
+	@Import("modelAngleX")
+	@Override
+	void setRotationX(int rotationX);
 
-	//@Import("rotationZ")
-	//int getRotationZ();
+	@Import("modelAngleY")
+	@Override
+	int getRotationY();
+
+	@Import("modelAngleY")
+	@Override
+	void setRotationY(int rotationY);
+
+	@Import("modelAngleZ")
+	@Override
+	int getRotationZ();
+
+	@Import("modelAngleZ")
+	@Override
+	void setRotationZ(int rotationZ);
+
+	@Import("modelZoom")
+	@Override
+	int getModelZoom();
+
+	@Import("modelZoom")
+	@Override
+	void setModelZoom(int modelZoom);
 
 	@Import("contentType")
 	@Override
@@ -312,7 +339,7 @@ public interface RSWidget extends Widget
 	@Override
 	void setHasListener(boolean hasListener);
 
-	@Import("onKeyListener")
+	@Import("onKey")
 	@Override
 	Object[] getOnKeyListener();
 
@@ -320,11 +347,15 @@ public interface RSWidget extends Widget
 	@Override
 	Object[] getOnLoadListener();
 
-	@Import("onDialogAbortListener")
+	@Import("onOp")
+	@Override
+	Object[] getOnOp();
+
+	@Import("onDialogAbort")
 	@Override
 	void setOnDialogAbortListener(Object... args);
 
-	@Import("onKeyListener")
+	@Import("onKey")
 	@Override
 	void setOnKeyListener(Object... args);
 
@@ -442,7 +473,7 @@ public interface RSWidget extends Widget
 
 	@Import("getFont")
 	@Override
-	RSAbstractFont getFont();
+	RSFont getFont();
 
 	@Import("fill")
 	@Override
@@ -475,4 +506,37 @@ public interface RSWidget extends Widget
 	@Import("noScrollThrough")
 	@Override
 	void setNoScrollThrough(boolean noScrollThrough);
+
+	@Import("modelFrame")
+	int getModelFrame();
+
+	@Import("modelFrameCycle")
+	int getModelFrameCycle();
+
+	@Import("onInvTransmit")
+	@Override
+	Object[] getOnInvTransmit();
+
+	@Import("containsMouse")
+	@Override
+	boolean containsMouse();
+
+	@Import("getSprite")
+	RSSprite getSprite(boolean b);
+
+	@Import("onRelease")
+	@Override
+	void setOnReleaseListener(Object[] o);
+
+	@Import("varTransmitTriggers")
+	@Override
+	void setVarTransmitTrigger(int[] i);
+
+	@Import("onHold")
+	@Override
+	void setOnHoldListener(Object[] o);
+
+	@Import("onClick")
+	@Override
+	void setOnClickListener(Object[] o);
 }

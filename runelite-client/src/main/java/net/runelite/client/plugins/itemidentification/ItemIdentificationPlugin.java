@@ -30,17 +30,19 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.AccessLevel;
 import lombok.Getter;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @PluginDescriptor(
 	name = "Item Identification",
 	description = "Show identifying text over items with difficult to distinguish sprites",
-	enabledByDefault = false
+	enabledByDefault = false,
+	type = PluginType.UTILITY
 )
 @Singleton
 public class ItemIdentificationPlugin extends Plugin
@@ -64,6 +66,12 @@ public class ItemIdentificationPlugin extends Plugin
 	private boolean showHerbs;
 	@Getter(AccessLevel.PACKAGE)
 	private boolean showSaplings;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean showOres;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean showGems;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean showPotions;
 
 	@Provides
 	ItemIdentificationConfig getConfig(ConfigManager configManager)
@@ -85,7 +93,7 @@ public class ItemIdentificationPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("itemidentification"))
 		{
@@ -102,5 +110,8 @@ public class ItemIdentificationPlugin extends Plugin
 		this.showSeeds = config.showSeeds();
 		this.showHerbs = config.showHerbs();
 		this.showSaplings = config.showSaplings();
+		this.showOres = config.showOres();
+		this.showGems = config.showGems();
+		this.showPotions = config.showPotions();
 	}
 }

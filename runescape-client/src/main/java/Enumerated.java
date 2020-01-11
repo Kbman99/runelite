@@ -3,14 +3,14 @@ import net.runelite.mapping.Implements;
 import net.runelite.mapping.ObfuscatedName;
 import net.runelite.mapping.ObfuscatedSignature;
 
-@ObfuscatedName("gc")
+@ObfuscatedName("gz")
 @Implements("Enumerated")
 public interface Enumerated {
-   @ObfuscatedName("f")
-   @ObfuscatedSignature(
-      signature = "(B)I",
-      garbageValue = "83"
-   )
-   @Export("rsOrdinal")
-   int rsOrdinal();
+	@ObfuscatedName("i")
+	@ObfuscatedSignature(
+		signature = "(B)I",
+		garbageValue = "-57"
+	)
+	@Export("rsOrdinal")
+	int rsOrdinal();
 }

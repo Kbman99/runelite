@@ -1,138 +1,229 @@
-import java.util.Date;
+import java.lang.management.GarbageCollectorMXBean;
+import java.lang.management.ManagementFactory;
+import java.util.Iterator;
 import net.runelite.mapping.Export;
 import net.runelite.mapping.Implements;
 import net.runelite.mapping.ObfuscatedGetter;
 import net.runelite.mapping.ObfuscatedName;
 import net.runelite.mapping.ObfuscatedSignature;
 
-@ObfuscatedName("h")
+@ObfuscatedName("z")
 @Implements("WorldMapSectionType")
 public enum WorldMapSectionType implements Enumerated {
-   @ObfuscatedName("m")
-   @ObfuscatedSignature(
-      signature = "Lh;"
-   )
-   field1100(1, (byte)0),
-   @ObfuscatedName("f")
-   @ObfuscatedSignature(
-      signature = "Lh;"
-   )
-   field1101(0, (byte)1),
-   @ObfuscatedName("q")
-   @ObfuscatedSignature(
-      signature = "Lh;"
-   )
-   field1102(3, (byte)2),
-   @ObfuscatedName("w")
-   @ObfuscatedSignature(
-      signature = "Lh;"
-   )
-   field1103(2, (byte)3);
+	@ObfuscatedName("f")
+	@ObfuscatedSignature(
+		signature = "Lz;"
+	)
+	@Export("WORLDMAPSECTIONTYPE0")
+	WORLDMAPSECTIONTYPE0(3, (byte)0),
+	@ObfuscatedName("i")
+	@ObfuscatedSignature(
+		signature = "Lz;"
+	)
+	@Export("WORLDMAPSECTIONTYPE1")
+	WORLDMAPSECTIONTYPE1(0, (byte)1),
+	@ObfuscatedName("y")
+	@ObfuscatedSignature(
+		signature = "Lz;"
+	)
+	@Export("WORLDMAPSECTIONTYPE2")
+	WORLDMAPSECTIONTYPE2(1, (byte)2),
+	@ObfuscatedName("w")
+	@ObfuscatedSignature(
+		signature = "Lz;"
+	)
+	@Export("WORLDMAPSECTIONTYPE3")
+	WORLDMAPSECTIONTYPE3(2, (byte)3);
 
-   @ObfuscatedName("e")
-   @ObfuscatedSignature(
-      signature = "Llq;"
-   )
-   @Export("logoSprite")
-   static IndexedSprite logoSprite;
-   @ObfuscatedName("n")
-   static int[] field1104;
-   @ObfuscatedName("gc")
-   @ObfuscatedSignature(
-      signature = "[Llq;"
-   )
-   @Export("modIconSprites")
-   static IndexedSprite[] modIconSprites;
-   @ObfuscatedName("o")
-   @ObfuscatedGetter(
-      intValue = 738759853
-   )
-   @Export("type")
-   final int type;
-   @ObfuscatedName("u")
-   @Export("id")
-   final byte id;
+	@ObfuscatedName("hi")
+	@ObfuscatedGetter(
+		intValue = 75470723
+	)
+	@Export("oculusOrbFocalPointX")
+	static int oculusOrbFocalPointX;
+	@ObfuscatedName("p")
+	@ObfuscatedGetter(
+		intValue = -814445795
+	)
+	@Export("type")
+	final int type;
+	@ObfuscatedName("b")
+	@Export("id")
+	final byte id;
 
-   private WorldMapSectionType(int var3, byte var4) {
-      this.type = var3;
-      this.id = var4;
-   }
+	WorldMapSectionType(int var3, byte var4) {
+		this.type = var3;
+		this.id = var4;
+	}
 
-   @ObfuscatedName("f")
-   @ObfuscatedSignature(
-      signature = "(B)I",
-      garbageValue = "83"
-   )
-   @Export("rsOrdinal")
-   public int rsOrdinal() {
-      return this.id;
-   }
+	@ObfuscatedName("i")
+	@ObfuscatedSignature(
+		signature = "(B)I",
+		garbageValue = "-57"
+	)
+	@Export("rsOrdinal")
+	public int rsOrdinal() {
+		return this.id;
+	}
 
-   @ObfuscatedName("m")
-   public static String method252(long var0) {
-      class211.field1126.setTime(new Date(var0));
-      int var2 = class211.field1126.get(7);
-      int var3 = class211.field1126.get(5);
-      int var4 = class211.field1126.get(2);
-      int var5 = class211.field1126.get(1);
-      int var6 = class211.field1126.get(11);
-      int var7 = class211.field1126.get(12);
-      int var8 = class211.field1126.get(13);
-      return class211.field1125[var2 - 1] + ", " + var3 / 10 + var3 % 10 + "-" + class211.field1124[0][var4] + "-" + var5 + " " + var6 / 10 + var6 % 10 + ":" + var7 / 10 + var7 % 10 + ":" + var8 / 10 + var8 % 10 + " GMT";
-   }
+	@ObfuscatedName("f")
+	@ObfuscatedSignature(
+		signature = "(I)[Lz;",
+		garbageValue = "198707251"
+	)
+	static WorldMapSectionType[] method235() {
+		return new WorldMapSectionType[]{WORLDMAPSECTIONTYPE3, WORLDMAPSECTIONTYPE1, WORLDMAPSECTIONTYPE2, WORLDMAPSECTIONTYPE0};
+	}
 
-   @ObfuscatedName("w")
-   @ObfuscatedSignature(
-      signature = "(IZIZI)V",
-      garbageValue = "2102950996"
-   )
-   static void method248(int var0, boolean var1, int var2, boolean var3) {
-      if (ItemContainer.worlds != null) {
-         class3.method42(0, ItemContainer.worlds.length - 1, var0, var1, var2, var3);
-      }
+	@ObfuscatedName("f")
+	@ObfuscatedSignature(
+		signature = "(B)V",
+		garbageValue = "125"
+	)
+	static void method236() {
+		for (ObjectSound var0 = (ObjectSound)ObjectSound.objectSounds.last(); var0 != null; var0 = (ObjectSound)ObjectSound.objectSounds.previous()) {
+			if (var0.stream1 != null) {
+				Tiles.pcmStreamMixer.removeSubStream(var0.stream1);
+				var0.stream1 = null;
+			}
 
-   }
+			if (var0.stream2 != null) {
+				Tiles.pcmStreamMixer.removeSubStream(var0.stream2);
+				var0.stream2 = null;
+			}
+		}
 
-   @ObfuscatedName("z")
-   @ObfuscatedSignature(
-      signature = "(ILcg;ZI)I",
-      garbageValue = "-1520594673"
-   )
-   static int method253(int var0, Script var1, boolean var2) {
-      Widget var3 = var2 ? WorldMapIcon1.field1030 : class12.field1111;
-      if (var0 == 1500) {
-         Interpreter.Interpreter_intStack[++RouteStrategy.Interpreter_intStackSize - 1] = var3.x;
-         return 1;
-      } else if (var0 == 1501) {
-         Interpreter.Interpreter_intStack[++RouteStrategy.Interpreter_intStackSize - 1] = var3.y;
-         return 1;
-      } else if (var0 == 1502) {
-         Interpreter.Interpreter_intStack[++RouteStrategy.Interpreter_intStackSize - 1] = var3.width;
-         return 1;
-      } else if (var0 == 1503) {
-         Interpreter.Interpreter_intStack[++RouteStrategy.Interpreter_intStackSize - 1] = var3.height;
-         return 1;
-      } else if (var0 == 1504) {
-         Interpreter.Interpreter_intStack[++RouteStrategy.Interpreter_intStackSize - 1] = var3.isHidden ? 1 : 0;
-         return 1;
-      } else if (var0 == 1505) {
-         Interpreter.Interpreter_intStack[++RouteStrategy.Interpreter_intStackSize - 1] = var3.parentId;
-         return 1;
-      } else {
-         return 2;
-      }
-   }
+		ObjectSound.objectSounds.clear();
+	}
 
-   @ObfuscatedName("gp")
-   @ObfuscatedSignature(
-      signature = "(I)V",
-      garbageValue = "1187868759"
-   )
-   static void method254() {
-      if (class60.worldMap0 != null) {
-         class60.worldMap0.method366(SoundSystem.plane, (Canvas.localPlayer.x >> 7) + class50.baseX, (Canvas.localPlayer.y >> 7) + GraphicsObject.baseY, false);
-         class60.worldMap0.loadCache();
-      }
+	@ObfuscatedName("ab")
+	@ObfuscatedSignature(
+		signature = "(B)I",
+		garbageValue = "20"
+	)
+	@Export("getGcDuration")
+	protected static int getGcDuration() {
+		int var0 = 0;
+		if (Interpreter.garbageCollector == null || !Interpreter.garbageCollector.isValid()) {
+			try {
+				Iterator var1 = ManagementFactory.getGarbageCollectorMXBeans().iterator();
 
-   }
+				while (var1.hasNext()) {
+					GarbageCollectorMXBean var2 = (GarbageCollectorMXBean)var1.next();
+					if (var2.isValid()) {
+						Interpreter.garbageCollector = var2;
+						GameShell.garbageCollectorLastCheckTimeMs = -1L;
+						GameShell.garbageCollectorLastCollectionTime = -1L;
+					}
+				}
+			} catch (Throwable var11) {
+			}
+		}
+
+		if (Interpreter.garbageCollector != null) {
+			long var9 = WorldMapID.currentTimeMillis();
+			long var3 = Interpreter.garbageCollector.getCollectionTime();
+			if (GameShell.garbageCollectorLastCollectionTime != -1L) {
+				long var5 = var3 - GameShell.garbageCollectorLastCollectionTime;
+				long var7 = var9 - GameShell.garbageCollectorLastCheckTimeMs;
+				if (0L != var7) {
+					var0 = (int)(var5 * 100L / var7);
+				}
+			}
+
+			GameShell.garbageCollectorLastCollectionTime = var3;
+			GameShell.garbageCollectorLastCheckTimeMs = var9;
+		}
+
+		return var0;
+	}
+
+	@ObfuscatedName("gq")
+	@ObfuscatedSignature(
+		signature = "(Lbv;I)V",
+		garbageValue = "-821947807"
+	)
+	static final void method239(Actor var0) {
+		if (var0.field969 == Client.cycle || var0.sequence == -1 || var0.sequenceDelay != 0 || var0.sequenceFrameCycle + 1 > WorldMapSection0.SequenceDefinition_get(var0.sequence).frameLengths[var0.sequenceFrame]) {
+			int var1 = var0.field969 - var0.field950;
+			int var2 = Client.cycle - var0.field950;
+			int var3 = var0.field921 * 128 + var0.field925 * 64;
+			int var4 = var0.field966 * 128 + var0.field925 * 64;
+			int var5 = var0.field965 * 128 + var0.field925 * 64;
+			int var6 = var0.field929 * 128 + var0.field925 * 64;
+			var0.x = (var2 * var5 + var3 * (var1 - var2)) / var1;
+			var0.y = (var2 * var6 + var4 * (var1 - var2)) / var1;
+		}
+
+		var0.field980 = 0;
+		var0.orientation = var0.field970;
+		var0.rotation = var0.orientation;
+	}
+
+	@ObfuscatedName("jl")
+	@ObfuscatedSignature(
+		signature = "(IB)Ljava/lang/String;",
+		garbageValue = "24"
+	)
+	@Export("formatItemStacks")
+	static final String formatItemStacks(int var0) {
+		String var1 = Integer.toString(var0);
+
+		for (int var2 = var1.length() - 3; var2 > 0; var2 -= 3) {
+			var1 = var1.substring(0, var2) + "," + var1.substring(var2);
+		}
+
+		if (var1.length() > 9) {
+			return " " + NPC.colorStartTag(65408) + var1.substring(0, var1.length() - 8) + "M" + " " + " (" + var1 + ")" + "</col>";
+		} else {
+			return var1.length() > 6 ? " " + NPC.colorStartTag(16777215) + var1.substring(0, var1.length() - 4) + "K" + " " + " (" + var1 + ")" + "</col>" : " " + NPC.colorStartTag(16776960) + var1 + "</col>";
+		}
+	}
+
+	@ObfuscatedName("lp")
+	@ObfuscatedSignature(
+		signature = "(Ljava/lang/String;ZB)V",
+		garbageValue = "-1"
+	)
+	@Export("findItemDefinitions")
+	static void findItemDefinitions(String var0, boolean var1) {
+		var0 = var0.toLowerCase();
+		short[] var2 = new short[16];
+		int var3 = 0;
+
+		for (int var4 = 0; var4 < ItemDefinition.ItemDefinition_fileCount; ++var4) {
+			ItemDefinition var5 = PacketBufferNode.ItemDefinition_get(var4);
+			if ((!var1 || var5.isTradable) && var5.noteTemplate == -1 && var5.name.toLowerCase().indexOf(var0) != -1) {
+				if (var3 >= 250) {
+					KeyHandler.foundItemIdCount = -1;
+					class269.foundItemIds = null;
+					return;
+				}
+
+				if (var3 >= var2.length) {
+					short[] var6 = new short[var2.length * 2];
+
+					for (int var7 = 0; var7 < var3; ++var7) {
+						var6[var7] = var2[var7];
+					}
+
+					var2 = var6;
+				}
+
+				var2[var3++] = (short)var4;
+			}
+		}
+
+		class269.foundItemIds = var2;
+		class189.foundItemIndex = 0;
+		KeyHandler.foundItemIdCount = var3;
+		String[] var8 = new String[KeyHandler.foundItemIdCount];
+
+		for (int var9 = 0; var9 < KeyHandler.foundItemIdCount; ++var9) {
+			var8[var9] = PacketBufferNode.ItemDefinition_get(var2[var9]).name;
+		}
+
+		short[] var10 = class269.foundItemIds;
+		ParamDefinition.sortItemsByName(var8, var10, 0, var8.length - 1);
+	}
 }

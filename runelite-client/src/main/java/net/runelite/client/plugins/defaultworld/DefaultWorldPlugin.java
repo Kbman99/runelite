@@ -25,7 +25,6 @@
 package net.runelite.client.plugins.defaultworld;
 
 import com.google.inject.Provides;
-import java.io.IOException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
@@ -35,17 +34,19 @@ import net.runelite.api.events.GameStateChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.SessionOpen;
+import net.runelite.client.game.WorldService;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.util.WorldUtil;
 import net.runelite.http.api.worlds.World;
-import net.runelite.http.api.worlds.WorldClient;
 import net.runelite.http.api.worlds.WorldResult;
 
 @PluginDescriptor(
 	name = "Default World",
 	description = "Enable a default world to be selected when launching the client",
-	tags = {"home"}
+	tags = {"home"},
+	type = PluginType.UTILITY
 )
 @Slf4j
 @Singleton
@@ -57,19 +58,22 @@ public class DefaultWorldPlugin extends Plugin
 	@Inject
 	private DefaultWorldConfig config;
 
-	private final WorldClient worldClient = new WorldClient();
+	@Inject
+	private WorldService worldService;
+
 	private int worldCache;
 	private boolean worldChangeRequired;
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
+
 		worldChangeRequired = true;
 		applyWorld();
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		worldChangeRequired = true;
 		changeWorld(worldCache);
@@ -82,15 +86,20 @@ public class DefaultWorldPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onSessionOpen(SessionOpen event)
+	private void onSessionOpen(SessionOpen event)
 	{
 		worldChangeRequired = true;
 		applyWorld();
 	}
 
-	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	@Subscribe(takeUntil = 2)
+	private void onGameStateChanged(GameStateChanged event)
 	{
+		if (event.getGameState() == GameState.LOGGED_IN)
+		{
+			config.lastWorld(client.getWorld());
+		}
+
 		applyWorld();
 	}
 
@@ -111,38 +120,32 @@ public class DefaultWorldPlugin extends Plugin
 			return;
 		}
 
-		try
+		final WorldResult worldResult = worldService.getWorlds();
+
+		if (worldResult == null)
 		{
-			final WorldResult worldResult = worldClient.lookupWorlds();
-
-			if (worldResult == null)
-			{
-				return;
-			}
-
-			final World world = worldResult.findWorld(correctedWorld);
-
-			if (world != null)
-			{
-				final net.runelite.api.World rsWorld = client.createWorld();
-				rsWorld.setActivity(world.getActivity());
-				rsWorld.setAddress(world.getAddress());
-				rsWorld.setId(world.getId());
-				rsWorld.setPlayerCount(world.getPlayers());
-				rsWorld.setLocation(world.getLocation());
-				rsWorld.setTypes(WorldUtil.toWorldTypes(world.getTypes()));
-
-				client.changeWorld(rsWorld);
-				log.debug("Applied new world {}", correctedWorld);
-			}
-			else
-			{
-				log.warn("World {} not found.", correctedWorld);
-			}
+			log.warn("Failed to lookup worlds.");
+			return;
 		}
-		catch (IOException e)
+
+		final World world = worldResult.findWorld(correctedWorld);
+
+		if (world != null)
 		{
-			log.warn("Error looking up world {}. Error: {}", correctedWorld, e);
+			final net.runelite.api.World rsWorld = client.createWorld();
+			rsWorld.setActivity(world.getActivity());
+			rsWorld.setAddress(world.getAddress());
+			rsWorld.setId(world.getId());
+			rsWorld.setPlayerCount(world.getPlayers());
+			rsWorld.setLocation(world.getLocation());
+			rsWorld.setTypes(WorldUtil.toWorldTypes(world.getTypes()));
+
+			client.changeWorld(rsWorld);
+			log.debug("Applied new world {}", correctedWorld);
+		}
+		else
+		{
+			log.warn("World {} not found.", correctedWorld);
 		}
 	}
 
@@ -154,7 +157,7 @@ public class DefaultWorldPlugin extends Plugin
 			log.debug("Stored old world {}", worldCache);
 		}
 
-		final int newWorld = config.getWorld();
+		final int newWorld = !config.useLastWorld() ? config.getWorld() : config.lastWorld();
 		changeWorld(newWorld);
 	}
 }

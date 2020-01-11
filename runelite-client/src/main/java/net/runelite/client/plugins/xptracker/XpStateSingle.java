@@ -25,26 +25,27 @@
  */
 package net.runelite.client.plugins.xptracker;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Experience;
 import net.runelite.api.Skill;
 
 @Slf4j
-@RequiredArgsConstructor
 class XpStateSingle
 {
 	private final Skill skill;
 	private final Map<XpActionType, XpAction> actions = new HashMap<>();
 
-	@Getter
-	private final long startXp;
+	@Getter(AccessLevel.PACKAGE)
+	@Setter(AccessLevel.PACKAGE)
+	private long startXp;
 
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private int xpGained = 0;
 
 	@Setter
@@ -54,13 +55,19 @@ class XpStateSingle
 	private int startLevelExp = 0;
 	private int endLevelExp = 0;
 
+	XpStateSingle(Skill skill, long startXp)
+	{
+		this.skill = skill;
+		this.startXp = startXp;
+	}
+
 	XpAction getXpAction(final XpActionType type)
 	{
 		actions.putIfAbsent(type, new XpAction());
 		return actions.get(type);
 	}
 
-	private long getCurrentXp()
+	long getCurrentXp()
 	{
 		return startXp + xpGained;
 	}
@@ -165,7 +172,7 @@ class XpStateSingle
 	}
 
 
-	int getXpHr()
+	private int getXpHr()
 	{
 		return toHourly(xpGained);
 	}
@@ -198,10 +205,7 @@ class XpStateSingle
 		{
 			// populate all values in our action history array with this first value that we see
 			// so the average value of our action history starts out as this first value we see
-			for (int i = 0; i < action.getActionExps().length; i++)
-			{
-				action.getActionExps()[i] = actionExp;
-			}
+			Arrays.fill(action.getActionExps(), actionExp);
 
 			action.setActionsHistoryInitialized(true);
 		}
@@ -215,7 +219,7 @@ class XpStateSingle
 		// Determine XP goals, overall has no goals
 		if (skill != Skill.OVERALL)
 		{
-			if (goalStartXp <= 0 || currentXp > goalEndXp)
+			if (goalStartXp < 0 || currentXp > goalEndXp)
 			{
 				startLevelExp = Experience.getXpForLevel(Experience.getLevelForXp((int) currentXp));
 			}

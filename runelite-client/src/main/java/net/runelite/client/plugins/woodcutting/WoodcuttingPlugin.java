@@ -27,20 +27,25 @@ package net.runelite.client.plugins.woodcutting;
 import com.google.inject.Provides;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameObject;
-import net.runelite.api.GameState;
+import net.runelite.api.ItemID;
+import net.runelite.api.MenuOpcode;
 import net.runelite.api.Player;
+import net.runelite.api.Point;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameObjectChanged;
 import net.runelite.api.events.GameObjectDespawned;
 import net.runelite.api.events.GameObjectSpawned;
@@ -49,21 +54,35 @@ import net.runelite.api.events.GameTick;
 import net.runelite.client.Notifier;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.OverlayMenuClicked;
+import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDependency;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.plugins.xptracker.XpTrackerPlugin;
 import net.runelite.client.ui.overlay.OverlayManager;
+import net.runelite.client.ui.overlay.OverlayMenuEntry;
 
 @PluginDescriptor(
 	name = "Woodcutting",
 	description = "Show woodcutting statistics and/or bird nest notifications",
-	tags = {"birds", "nest", "notifications", "overlay", "skilling", "wc"}
+	tags = {"birds", "nest", "notifications", "overlay", "skilling", "wc"},
+	enabledByDefault = false,
+	type = PluginType.SKILLING
 )
-@Singleton
 @PluginDependency(XpTrackerPlugin.class)
+@Slf4j
 public class WoodcuttingPlugin extends Plugin
 {
+	private static final Pattern WOOD_CUT_PATTERN = Pattern.compile("You get (?:some|an)[\\w ]+(?:logs?|mushrooms)\\.");
+
+	@Getter
+	private final Set<GameObject> treeObjects = new HashSet<>();
+
+	@Getter(AccessLevel.PACKAGE)
+	private final List<TreeRespawn> respawns = new ArrayList<>();
+
 	@Inject
 	private Notifier notifier;
 
@@ -82,21 +101,20 @@ public class WoodcuttingPlugin extends Plugin
 	@Inject
 	private WoodcuttingConfig config;
 
-	@Getter(AccessLevel.PACKAGE)
+	@Inject
+	private ItemManager itemManager;
+
+	@Getter
 	private WoodcuttingSession session;
 
-	@Getter(AccessLevel.PACKAGE)
+	@Getter
 	private Axe axe;
 
+	private boolean recentlyLoggedIn;
+	private int treeTypeID;
 	@Getter(AccessLevel.PACKAGE)
-	private final Set<GameObject> treeObjects = new HashSet<>();
-
-	private int statTimeout;
-	private boolean showNestNotification;
-	@Getter(AccessLevel.PACKAGE)
-	private boolean showWoodcuttingStats;
-	@Getter(AccessLevel.PACKAGE)
-	private boolean showRedwoodTrees;
+	private int gpEarned;
+	private int currentPlane;
 
 	@Provides
 	WoodcuttingConfig getConfig(ConfigManager configManager)
@@ -107,8 +125,6 @@ public class WoodcuttingPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		updateConfig();
-
 		overlayManager.add(overlay);
 		overlayManager.add(treesOverlay);
 	}
@@ -118,20 +134,38 @@ public class WoodcuttingPlugin extends Plugin
 	{
 		overlayManager.remove(overlay);
 		overlayManager.remove(treesOverlay);
+		respawns.clear();
 		treeObjects.clear();
 		session = null;
 		axe = null;
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick gameTick)
+	private void onOverlayMenuClicked(OverlayMenuClicked overlayMenuClicked)
 	{
+		OverlayMenuEntry overlayMenuEntry = overlayMenuClicked.getEntry();
+		if (overlayMenuEntry.getMenuOpcode() == MenuOpcode.RUNELITE_OVERLAY
+			&& overlayMenuClicked.getEntry().getOption().equals(WoodcuttingOverlay.WOODCUTTING_RESET)
+			&& overlayMenuClicked.getOverlay() == overlay)
+		{
+			session = null;
+		}
+	}
+
+	@Subscribe
+	private void onGameTick(GameTick gameTick)
+	{
+		recentlyLoggedIn = false;
+		currentPlane = client.getPlane();
+
+		respawns.removeIf(TreeRespawn::isExpired);
+
 		if (session == null || session.getLastLogCut() == null)
 		{
 			return;
 		}
 
-		Duration statTimeout = Duration.ofMinutes(this.statTimeout);
+		Duration statTimeout = Duration.ofMinutes(config.statTimeout());
 		Duration sinceCut = Duration.between(session.getLastLogCut(), Instant.now());
 
 		if (sinceCut.compareTo(statTimeout) >= 0)
@@ -142,21 +176,25 @@ public class WoodcuttingPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onChatMessage(ChatMessage event)
+	void onChatMessage(ChatMessage event)
 	{
 		if (event.getType() == ChatMessageType.SPAM || event.getType() == ChatMessageType.GAMEMESSAGE)
 		{
-			if (event.getMessage().startsWith("You get some") && (event.getMessage().endsWith("logs.") || event.getMessage().endsWith("mushrooms.")))
+			if (WOOD_CUT_PATTERN.matcher(event.getMessage()).matches())
 			{
 				if (session == null)
 				{
 					session = new WoodcuttingSession();
+					gpEarned = 0;
 				}
 
 				session.setLastLogCut();
+
+				typeOfLogCut(event.getMessage());
+				gpEarned += itemManager.getItemPrice(treeTypeID);
 			}
 
-			if (event.getMessage().contains("A bird's nest falls out of the tree") && this.showNestNotification)
+			if (event.getMessage().contains("A bird's nest falls out of the tree") && config.showNestNotification())
 			{
 				notifier.notify("A bird nest has spawned!");
 			}
@@ -164,40 +202,72 @@ public class WoodcuttingPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameObjectSpawned(final GameObjectSpawned event)
+	private void onGameObjectSpawned(final GameObjectSpawned event)
 	{
 		GameObject gameObject = event.getGameObject();
 		Tree tree = Tree.findTree(gameObject.getId());
 
-		if (tree != null)
+		if (tree == Tree.REDWOOD)
 		{
 			treeObjects.add(gameObject);
 		}
 	}
 
 	@Subscribe
-	public void onGameObjectDespawned(final GameObjectDespawned event)
+	private void onGameObjectDespawned(final GameObjectDespawned event)
 	{
-		treeObjects.remove(event.getGameObject());
-	}
+		final GameObject object = event.getGameObject();
 
-	@Subscribe
-	public void onGameObjectChanged(final GameObjectChanged event)
-	{
-		treeObjects.remove(event.getGameObject());
-	}
-
-	@Subscribe
-	public void onGameStateChanged(final GameStateChanged event)
-	{
-		if (event.getGameState() != GameState.LOGGED_IN)
+		Tree tree = Tree.findTree(object.getId());
+		if (tree != null)
 		{
-			treeObjects.clear();
+			if (tree.getRespawnTime() != null && !recentlyLoggedIn && currentPlane == object.getPlane())
+			{
+				Point max = object.getSceneMaxLocation();
+				Point min = object.getSceneMinLocation();
+				int lenX = max.getX() - min.getX();
+				int lenY = max.getY() - min.getY();
+				log.debug("Adding respawn timer for {} tree at {}", tree, object.getLocalLocation());
+
+				final int region = client.getLocalPlayer().getWorldLocation().getRegionID();
+				TreeRespawn treeRespawn = new TreeRespawn(tree, lenX, lenY, WorldPoint.fromScene(client, min.getX(), min.getY(), client.getPlane()), Instant.now(), (int) tree.getRespawnTime(region).toMillis());
+				respawns.add(treeRespawn);
+			}
+
+			if (tree == Tree.REDWOOD)
+			{
+				treeObjects.remove(event.getGameObject());
+			}
 		}
 	}
 
 	@Subscribe
-	public void onAnimationChanged(final AnimationChanged event)
+	private void onGameObjectChanged(final GameObjectChanged event)
+	{
+		treeObjects.remove(event.getGameObject());
+	}
+
+	@Subscribe
+	private void onGameStateChanged(final GameStateChanged event)
+	{
+		switch (event.getGameState())
+		{
+			case HOPPING:
+				respawns.clear();
+			case LOADING:
+				treeObjects.clear();
+				break;
+			case LOGGED_IN:
+				// After login trees that are depleted will be changed,
+				// wait for the next game tick before watching for
+				// trees to despawn
+				recentlyLoggedIn = true;
+				break;
+		}
+	}
+
+	@Subscribe
+	private void onAnimationChanged(final AnimationChanged event)
 	{
 		Player local = client.getLocalPlayer();
 
@@ -214,22 +284,47 @@ public class WoodcuttingPlugin extends Plugin
 		}
 	}
 
-	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void typeOfLogCut(String message)
 	{
-		if (!event.getGroup().equals("woodcutting"))
+		if (message.contains("mushrooms."))
 		{
-			return;
+			return; //TO DO Add valuation for scullicep mushroom cutting.
 		}
-
-		updateConfig();
-	}
-
-	private void updateConfig()
-	{
-		this.statTimeout = config.statTimeout();
-		this.showNestNotification = config.showNestNotification();
-		this.showWoodcuttingStats = config.showWoodcuttingStats();
-		this.showRedwoodTrees = config.showRedwoodTrees();
+		else if (message.contains("oak"))
+		{
+			treeTypeID = ItemID.OAK_LOGS;
+		}
+		else if (message.contains("willow"))
+		{
+			treeTypeID = ItemID.WILLOW_LOGS;
+		}
+		else if (message.contains("yew"))
+		{
+			treeTypeID = ItemID.YEW_LOGS;
+		}
+		else if (message.contains("redwood"))
+		{
+			treeTypeID = ItemID.REDWOOD_LOGS;
+		}
+		else if (message.contains("magic"))
+		{
+			treeTypeID = ItemID.MAGIC_LOGS;
+		}
+		else if (message.contains("teak"))
+		{
+			treeTypeID = ItemID.TEAK_LOGS;
+		}
+		else if (message.contains("mahogany"))
+		{
+			treeTypeID = ItemID.MAHOGANY_LOGS;
+		}
+		else if (message.contains("maple"))
+		{
+			treeTypeID = ItemID.MAPLE_LOGS;
+		}
+		else
+		{
+			treeTypeID = ItemID.LOGS;
+		}
 	}
 }

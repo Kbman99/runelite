@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2018, https://runelitepl.us
- * Copyright (c) 2018, https://github.com/runeliteplusplus
+ * Copyright (c) 2018, https://openosrs.com
+ * Copyright (c) 2018, https://github.com/openosrsplus
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,19 +60,17 @@ class ItemRecoilOverlay extends Overlay
 		tableComponent.setColumnAlignments(TableAlignment.LEFT, TableAlignment.RIGHT);
 
 		this.imagePanelComponent.getChildren().clear();
-		if (plugin.isShowrecoil())
+		if (plugin.isShowrecoil() && plugin.isRingOfRecoilAvailable())
 		{
-			if (plugin.isRingOfRecoilAvailable())
-			{
-				BufferedImage recoilImage = plugin.getRecoilRingImage();
-				imagePanelComponent.setBackgroundColor(plugin
-						.isRingOfRecoilEquipped() ? ACTIVATED_BACKGROUND_COLOR : NOT_ACTIVATED_BACKGROUND_COLOR);
-				imagePanelComponent.getChildren().add(new ImageComponent(recoilImage));
+			BufferedImage recoilImage = plugin.getRecoilRingImage();
+			imagePanelComponent.setBackgroundColor(plugin
+				.isRingOfRecoilEquipped() ? ACTIVATED_BACKGROUND_COLOR : NOT_ACTIVATED_BACKGROUND_COLOR);
+			imagePanelComponent.getChildren().add(new ImageComponent(recoilImage));
 
-				imagePanelComponent.getChildren().add(tableComponent);
-				return imagePanelComponent.render(graphics);
-			}
+			imagePanelComponent.getChildren().add(tableComponent);
+			return imagePanelComponent.render(graphics);
 		}
+
 		return null;
 	}
 }

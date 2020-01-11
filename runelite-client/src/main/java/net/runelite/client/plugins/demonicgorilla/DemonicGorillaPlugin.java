@@ -24,12 +24,14 @@
  */
 package net.runelite.client.plugins.demonicgorilla;
 
+import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -54,21 +56,25 @@ import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.events.PlayerDespawned;
 import net.runelite.api.events.PlayerSpawned;
-import net.runelite.api.events.ProjectileMoved;
+import net.runelite.api.events.ProjectileSpawned;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @PluginDescriptor(
 	name = "Demonic Gorillas",
 	description = "Count demonic gorilla attacks and display their next possible attack styles",
-	tags = {"combat", "overlay", "pve", "pvm"}
+	tags = {"combat", "overlay", "pve", "pvm"},
+	type = PluginType.PVM
 )
 @Singleton
 public class DemonicGorillaPlugin extends Plugin
 {
+	private static final Set<Integer> DEMONIC_PROJECTILES = ImmutableSet.of(ProjectileID.DEMONIC_GORILLA_RANGED, ProjectileID.DEMONIC_GORILLA_MAGIC, ProjectileID.DEMONIC_GORILLA_BOULDER);
+
 	@Inject
 	private Client client;
 
@@ -91,7 +97,7 @@ public class DemonicGorillaPlugin extends Plugin
 	private Map<Player, MemorizedPlayer> memorizedPlayers;
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		overlayManager.add(overlay);
 		gorillas = new HashMap<>();
@@ -102,7 +108,7 @@ public class DemonicGorillaPlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
 		gorillas = null;
@@ -158,8 +164,7 @@ public class DemonicGorillaPlugin extends Plugin
 			npcId == NpcID.DEMONIC_GORILLA_7149;
 	}
 
-	private void checkGorillaAttackStyleSwitch(DemonicGorilla gorilla,
-											final DemonicGorilla.AttackStyle... protectedStyles)
+	private void checkGorillaAttackStyleSwitch(DemonicGorilla gorilla, final DemonicGorilla.AttackStyle... protectedStyles)
 	{
 		if (gorilla.getAttacksUntilSwitch() <= 0 ||
 			gorilla.getNextPosibleAttackStyles().isEmpty())
@@ -206,7 +211,8 @@ public class DemonicGorillaPlugin extends Plugin
 		}
 		boolean correctPrayer =
 			target == null || // If player is out of memory, assume prayer was correct
-				attackStyle == protectedStyle;
+				(attackStyle != null &&
+					attackStyle.equals(protectedStyle));
 
 		if (attackStyle == DemonicGorilla.AttackStyle.BOULDER)
 		{
@@ -528,35 +534,27 @@ public class DemonicGorillaPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onProjectileMoved(ProjectileMoved event)
+	private void onProjectileSpawned(ProjectileSpawned event)
 	{
-		Projectile projectile = event.getProjectile();
-		int projectileId = projectile.getId();
-		if (projectileId != ProjectileID.DEMONIC_GORILLA_RANGED &&
-			projectileId != ProjectileID.DEMONIC_GORILLA_MAGIC &&
-			projectileId != ProjectileID.DEMONIC_GORILLA_BOULDER)
+		final Projectile projectile = event.getProjectile();
+		final int projectileId = projectile.getId();
+
+		if (!DEMONIC_PROJECTILES.contains(projectileId))
 		{
 			return;
 		}
 
-		// The event fires once before the projectile starts moving,
-		// and we only want to check each projectile once
-		if (client.getGameCycle() >= projectile.getStartMovementCycle())
-		{
-			return;
-		}
+		final WorldPoint loc = WorldPoint.fromLocal(client, projectile.getX1(), projectile.getY1(), client.getPlane());
 
 		if (projectileId == ProjectileID.DEMONIC_GORILLA_BOULDER)
 		{
-			recentBoulders.add(WorldPoint.fromLocal(client, event.getPosition()));
+			recentBoulders.add(loc);
 		}
 		else
 		{
-			WorldPoint projectileSourcePosition = WorldPoint.fromLocal(
-				client, projectile.getX1(), projectile.getY1(), client.getPlane());
 			for (DemonicGorilla gorilla : gorillas.values())
 			{
-				if (gorilla.getNpc().getWorldLocation().distanceTo(projectileSourcePosition) == 0)
+				if (gorilla.getNpc().getWorldLocation().distanceTo(loc) == 0)
 				{
 					gorilla.setRecentProjectileId(projectile.getId());
 				}
@@ -616,7 +614,7 @@ public class DemonicGorillaPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onHitsplatApplied(HitsplatApplied event)
+	private void onHitsplatApplied(HitsplatApplied event)
 	{
 		if (gorillas.isEmpty())
 		{
@@ -645,7 +643,7 @@ public class DemonicGorillaPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		GameState gs = event.getGameState();
 		if (gs == GameState.LOGGING_IN ||
@@ -657,7 +655,7 @@ public class DemonicGorillaPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onPlayerSpawned(PlayerSpawned event)
+	private void onPlayerSpawned(PlayerSpawned event)
 	{
 		if (gorillas.isEmpty())
 		{
@@ -669,7 +667,7 @@ public class DemonicGorillaPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onPlayerDespawned(PlayerDespawned event)
+	private void onPlayerDespawned(PlayerDespawned event)
 	{
 		if (gorillas.isEmpty())
 		{
@@ -680,7 +678,7 @@ public class DemonicGorillaPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onNpcSpawned(NpcSpawned event)
+	private void onNpcSpawned(NpcSpawned event)
 	{
 		NPC npc = event.getNpc();
 		if (isNpcGorilla(npc.getId()))
@@ -697,7 +695,7 @@ public class DemonicGorillaPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onNpcDespawned(NpcDespawned event)
+	private void onNpcDespawned(NpcDespawned event)
 	{
 		if (gorillas.remove(event.getNpc()) != null && gorillas.isEmpty())
 		{
@@ -706,7 +704,7 @@ public class DemonicGorillaPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick event)
+	private void onGameTick(GameTick event)
 	{
 		checkGorillaAttacks();
 		checkPendingAttacks();

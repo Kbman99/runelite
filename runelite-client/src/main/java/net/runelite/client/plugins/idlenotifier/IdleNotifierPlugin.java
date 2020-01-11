@@ -25,107 +25,31 @@
  */
 package net.runelite.client.plugins.idlenotifier;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Provides;
 import java.awt.TrayIcon;
-//import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import javax.inject.Inject;
-//import javax.sound.sampled.LineUnavailableException;
-//import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.inject.Singleton;
 import lombok.AccessLevel;
 import lombok.Setter;
-import net.runelite.api.events.ConfigChanged;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import net.runelite.api.Actor;
 import net.runelite.api.AnimationID;
-import static net.runelite.api.AnimationID.COOKING_FIRE;
-import static net.runelite.api.AnimationID.COOKING_RANGE;
-import static net.runelite.api.AnimationID.COOKING_WINE;
-import static net.runelite.api.AnimationID.CRAFTING_BATTLESTAVES;
-import static net.runelite.api.AnimationID.CRAFTING_GLASSBLOWING;
-import static net.runelite.api.AnimationID.CRAFTING_LEATHER;
-import static net.runelite.api.AnimationID.CRAFTING_POTTERS_WHEEL;
-import static net.runelite.api.AnimationID.CRAFTING_POTTERY_OVEN;
-import static net.runelite.api.AnimationID.CRAFTING_SPINNING;
-import static net.runelite.api.AnimationID.DENSE_ESSENCE_CHIPPING;
-import static net.runelite.api.AnimationID.DENSE_ESSENCE_CHISELING;
-import static net.runelite.api.AnimationID.FARMING_MIX_ULTRACOMPOST;
-import static net.runelite.api.AnimationID.FISHING_CRUSHING_INFERNAL_EELS;
-import static net.runelite.api.AnimationID.FISHING_CUTTING_SACRED_EELS;
-import static net.runelite.api.AnimationID.FLETCHING_BOW_CUTTING;
-import static net.runelite.api.AnimationID.FLETCHING_STRING_MAGIC_LONGBOW;
-import static net.runelite.api.AnimationID.FLETCHING_STRING_MAGIC_SHORTBOW;
-import static net.runelite.api.AnimationID.FLETCHING_STRING_MAPLE_LONGBOW;
-import static net.runelite.api.AnimationID.FLETCHING_STRING_MAPLE_SHORTBOW;
-import static net.runelite.api.AnimationID.FLETCHING_STRING_NORMAL_LONGBOW;
-import static net.runelite.api.AnimationID.FLETCHING_STRING_NORMAL_SHORTBOW;
-import static net.runelite.api.AnimationID.FLETCHING_STRING_OAK_LONGBOW;
-import static net.runelite.api.AnimationID.FLETCHING_STRING_OAK_SHORTBOW;
-import static net.runelite.api.AnimationID.FLETCHING_STRING_WILLOW_LONGBOW;
-import static net.runelite.api.AnimationID.FLETCHING_STRING_WILLOW_SHORTBOW;
-import static net.runelite.api.AnimationID.FLETCHING_STRING_YEW_LONGBOW;
-import static net.runelite.api.AnimationID.FLETCHING_STRING_YEW_SHORTBOW;
-import static net.runelite.api.AnimationID.GEM_CUTTING_AMETHYST;
-import static net.runelite.api.AnimationID.GEM_CUTTING_DIAMOND;
-import static net.runelite.api.AnimationID.GEM_CUTTING_EMERALD;
-import static net.runelite.api.AnimationID.GEM_CUTTING_JADE;
-import static net.runelite.api.AnimationID.GEM_CUTTING_OPAL;
-import static net.runelite.api.AnimationID.GEM_CUTTING_REDTOPAZ;
-import static net.runelite.api.AnimationID.GEM_CUTTING_RUBY;
-import static net.runelite.api.AnimationID.GEM_CUTTING_SAPPHIRE;
-import static net.runelite.api.AnimationID.HERBLORE_MAKE_TAR;
-import static net.runelite.api.AnimationID.HERBLORE_PESTLE_AND_MORTAR;
-import static net.runelite.api.AnimationID.HERBLORE_POTIONMAKING;
-import static net.runelite.api.AnimationID.HOME_MAKE_TABLET;
-import static net.runelite.api.AnimationID.IDLE;
-import static net.runelite.api.AnimationID.MAGIC_CHARGING_ORBS;
-import static net.runelite.api.AnimationID.MAGIC_ENCHANTING_AMULET_1;
-import static net.runelite.api.AnimationID.MAGIC_ENCHANTING_AMULET_2;
-import static net.runelite.api.AnimationID.MAGIC_ENCHANTING_AMULET_3;
-import static net.runelite.api.AnimationID.MAGIC_ENCHANTING_JEWELRY;
-import static net.runelite.api.AnimationID.MAGIC_LUNAR_PLANK_MAKE;
-import static net.runelite.api.AnimationID.MAGIC_LUNAR_SHARED;
-import static net.runelite.api.AnimationID.MAGIC_LUNAR_STRING_JEWELRY;
-import static net.runelite.api.AnimationID.MAGIC_MAKE_TABLET;
-import static net.runelite.api.AnimationID.MINING_3A_PICKAXE;
-import static net.runelite.api.AnimationID.MINING_ADAMANT_PICKAXE;
-import static net.runelite.api.AnimationID.MINING_BLACK_PICKAXE;
-import static net.runelite.api.AnimationID.MINING_BRONZE_PICKAXE;
-import static net.runelite.api.AnimationID.MINING_DRAGON_PICKAXE;
-import static net.runelite.api.AnimationID.MINING_DRAGON_PICKAXE_ORN;
-import static net.runelite.api.AnimationID.MINING_INFERNAL_PICKAXE;
-import static net.runelite.api.AnimationID.MINING_IRON_PICKAXE;
-import static net.runelite.api.AnimationID.MINING_MITHRIL_PICKAXE;
-import static net.runelite.api.AnimationID.MINING_RUNE_PICKAXE;
-import static net.runelite.api.AnimationID.MINING_STEEL_PICKAXE;
-import static net.runelite.api.AnimationID.PISCARILIUS_CRANE_REPAIR;
-import static net.runelite.api.AnimationID.SAND_COLLECTION;
-import static net.runelite.api.AnimationID.SMITHING_ANVIL;
-import static net.runelite.api.AnimationID.SMITHING_CANNONBALL;
-import static net.runelite.api.AnimationID.SMITHING_SMELTING;
-import static net.runelite.api.AnimationID.USING_GILDED_ALTAR;
-import static net.runelite.api.AnimationID.WOODCUTTING_3A_AXE;
-import static net.runelite.api.AnimationID.WOODCUTTING_ADAMANT;
-import static net.runelite.api.AnimationID.WOODCUTTING_BLACK;
-import static net.runelite.api.AnimationID.WOODCUTTING_BRONZE;
-import static net.runelite.api.AnimationID.WOODCUTTING_DRAGON;
-import static net.runelite.api.AnimationID.WOODCUTTING_INFERNAL;
-import static net.runelite.api.AnimationID.WOODCUTTING_IRON;
-import static net.runelite.api.AnimationID.WOODCUTTING_MITHRIL;
-import static net.runelite.api.AnimationID.WOODCUTTING_RUNE;
-import static net.runelite.api.AnimationID.WOODCUTTING_STEEL;
+import static net.runelite.api.AnimationID.*;
 import net.runelite.api.Client;
 import net.runelite.api.Constants;
 import net.runelite.api.GameState;
 import net.runelite.api.GraphicID;
 import net.runelite.api.Hitsplat;
+import net.runelite.api.InventoryID;
+import net.runelite.api.Item;
+import net.runelite.api.ItemContainer;
 import net.runelite.api.NPC;
 import net.runelite.api.NPCDefinition;
 import net.runelite.api.Player;
@@ -133,33 +57,39 @@ import net.runelite.api.Skill;
 import net.runelite.api.SkullIcon;
 import net.runelite.api.VarPlayer;
 import net.runelite.api.Varbits;
+import net.runelite.api.WallObject;
 import net.runelite.api.WorldType;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
-import net.runelite.api.events.SpotAnimationChanged;
 import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.InteractingChanged;
+import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.PlayerSpawned;
+import net.runelite.api.events.SpotAnimationChanged;
+import net.runelite.api.events.WallObjectSpawned;
 import net.runelite.client.Notifier;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.Sound;
 import net.runelite.client.game.SoundManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.util.PvPUtil;
+import org.apache.commons.lang3.ArrayUtils;
 
 @PluginDescriptor(
 	name = "Idle Notifier",
 	description = "Send a notification when going idle, or when HP/Prayer reaches a threshold",
-	tags = {"health", "hitpoints", "notifications", "prayer", "pvp", "pker"}
+	tags = {"health", "hitpoints", "notifications", "prayer", "pvp", "pker"},
+	type = PluginType.MISCELLANEOUS
 )
 @Singleton
 public class IdleNotifierPlugin extends Plugin
 {
-	private static final Logger logger = LoggerFactory.getLogger(IdleNotifierPlugin.class);
-
 	// This must be more than 500 client ticks (10 seconds) before you get AFK kicked
 	private static final int LOGOUT_WARNING_MILLIS = (4 * 60 + 40) * 1000; // 4 minutes and 40 seconds
 	private static final int COMBAT_WARNING_MILLIS = 19 * 60 * 1000; // 19 minutes
@@ -170,6 +100,135 @@ public class IdleNotifierPlugin extends Plugin
 	private static final Duration SIX_HOUR_LOGOUT_WARNING_AFTER_DURATION = Duration.ofMinutes(340);
 
 	private static final String FISHING_SPOT = "Fishing spot";
+
+	private static final int RESOURCE_AREA_REGION = 12605;
+
+	private static final Set<Integer> nominalAnimations = new ImmutableSet.Builder<Integer>()
+		.addAll(
+			Arrays.asList(
+				/* Woodcutting */
+				WOODCUTTING_BRONZE,
+				WOODCUTTING_IRON,
+				WOODCUTTING_STEEL,
+				WOODCUTTING_BLACK,
+				WOODCUTTING_MITHRIL,
+				WOODCUTTING_ADAMANT,
+				WOODCUTTING_RUNE,
+				WOODCUTTING_DRAGON,
+				WOODCUTTING_INFERNAL,
+				WOODCUTTING_3A_AXE,
+				WOODCUTTING_CRYSTAL,
+				/* Cooking(Fire, Range) */
+				COOKING_FIRE,
+				COOKING_RANGE,
+				COOKING_WINE,
+				/* Crafting(Gem Cutting, Glassblowing, Spinning, Battlestaves, Pottery) */
+				GEM_CUTTING_OPAL,
+				GEM_CUTTING_JADE,
+				GEM_CUTTING_REDTOPAZ,
+				GEM_CUTTING_SAPPHIRE,
+				GEM_CUTTING_EMERALD,
+				GEM_CUTTING_RUBY,
+				GEM_CUTTING_DIAMOND,
+				GEM_CUTTING_AMETHYST,
+				CRAFTING_GLASSBLOWING,
+				CRAFTING_SPINNING,
+				CRAFTING_BATTLESTAVES,
+				CRAFTING_LEATHER,
+				CRAFTING_POTTERS_WHEEL,
+				CRAFTING_POTTERY_OVEN,
+				/* Fletching(Cutting, Stringing, Adding feathers and heads) */
+				FLETCHING_BOW_CUTTING,
+				FLETCHING_STRING_NORMAL_SHORTBOW,
+				FLETCHING_STRING_OAK_SHORTBOW,
+				FLETCHING_STRING_WILLOW_SHORTBOW,
+				FLETCHING_STRING_MAPLE_SHORTBOW,
+				FLETCHING_STRING_YEW_SHORTBOW,
+				FLETCHING_STRING_MAGIC_SHORTBOW,
+				FLETCHING_STRING_NORMAL_LONGBOW,
+				FLETCHING_STRING_OAK_LONGBOW,
+				FLETCHING_STRING_WILLOW_LONGBOW,
+				FLETCHING_STRING_MAPLE_LONGBOW,
+				FLETCHING_STRING_YEW_LONGBOW,
+				FLETCHING_STRING_MAGIC_LONGBOW,
+				FLETCHING_ATTACH_FEATHERS_TO_ARROWSHAFT,
+				FLETCHING_ATTACH_HEADS,
+				/* Smithing(Anvil, Furnace, Cannonballs */
+				SMITHING_ANVIL,
+				SMITHING_SMELTING,
+				SMITHING_CANNONBALL,
+				/* Fishing */
+				FISHING_CRUSHING_INFERNAL_EELS,
+				FISHING_CUTTING_SACRED_EELS,
+				FISHING_BIG_NET,
+				FISHING_NET,
+				FISHING_POLE_CAST,
+				FISHING_CAGE,
+				FISHING_HARPOON,
+				FISHING_BARBTAIL_HARPOON,
+				FISHING_DRAGON_HARPOON,
+				FISHING_INFERNAL_HARPOON,
+				FISHING_OILY_ROD,
+				FISHING_KARAMBWAN,
+				FISHING_BAREHAND,
+				/* Mining(Normal) */
+				MINING_BRONZE_PICKAXE,
+				MINING_IRON_PICKAXE,
+				MINING_STEEL_PICKAXE,
+				MINING_BLACK_PICKAXE,
+				MINING_MITHRIL_PICKAXE,
+				MINING_ADAMANT_PICKAXE,
+				MINING_RUNE_PICKAXE,
+				MINING_DRAGON_PICKAXE,
+				MINING_DRAGON_PICKAXE_UPGRADED,
+				MINING_DRAGON_PICKAXE_OR,
+				MINING_INFERNAL_PICKAXE,
+				MINING_3A_PICKAXE,
+				MINING_CRYSTAL_PICKAXE,
+				DENSE_ESSENCE_CHIPPING,
+				DENSE_ESSENCE_CHISELING,
+				/* Mining(Motherlode) */
+				MINING_MOTHERLODE_BRONZE,
+				MINING_MOTHERLODE_IRON,
+				MINING_MOTHERLODE_STEEL,
+				MINING_MOTHERLODE_BLACK,
+				MINING_MOTHERLODE_MITHRIL,
+				MINING_MOTHERLODE_ADAMANT,
+				MINING_MOTHERLODE_RUNE,
+				MINING_MOTHERLODE_DRAGON,
+				MINING_MOTHERLODE_DRAGON_UPGRADED,
+				MINING_MOTHERLODE_DRAGON_OR,
+				MINING_MOTHERLODE_INFERNAL,
+				MINING_MOTHERLODE_3A,
+				MINING_MOTHERLODE_CRYSTAL,
+				/* Herblore */
+				HERBLORE_PESTLE_AND_MORTAR,
+				HERBLORE_POTIONMAKING,
+				HERBLORE_MAKE_TAR,
+				/* Magic */
+				MAGIC_CHARGING_ORBS,
+				MAGIC_LUNAR_PLANK_MAKE,
+				MAGIC_LUNAR_STRING_JEWELRY,
+				MAGIC_MAKE_TABLET,
+				MAGIC_ENCHANTING_JEWELRY,
+				MAGIC_ENCHANTING_AMULET_1,
+				MAGIC_ENCHANTING_AMULET_2,
+				MAGIC_ENCHANTING_AMULET_3,
+				/* Prayer */
+				USING_GILDED_ALTAR,
+				/* Farming */
+				FARMING_MIX_ULTRACOMPOST,
+				FARMING_HARVEST_BUSH,
+				FARMING_HARVEST_HERB,
+				FARMING_HARVEST_FRUIT_TREE,
+				FARMING_HARVEST_FLOWER,
+				FARMING_HARVEST_ALLOTMENT,
+				/* Misc */
+				PISCARILIUS_CRANE_REPAIR,
+				HOME_MAKE_TABLET,
+				SAND_COLLECTION
+			)
+		).build();
 
 	@Inject
 	private Notifier notifier;
@@ -187,6 +246,9 @@ public class IdleNotifierPlugin extends Plugin
 	private int lastAnimation = AnimationID.IDLE;
 	private Instant lastInteracting;
 	private Actor lastInteract;
+	private Instant lastMoving;
+	private WorldPoint lastPosition;
+	private boolean notifyPosition = false;
 	private boolean notifyHitpoints = true;
 	private boolean notifyPrayer = true;
 	private boolean notifyOxygen = true;
@@ -196,9 +258,15 @@ public class IdleNotifierPlugin extends Plugin
 	private int lastCombatCountdown = 0;
 	private Instant sixHourWarningTime;
 	private boolean ready;
+	private Instant lastTimeItemsUsedUp;
+	private List<Integer> itemIdsPrevious = new ArrayList<>();
+	private List<Integer> itemQuantitiesPrevious = new ArrayList<>();
+	private final List<Integer> itemQuantitiesChange = new ArrayList<>();
 	private boolean lastInteractWasCombat;
+	private boolean interactingNotified;
 	private SkullIcon lastTickSkull = null;
 	private boolean isFirstTick = true;
+	private boolean resourceDoorReady = false;
 
 	@Setter(AccessLevel.PACKAGE)
 	private boolean animationIdle;
@@ -225,6 +293,10 @@ public class IdleNotifierPlugin extends Plugin
 	private boolean getSpecSound;
 	private boolean getOverSpecEnergy;
 	private boolean notifyPkers;
+	private boolean notifyResourceDoor;
+	private boolean outOfItemsIdle;
+	@Setter(AccessLevel.PACKAGE)
+	private boolean movementIdle;
 
 	@Provides
 	IdleNotifierConfig provideConfig(ConfigManager configManager)
@@ -233,7 +305,7 @@ public class IdleNotifierPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onAnimationChanged(AnimationChanged event)
+	void onAnimationChanged(AnimationChanged event)
 	{
 		if (client.getGameState() != GameState.LOGGED_IN)
 		{
@@ -248,113 +320,26 @@ public class IdleNotifierPlugin extends Plugin
 
 		int graphic = localPlayer.getSpotAnimation();
 		int animation = localPlayer.getAnimation();
-		switch (animation)
+
+		if (nominalAnimations.contains(animation) || (animation == MAGIC_LUNAR_SHARED && graphic == GraphicID.BAKE_PIE))
 		{
-			/* Woodcutting */
-			case WOODCUTTING_BRONZE:
-			case WOODCUTTING_IRON:
-			case WOODCUTTING_STEEL:
-			case WOODCUTTING_BLACK:
-			case WOODCUTTING_MITHRIL:
-			case WOODCUTTING_ADAMANT:
-			case WOODCUTTING_RUNE:
-			case WOODCUTTING_DRAGON:
-			case WOODCUTTING_INFERNAL:
-			case WOODCUTTING_3A_AXE:
-				/* Cooking(Fire, Range) */
-			case COOKING_FIRE:
-			case COOKING_RANGE:
-			case COOKING_WINE:
-				/* Crafting(Gem Cutting, Glassblowing, Spinning, Battlestaves, Pottery) */
-			case GEM_CUTTING_OPAL:
-			case GEM_CUTTING_JADE:
-			case GEM_CUTTING_REDTOPAZ:
-			case GEM_CUTTING_SAPPHIRE:
-			case GEM_CUTTING_EMERALD:
-			case GEM_CUTTING_RUBY:
-			case GEM_CUTTING_DIAMOND:
-			case GEM_CUTTING_AMETHYST:
-			case CRAFTING_GLASSBLOWING:
-			case CRAFTING_SPINNING:
-			case CRAFTING_BATTLESTAVES:
-			case CRAFTING_LEATHER:
-			case CRAFTING_POTTERS_WHEEL:
-			case CRAFTING_POTTERY_OVEN:
-				/* Fletching(Cutting, Stringing) */
-			case FLETCHING_BOW_CUTTING:
-			case FLETCHING_STRING_NORMAL_SHORTBOW:
-			case FLETCHING_STRING_OAK_SHORTBOW:
-			case FLETCHING_STRING_WILLOW_SHORTBOW:
-			case FLETCHING_STRING_MAPLE_SHORTBOW:
-			case FLETCHING_STRING_YEW_SHORTBOW:
-			case FLETCHING_STRING_MAGIC_SHORTBOW:
-			case FLETCHING_STRING_NORMAL_LONGBOW:
-			case FLETCHING_STRING_OAK_LONGBOW:
-			case FLETCHING_STRING_WILLOW_LONGBOW:
-			case FLETCHING_STRING_MAPLE_LONGBOW:
-			case FLETCHING_STRING_YEW_LONGBOW:
-			case FLETCHING_STRING_MAGIC_LONGBOW:
-				/* Smithing(Anvil, Furnace, Cannonballs */
-			case SMITHING_ANVIL:
-			case SMITHING_SMELTING:
-			case SMITHING_CANNONBALL:
-				/* Fishing */
-			case FISHING_CRUSHING_INFERNAL_EELS:
-			case FISHING_CUTTING_SACRED_EELS:
-				/* Mining(Normal) */
-			case MINING_BRONZE_PICKAXE:
-			case MINING_IRON_PICKAXE:
-			case MINING_STEEL_PICKAXE:
-			case MINING_BLACK_PICKAXE:
-			case MINING_MITHRIL_PICKAXE:
-			case MINING_ADAMANT_PICKAXE:
-			case MINING_RUNE_PICKAXE:
-			case MINING_DRAGON_PICKAXE:
-			case MINING_DRAGON_PICKAXE_ORN:
-			case MINING_INFERNAL_PICKAXE:
-			case MINING_3A_PICKAXE:
-			case DENSE_ESSENCE_CHIPPING:
-			case DENSE_ESSENCE_CHISELING:
-			/* Herblore */
-			case HERBLORE_PESTLE_AND_MORTAR:
-			case HERBLORE_POTIONMAKING:
-			case HERBLORE_MAKE_TAR:
-				/* Magic */
-			case MAGIC_CHARGING_ORBS:
-			case MAGIC_LUNAR_PLANK_MAKE:
-			case MAGIC_LUNAR_STRING_JEWELRY:
-			case MAGIC_MAKE_TABLET:
-			case MAGIC_ENCHANTING_JEWELRY:
-			case MAGIC_ENCHANTING_AMULET_1:
-			case MAGIC_ENCHANTING_AMULET_2:
-			case MAGIC_ENCHANTING_AMULET_3:
-				/* Prayer */
-			case USING_GILDED_ALTAR:
-				/* Farming */
-			case FARMING_MIX_ULTRACOMPOST:
-				/* Misc */
-			case PISCARILIUS_CRANE_REPAIR:
-			case HOME_MAKE_TABLET:
-			case SAND_COLLECTION:
-				resetTimers();
-				lastAnimation = animation;
-				lastAnimating = Instant.now();
-				break;
-			case MAGIC_LUNAR_SHARED:
-				if (graphic == GraphicID.BAKE_PIE)
-				{
-					resetTimers();
-					lastAnimation = animation;
-					lastAnimating = Instant.now();
-					break;
-				}
-			case IDLE:
-				lastAnimating = Instant.now();
-				break;
-			default:
-				// On unknown animation simply assume the animation is invalid and dont throw notification
-				lastAnimation = IDLE;
-				lastAnimating = null;
+			resetTimers();
+			lastAnimation = animation;
+			lastAnimating = Instant.now();
+			interactingNotified = false;
+		}
+
+		else if (animation == IDLE)
+		{
+			lastAnimating = Instant.now();
+			interactingNotified = false;
+		}
+
+		// On unknown animation simply assume the animation is invalid and dont throw notification
+		else
+		{
+			lastAnimation = IDLE;
+			lastAnimating = null;
 		}
 	}
 
@@ -362,27 +347,111 @@ public class IdleNotifierPlugin extends Plugin
 	private void onPlayerSpawned(PlayerSpawned event)
 	{
 		final Player p = event.getPlayer();
-		if (this.notifyPkers)
+		if (this.notifyPkers && p != null && p != client.getLocalPlayer()
+			&& PvPUtil.isAttackable(client, p) && !client.isFriended(p.getName(), false)
+			&& !client.isClanMember(p.getName()))
 		{
-			if (p != null)
+			String playerName = p.getName();
+			int combat = p.getCombatLevel();
+			notifier.notify("PK'er warning! A level " + combat + " player named " + playerName +
+				" appeared!", TrayIcon.MessageType.WARNING);
+		}
+	}
+
+	@Subscribe
+	private void onWallObjectSpawned(WallObjectSpawned event)
+	{
+		WallObject wall = event.getWallObject();
+
+		if (regionCheck())
+		{
+			if (this.notifyResourceDoor && wall.getId() == 83 && resourceDoorReady)
 			{
-				if (p != client.getLocalPlayer())
-				{
-					if (PvPUtil.isAttackable(client, p) && !client.isFriended(p.getName(), false)
-						&& !client.isClanMember(p.getName()))
-					{
-						String playerName = p.getName();
-						int combat = p.getCombatLevel();
-						notifier.notify("PK'er warning! A level " + combat + " player named " + playerName +
-							" appeared!", TrayIcon.MessageType.WARNING);
-					}
-				}
+				notifier.notify("Door warning! The resource area door has been opened!");
 			}
 		}
 	}
 
 	@Subscribe
-	public void onInteractingChanged(InteractingChanged event)
+	private void onItemContainerChanged(ItemContainerChanged event)
+	{
+		ItemContainer itemContainer = event.getItemContainer();
+
+		if (itemContainer != client.getItemContainer(InventoryID.INVENTORY) || !config.outOfItemsIdle())
+		{
+			return;
+		}
+
+		Item[] items = itemContainer.getItems();
+		ArrayList<Integer> itemQuantities = new ArrayList<>();
+		ArrayList<Integer> itemIds = new ArrayList<>();
+
+		// Populate list of items in inventory without duplicates
+		for (Item value : items)
+		{
+			int itemId = OutOfItemsMapping.mapFirst(value.getId());
+			if (itemIds.indexOf(itemId) == -1) // -1 if item not yet in list
+			{
+				itemIds.add(itemId);
+			}
+		}
+
+		// Populate quantity of each item in inventory
+		for (int j = 0; j < itemIds.size(); j++)
+		{
+			itemQuantities.add(0);
+			for (Item item : items)
+			{
+				if (itemIds.get(j) == OutOfItemsMapping.mapFirst(item.getId()))
+				{
+					itemQuantities.set(j, itemQuantities.get(j) + item.getQuantity());
+				}
+			}
+		}
+
+		itemQuantitiesChange.clear();
+
+		// Calculate the quantity of each item consumed by the last action
+		if (!itemIdsPrevious.isEmpty())
+		{
+			for (int i = 0; i < itemIdsPrevious.size(); i++)
+			{
+				int id = itemIdsPrevious.get(i);
+				int currentIndex = itemIds.indexOf(id);
+				int currentQuantity;
+				if (currentIndex != -1) // -1 if item is no longer in inventory
+				{
+					currentQuantity = itemQuantities.get(currentIndex);
+				}
+				else
+				{
+					currentQuantity = 0;
+				}
+				itemQuantitiesChange.add(currentQuantity - itemQuantitiesPrevious.get(i));
+			}
+		}
+		else
+		{
+			itemIdsPrevious = itemIds;
+			itemQuantitiesPrevious = itemQuantities;
+			return;
+		}
+
+		// Check we have enough items left for another action.
+		for (int i = 0; i < itemQuantitiesPrevious.size(); i++)
+		{
+			if (-itemQuantitiesChange.get(i) * 2 > itemQuantitiesPrevious.get(i))
+			{
+				lastTimeItemsUsedUp = Instant.now();
+				return;
+			}
+		}
+		itemIdsPrevious = itemIds;
+		itemQuantitiesPrevious = itemQuantities;
+	}
+
+	@Subscribe
+	void onInteractingChanged(InteractingChanged event)
 	{
 		final Actor source = event.getSource();
 		if (source != client.getLocalPlayer())
@@ -433,7 +502,7 @@ public class IdleNotifierPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged)
+	void onGameStateChanged(GameStateChanged gameStateChanged)
 	{
 		lastInteracting = null;
 
@@ -460,13 +529,14 @@ public class IdleNotifierPlugin extends Plugin
 					ready = false;
 					resetTimers();
 				}
+				resourceDoorReady = true;
 
 				break;
 		}
 	}
 
 	@Subscribe
-	public void onHitsplatApplied(HitsplatApplied event)
+	void onHitsplatApplied(HitsplatApplied event)
 	{
 		if (event.getActor() != client.getLocalPlayer())
 		{
@@ -483,7 +553,7 @@ public class IdleNotifierPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onSpotAnimationChanged(SpotAnimationChanged event)
+	private void onSpotAnimationChanged(SpotAnimationChanged event)
 	{
 		Actor actor = event.getActor();
 
@@ -499,7 +569,7 @@ public class IdleNotifierPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick event)
+	void onGameTick(GameTick event)
 	{
 		skullNotifier();
 
@@ -514,32 +584,37 @@ public class IdleNotifierPlugin extends Plugin
 			|| client.getKeyboardIdleTicks() < 10)
 		{
 			resetTimers();
+			resetOutOfItemsIdleChecks();
 			return;
 		}
 
 		if (this.logoutIdle && checkIdleLogout())
 		{
-			notifier.notify("[" + local.getName() + "] is about to log out from idling too long!");
+			notifyWith(local, "is about to log out from idling too long!");
 		}
 
 		if (check6hrLogout())
 		{
-			notifier.notify("[" + local.getName() + "] is about to log out from being online for 6 hours!");
+			notifyWith(local, "is about to log out from being online for 6 hours!");
 		}
 
-		if (this.animationIdle && checkAnimationIdle(waitDuration, local))
+		if (this.outOfItemsIdle && checkOutOfItemsIdle(waitDuration))
 		{
-			notifier.notify("[" + local.getName() + "] is now idle!");
-			if (this.animationIdleSound)
-			{
-				soundManager.playSound(Sound.IDLE);
-			}
+			notifyWith(local, "has run out of items!");
+			// If this triggers, don't also trigger animation idle notification afterwards.
+			lastAnimation = IDLE;
 		}
+
+		if (this.movementIdle && checkMovementIdle(waitDuration, local))
+		{
+			notifier.notify("[" + local.getName() + "] has stopped moving!");
+		}
+
 		if (this.interactionIdle && checkInteractionIdle(waitDuration, local))
 		{
 			if (lastInteractWasCombat)
 			{
-				notifier.notify("[" + local.getName() + "] is now out of combat!");
+				notifyWith(local, "is now out of combat!");
 				if (this.outOfCombatSound)
 				{
 					soundManager.playSound(Sound.OUT_OF_COMBAT);
@@ -547,17 +622,27 @@ public class IdleNotifierPlugin extends Plugin
 			}
 			else
 			{
-				notifier.notify("[" + local.getName() + "] is now idle!");
+				notifyWith(local, "is now idle!");
 				if (this.interactionIdleSound)
 				{
 					soundManager.playSound(Sound.IDLE);
 				}
 			}
+			interactingNotified = true;
+		}
+
+		if (this.animationIdle && checkAnimationIdle(waitDuration, local))
+		{
+			notifyWith(local, "is now idle!");
+			if (this.animationIdleSound)
+			{
+				soundManager.playSound(Sound.IDLE);
+			}
 		}
 
 		if (checkLowHitpoints())
 		{
-			notifier.notify("[" + local.getName() + "] has low hitpoints!");
+			notifyWith(local, "has low hitpoints!");
 			if (this.getPlayHealthSound)
 			{
 				soundManager.playSound(Sound.LOW_HEATLH);
@@ -566,7 +651,7 @@ public class IdleNotifierPlugin extends Plugin
 
 		if (checkLowPrayer())
 		{
-			notifier.notify("[" + local.getName() + "] has low prayer!");
+			notifyWith(local, "has low prayer!");
 			if (this.getPlayPrayerSound)
 			{
 				soundManager.playSound(Sound.LOW_PRAYER);
@@ -575,12 +660,12 @@ public class IdleNotifierPlugin extends Plugin
 
 		if (checkLowOxygen())
 		{
-			notifier.notify("[" + local.getName() + "] has low oxygen!");
+			notifyWith(local, "has low oxygen!");
 		}
 
 		if (checkFullSpecEnergy())
 		{
-			notifier.notify("[" + local.getName() + "] has restored spec energy!");
+			notifyWith(local, "has restored spec energy!");
 			if (this.getSpecSound)
 			{
 				soundManager.playSound(Sound.RESTORED_SPECIAL_ATTACK);
@@ -771,7 +856,7 @@ public class IdleNotifierPlugin extends Plugin
 
 	private boolean checkAnimationIdle(Duration waitDuration, Player local)
 	{
-		if (lastAnimation == IDLE)
+		if (lastAnimation == IDLE || interactingNotified)
 		{
 			return false;
 		}
@@ -795,6 +880,52 @@ public class IdleNotifierPlugin extends Plugin
 		return false;
 	}
 
+	private boolean checkOutOfItemsIdle(Duration waitDuration)
+	{
+		if (lastTimeItemsUsedUp == null)
+		{
+			return false;
+		}
+
+		if (Instant.now().compareTo(lastTimeItemsUsedUp.plus(waitDuration)) >= 0)
+		{
+			resetTimers();
+			resetOutOfItemsIdleChecks();
+			return true;
+		}
+		return false;
+	}
+
+	private boolean checkMovementIdle(Duration waitDuration, Player local)
+	{
+		if (lastPosition == null)
+		{
+			lastPosition = local.getWorldLocation();
+			return false;
+		}
+
+		WorldPoint position = local.getWorldLocation();
+
+		if (lastPosition.equals(position))
+		{
+			if (notifyPosition
+				&& local.getAnimation() == IDLE
+				&& Instant.now().compareTo(lastMoving.plus(waitDuration)) >= 0)
+			{
+				notifyPosition = false;
+				// Return true only if we weren't just breaking out of an animation
+				return lastAnimation == IDLE;
+			}
+		}
+		else
+		{
+			notifyPosition = true;
+			lastPosition = position;
+			lastMoving = Instant.now();
+		}
+		return false;
+	}
+
 	private void resetTimers()
 	{
 		final Player local = client.getLocalPlayer();
@@ -814,22 +945,30 @@ public class IdleNotifierPlugin extends Plugin
 		}
 	}
 
+	private void resetOutOfItemsIdleChecks()
+	{
+		lastTimeItemsUsedUp = null;
+		itemQuantitiesChange.clear();
+		itemIdsPrevious.clear();
+		itemQuantitiesPrevious.clear();
+	}
+
 	private void skullNotifier()
 	{
 		final Player local = client.getLocalPlayer();
 		SkullIcon currentTickSkull = local.getSkullIcon();
 		EnumSet worldTypes = client.getWorldType();
-		if (!(worldTypes.contains(WorldType.DEADMAN) || worldTypes.contains(WorldType.SEASONAL_DEADMAN)))
+		if (!(worldTypes.contains(WorldType.DEADMAN)))
 		{
 			if (!isFirstTick)
 			{
 				if (this.showSkullNotification && lastTickSkull == null && currentTickSkull == SkullIcon.SKULL)
 				{
-					notifier.notify("[" + local.getName() + "] is now skulled!");
+					notifyWith(local, "is now skulled!");
 				}
 				else if (this.showUnskullNotification && lastTickSkull == SkullIcon.SKULL && currentTickSkull == null)
 				{
-					notifier.notify("[" + local.getName() + "] is now unskulled!");
+					notifyWith(local, "is now unskulled!");
 				}
 			}
 			else
@@ -841,14 +980,24 @@ public class IdleNotifierPlugin extends Plugin
 		}
 	}
 
+	private boolean regionCheck()
+	{
+		return ArrayUtils.contains(client.getMapRegions(), RESOURCE_AREA_REGION);
+	}
+
+	private void notifyWith(Player local, String message)
+	{
+		notifier.notify("[" + local.getName() + "] " + message);
+	}
+
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("idlenotifier"))
 		{
@@ -878,5 +1027,8 @@ public class IdleNotifierPlugin extends Plugin
 		this.getSpecSound = config.getSpecSound();
 		this.getOverSpecEnergy = config.getOverSpecEnergy();
 		this.notifyPkers = config.notifyPkers();
+		this.notifyResourceDoor = config.notifyResourceDoor();
+		this.outOfItemsIdle = config.outOfItemsIdle();
+		this.movementIdle = config.movementIdle();
 	}
 }

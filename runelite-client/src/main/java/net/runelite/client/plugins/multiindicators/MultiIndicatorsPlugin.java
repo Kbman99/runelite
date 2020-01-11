@@ -29,7 +29,6 @@ import com.google.inject.Provides;
 import java.awt.Color;
 import java.awt.Rectangle;
 import java.awt.geom.GeneralPath;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -46,16 +45,15 @@ import net.runelite.api.WorldType;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.geometry.Geometry;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginType;
-import net.runelite.client.task.Schedule;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @PluginDescriptor(
@@ -119,6 +117,8 @@ public class MultiIndicatorsPlugin extends Plugin
 	private Color safeZoneColor;
 	@Getter(AccessLevel.PACKAGE)
 	private Color wildernessLevelLinesColor;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean thinnerLines;
 
 	@Provides
 	MultiIndicatorsConfig getConfig(ConfigManager configManager)
@@ -127,7 +127,7 @@ public class MultiIndicatorsPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 
@@ -146,7 +146,7 @@ public class MultiIndicatorsPlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
 		overlayManager.remove(minimapOverlay);
@@ -171,15 +171,12 @@ public class MultiIndicatorsPlugin extends Plugin
 	// sometimes the lines get offset (seems to happen when there is a delay
 	// due to map reloading when walking/running "Loading - please wait")
 	// resetting the lines generation logic fixes this
-	@Schedule(
-		period = 1800,
-		unit = ChronoUnit.MILLIS
-	)
+
 	public void update()
 	{
 		if (client.getGameState() == GameState.LOGGED_IN)
 		{
-			findLinesInScene();
+			clientThread.invokeLater(this::findLinesInScene);
 		}
 
 	}
@@ -270,7 +267,7 @@ public class MultiIndicatorsPlugin extends Plugin
 	private void findLinesInScene()
 	{
 		inDeadman = client.getWorldType().stream().anyMatch(x ->
-			x == WorldType.DEADMAN || x == WorldType.SEASONAL_DEADMAN);
+			x == WorldType.DEADMAN);
 		inPvp = client.getWorldType().stream().anyMatch(x ->
 			x == WorldType.PVP || x == WorldType.HIGH_RISK);
 
@@ -281,10 +278,7 @@ public class MultiIndicatorsPlugin extends Plugin
 		// Generate lines for multicombat zones
 		if (this.multicombatZoneVisibility == ZoneVisibility.HIDE)
 		{
-			for (int i = 0; i < multicombatPathToDisplay.length; i++)
-			{
-				multicombatPathToDisplay[i] = null;
-			}
+			Arrays.fill(multicombatPathToDisplay, null);
 		}
 		else
 		{
@@ -367,7 +361,7 @@ public class MultiIndicatorsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("multiindicators"))
 		{
@@ -387,7 +381,7 @@ public class MultiIndicatorsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		if (event.getGameState() == GameState.LOGGED_IN)
 		{
@@ -405,5 +399,6 @@ public class MultiIndicatorsPlugin extends Plugin
 		this.multicombatColor = config.multicombatColor();
 		this.safeZoneColor = config.safeZoneColor();
 		this.wildernessLevelLinesColor = config.wildernessLevelLinesColor();
+		this.thinnerLines = config.thinnerLines();
 	}
 }

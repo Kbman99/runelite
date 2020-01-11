@@ -16,7 +16,6 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.events.VarbitChanged;
-import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.theatre.RoomHandler;
 import net.runelite.client.plugins.theatre.TheatrePlugin;
 import net.runelite.client.plugins.theatre.TheatreRoom;
@@ -48,7 +47,6 @@ public class BloatHandler extends RoomHandler
 
 		this.reset();
 		this.plugin.setRoom(TheatreRoom.BLOAT);
-		System.out.println("Starting Bloat Room");
 	}
 
 	@Override
@@ -56,10 +54,9 @@ public class BloatHandler extends RoomHandler
 	{
 		this.reset();
 		this.plugin.setRoom(TheatreRoom.UNKNOWN);
-		System.out.println("Stopping Bloat Room");
 	}
 
-	public void reset()
+	private void reset()
 	{
 		bloat = null;
 		bloatFlag = false;
@@ -131,16 +128,12 @@ public class BloatHandler extends RoomHandler
 		}
 	}
 
-	@Subscribe
 	public void onVarbitChanged(VarbitChanged event)
 	{
-		if (client.getVar(Varbits.BLOAT_DOOR) == 1)
+		if (client.getVar(Varbits.BLOAT_DOOR) == 1 && !bloatFlag)
 		{
-			if (!bloatFlag)
-			{
-				bloatTimer = 0;
-				bloatFlag = true;
-			}
+			bloatTimer = 0;
+			bloatFlag = true;
 		}
 	}
 

@@ -46,13 +46,13 @@ import net.runelite.api.GameState;
 import net.runelite.api.NPC;
 import net.runelite.api.NpcID;
 import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.NPCManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -120,16 +120,22 @@ public class FightCavePlugin extends Plugin
 
 	@Inject
 	private Client client;
+
 	@Inject
 	private NPCManager npcManager;
+
 	@Inject
 	private OverlayManager overlayManager;
+
 	@Inject
 	private WaveOverlay waveOverlay;
+
 	@Inject
 	private FightCaveOverlay fightCaveOverlay;
+
 	@Inject
 	private FightCaveConfig config;
+
 	@Getter(AccessLevel.PACKAGE)
 	private Set<FightCaveContainer> fightCaveContainer = new HashSet<>();
 	@Getter(AccessLevel.PACKAGE)
@@ -171,14 +177,11 @@ public class FightCavePlugin extends Plugin
 	{
 		updateConfig();
 
-		if (client.getGameState() == GameState.LOGGED_IN)
+		if (client.getGameState() == GameState.LOGGED_IN && regionCheck())
 		{
-			if (regionCheck())
-			{
-				validRegion = true;
-				overlayManager.add(waveOverlay);
-				overlayManager.add(fightCaveOverlay);
-			}
+			validRegion = true;
+			overlayManager.add(waveOverlay);
+			overlayManager.add(fightCaveOverlay);
 		}
 	}
 
@@ -191,7 +194,7 @@ public class FightCavePlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("fightcave"))
 		{
@@ -202,7 +205,7 @@ public class FightCavePlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onChatMessage(ChatMessage event)
+	private void onChatMessage(ChatMessage event)
 	{
 		if (!validRegion)
 		{
@@ -220,7 +223,7 @@ public class FightCavePlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		if (event.getGameState() != GameState.LOGGED_IN)
 		{
@@ -244,7 +247,7 @@ public class FightCavePlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onNpcSpawned(NpcSpawned event)
+	private void onNpcSpawned(NpcSpawned event)
 	{
 		if (!validRegion)
 		{
@@ -269,7 +272,7 @@ public class FightCavePlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onNpcDespawned(NpcDespawned event)
+	private void onNpcDespawned(NpcDespawned event)
 	{
 		if (!validRegion)
 		{
@@ -294,7 +297,7 @@ public class FightCavePlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick Event)
+	private void onGameTick(GameTick Event)
 	{
 		if (!validRegion)
 		{

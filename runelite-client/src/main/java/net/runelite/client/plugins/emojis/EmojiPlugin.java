@@ -45,18 +45,21 @@ import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.util.ImageUtil;
 
 @PluginDescriptor(
 	name = "Emojis",
 	description = "Replaces common emoticons such as :) with their corresponding emoji in the chat",
-	enabledByDefault = false
+	enabledByDefault = false,
+	type = PluginType.MISCELLANEOUS
 )
 @Slf4j
 @Singleton
 public class EmojiPlugin extends Plugin
 {
 	private static final Pattern TAG_REGEXP = Pattern.compile("<[^>]*>");
+	private static final Pattern WHITESPACE_REGEXP = Pattern.compile("[\\s\\u00A0]");
 
 	@Inject
 	private Client client;
@@ -73,7 +76,7 @@ public class EmojiPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged)
+	void onGameStateChanged(GameStateChanged gameStateChanged)
 	{
 		if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
 		{
@@ -114,7 +117,7 @@ public class EmojiPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onChatMessage(ChatMessage chatMessage)
+	void onChatMessage(ChatMessage chatMessage)
 	{
 		if (client.getGameState() != GameState.LOGGED_IN || modIconsStart == -1)
 		{
@@ -149,7 +152,7 @@ public class EmojiPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onOverheadTextChanged(final OverheadTextChanged event)
+	private void onOverheadTextChanged(final OverheadTextChanged event)
 	{
 		if (!(event.getActor() instanceof Player))
 		{
@@ -168,9 +171,9 @@ public class EmojiPlugin extends Plugin
 	}
 
 	@Nullable
-	private String updateMessage(final String message)
+	String updateMessage(final String message)
 	{
-		final String[] messageWords = message.split(" ");
+		final String[] messageWords = WHITESPACE_REGEXP.split(message);
 
 		boolean editedMessage = false;
 		for (int i = 0; i < messageWords.length; i++)

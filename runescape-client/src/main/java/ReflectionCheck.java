@@ -6,52 +6,55 @@ import net.runelite.mapping.ObfuscatedGetter;
 import net.runelite.mapping.ObfuscatedName;
 import net.runelite.mapping.ObfuscatedSignature;
 
-@ObfuscatedName("lw")
+@ObfuscatedName("dn")
 @Implements("ReflectionCheck")
 public class ReflectionCheck extends Node {
-   @ObfuscatedName("su")
-   @ObfuscatedSignature(
-      signature = "Lbf;"
-   )
-   @Export("clientPreferences")
-   static ClientPreferences clientPreferences;
-   @ObfuscatedName("m")
-   @Export("arguments")
-   byte[][][] arguments;
-   @ObfuscatedName("f")
-   @Export("intReplaceValues")
-   int[] intReplaceValues;
-   @ObfuscatedName("q")
-   @ObfuscatedGetter(
-      intValue = -1955146989
-   )
-   @Export("id")
-   int id;
-   @ObfuscatedName("w")
-   @ObfuscatedGetter(
-      intValue = -1091722075
-   )
-   @Export("size")
-   int size;
-   @ObfuscatedName("o")
-   @Export("operations")
-   int[] operations;
-   @ObfuscatedName("u")
-   @Export("creationErrors")
-   int[] creationErrors;
-   @ObfuscatedName("g")
-   @Export("fields")
-   Field[] fields;
-   @ObfuscatedName("l")
-   @Export("methods")
-   Method[] methods;
+	@ObfuscatedName("v")
+	@ObfuscatedSignature(
+		signature = "Lko;"
+	)
+	@Export("ItemDefinition_fontPlain11")
+	static Font ItemDefinition_fontPlain11;
+	@ObfuscatedName("m")
+	@Export("userHomeDirectory")
+	static String userHomeDirectory;
+	@ObfuscatedName("mp")
+	@ObfuscatedGetter(
+		intValue = -942024519
+	)
+	@Export("selectedSpellFlags")
+	static int selectedSpellFlags;
+	@ObfuscatedName("f")
+	@Export("intReplaceValues")
+	int[] intReplaceValues;
+	@ObfuscatedName("i")
+	@ObfuscatedGetter(
+		intValue = -1153531937
+	)
+	@Export("id")
+	int id;
+	@ObfuscatedName("y")
+	@ObfuscatedGetter(
+		intValue = 1226139147
+	)
+	@Export("size")
+	int size;
+	@ObfuscatedName("w")
+	@Export("operations")
+	int[] operations;
+	@ObfuscatedName("p")
+	@Export("creationErrors")
+	int[] creationErrors;
+	@ObfuscatedName("b")
+	@Export("fields")
+	Field[] fields;
+	@ObfuscatedName("e")
+	@Export("methods")
+	Method[] methods;
+	@ObfuscatedName("x")
+	@Export("arguments")
+	byte[][][] arguments;
 
-   @ObfuscatedName("f")
-   @ObfuscatedSignature(
-      signature = "(Ljava/lang/String;II)Z",
-      garbageValue = "384237837"
-   )
-   static boolean method5920(String var0, int var1) {
-      return FaceNormal.method3237(var0, var1, "openjs");
-   }
+	ReflectionCheck() {
+	}
 }

@@ -43,21 +43,23 @@ import net.runelite.api.Tile;
 import net.runelite.api.coords.Direction;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.api.events.GameTick;
 import net.runelite.client.Notifier;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @Slf4j
 @PluginDescriptor(
 	name = "Hunter",
 	description = "Show the state of your traps",
-	tags = {"overlay", "skilling", "timers"}
+	tags = {"overlay", "skilling", "timers"},
+	type = PluginType.SKILLING
 )
 @Singleton
 public class HunterPlugin extends Plugin
@@ -111,7 +113,7 @@ public class HunterPlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
 		lastActionTime = Instant.ofEpochMilli(0);
@@ -119,7 +121,7 @@ public class HunterPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameObjectSpawned(GameObjectSpawned event)
+	private void onGameObjectSpawned(GameObjectSpawned event)
 	{
 		final GameObject gameObject = event.getGameObject();
 		final WorldPoint trapLocation = gameObject.getWorldLocation();
@@ -134,14 +136,6 @@ public class HunterPlugin extends Plugin
 			 * ------------------------------------------------------------------------------
 			 */
 			case ObjectID.DEADFALL: // Deadfall trap placed
-				if (localPlayer.getWorldLocation().distanceTo(trapLocation) <= 2)
-				{
-					log.debug("Trap placed by \"{}\" on {}", localPlayer.getName(), trapLocation);
-					traps.put(trapLocation, new HunterTrap(gameObject));
-					lastActionTime = Instant.now();
-				}
-				break;
-
 			case ObjectID.MONKEY_TRAP: // Maniacal monkey trap placed
 				// If player is right next to "object" trap assume that player placed the trap
 				if (localPlayer.getWorldLocation().distanceTo(trapLocation) <= 2)
@@ -205,6 +199,7 @@ public class HunterPlugin extends Plugin
 			case ObjectID.SHAKING_BOX: // Black chinchompa caught
 			case ObjectID.SHAKING_BOX_9382: // Grey chinchompa caught
 			case ObjectID.SHAKING_BOX_9383: // Red chinchompa caught
+			case ObjectID.SHAKING_BOX_9384: // Ferret caught
 			case ObjectID.BOULDER_20648: // Prickly kebbit caught
 			case ObjectID.BOULDER_20649: // Sabre-tooth kebbit caught
 			case ObjectID.BOULDER_20650: // Barb-tailed kebbit caught
@@ -275,6 +270,11 @@ public class HunterPlugin extends Plugin
 			case ObjectID.BOX_TRAP_9387:
 			case ObjectID.BOX_TRAP_9388:
 
+				// Ferret shaking box
+			case ObjectID.BOX_TRAP_9394:
+			case ObjectID.BOX_TRAP_9396:
+			case ObjectID.BOX_TRAP_9397:
+
 				// Bird traps
 			case ObjectID.BIRD_SNARE_9346:
 			case ObjectID.BIRD_SNARE_9347:
@@ -318,7 +318,7 @@ public class HunterPlugin extends Plugin
 	 * the trap from the local players trap collection.
 	 */
 	@Subscribe
-	public void onGameTick(GameTick event)
+	private void onGameTick(GameTick event)
 	{
 		// Check if all traps are still there, and remove the ones that are not.
 		Iterator<Map.Entry<WorldPoint, HunterTrap>> it = traps.entrySet().iterator();
@@ -396,7 +396,7 @@ public class HunterPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (event.getGroup().equals("hunterplugin"))
 		{

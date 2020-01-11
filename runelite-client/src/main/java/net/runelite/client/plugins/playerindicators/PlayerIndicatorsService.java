@@ -24,8 +24,10 @@
  */
 package net.runelite.client.plugins.playerindicators;
 
-import java.awt.Color;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.runelite.api.Client;
@@ -38,72 +40,107 @@ public class PlayerIndicatorsService
 	private final Client client;
 	private final PlayerIndicatorsPlugin plugin;
 
+	private final Predicate<Player> self;
+	private final Predicate<Player> friend;
+	private final Predicate<Player> clan;
+	private final Predicate<Player> team;
+	private final Predicate<Player> target;
+	private final Predicate<Player> other;
+	private final Predicate<Player> caller;
+	private final Predicate<Player> callerTarget;
+
 	@Inject
 	private PlayerIndicatorsService(final Client client, final PlayerIndicatorsPlugin plugin)
 	{
 		this.client = client;
 		this.plugin = plugin;
+
+		self = (player) -> (client.getLocalPlayer().equals(player)
+			&& plugin.getLocationHashMap().containsKey(PlayerRelation.SELF));
+
+		friend = (player) -> (!player.equals(client.getLocalPlayer())
+			&& client.isFriended(player.getName(), false)
+			&& plugin.getLocationHashMap().containsKey(PlayerRelation.FRIEND));
+
+		clan = (player) -> (player.isClanMember() && !client.getLocalPlayer().equals(player) && !client.isFriended(player.getName(), false)
+			&& plugin.getLocationHashMap().containsKey(PlayerRelation.CLAN));
+
+		team = (player) -> (Objects.requireNonNull(client.getLocalPlayer()).getTeam() != 0 && !player.isClanMember()
+			&& !client.isFriended(player.getName(), false)
+			&& client.getLocalPlayer().getTeam() == player.getTeam()
+			&& plugin.getLocationHashMap().containsKey(PlayerRelation.TEAM));
+
+		target = (player) -> (!team.test(player) && !clan.test(player)
+			&& !client.isFriended(player.getName(), false) && PvPUtil.isAttackable(client, player)
+			&& !client.getLocalPlayer().equals(player) && !clan.test(player) && plugin.getLocationHashMap().containsKey(PlayerRelation.TARGET));
+
+		caller = (player) -> (plugin.isCaller(player) && plugin.getLocationHashMap().containsKey(PlayerRelation.CALLER));
+
+		callerTarget = (player) -> (plugin.isPile(player) && plugin.getLocationHashMap().containsKey(PlayerRelation.CALLER_TARGET));
+
+		other = (player) ->
+			(!PvPUtil.isAttackable(client, player) && !client.getLocalPlayer().equals(player)
+				&& !team.test(player) && !clan.test(player) && !client.isFriended(player.getName(), false)
+				&& plugin.getLocationHashMap().containsKey(PlayerRelation.OTHER));
+
 	}
 
-	public void forEachPlayer(final BiConsumer<Player, Color> consumer)
+	public void forEachPlayer(final BiConsumer<Player, PlayerRelation> consumer)
 	{
-		if (!plugin.isHighlightOwnPlayer() && !plugin.isDrawClanMemberNames()
-			&& !plugin.isHighlightFriends() && !plugin.isHighlightNonClanMembers() && !plugin.isHighlightTargets() && !plugin.isHighlightCallers() && !plugin.isHighlightTeamMembers())
+		if (!highlight())
 		{
 			return;
 		}
 
-		final Player localPlayer = client.getLocalPlayer();
-
-		for (Player player : client.getPlayers())
+		final List<Player> players = client.getPlayers();
+		for (Player p : players)
 		{
-			if (player == null || player.getName() == null)
+			if (caller.test(p))
 			{
+				consumer.accept(p, PlayerRelation.CALLER);
 				continue;
 			}
-
-			boolean isClanMember = player.isClanMember();
-
-			if (player == localPlayer)
+			if (callerTarget.test(p))
 			{
-				if (plugin.isHighlightOwnPlayer())
-				{
-					consumer.accept(player, plugin.getGetOwnPlayerColor());
-				}
+				consumer.accept(p, PlayerRelation.CALLER_TARGET);
+				continue;
 			}
-			else if (plugin.isHighlightFriends() && client.isFriended(player.getName(), false))
+			if (other.test(p))
 			{
-				consumer.accept(player, plugin.getGetFriendColor());
+				consumer.accept(p, PlayerRelation.OTHER);
+				continue;
 			}
-			else if (plugin.isDrawClanMemberNames() && isClanMember)
+			if (self.test(p))
 			{
-				consumer.accept(player, plugin.getGetClanMemberColor());
+				consumer.accept(p, PlayerRelation.SELF);
+				continue;
 			}
-			else if (plugin.isHighlightTeamMembers() && localPlayer.getTeam() > 0 &&
-				localPlayer.getTeam() == player.getTeam())
+			if (friend.test(p))
 			{
-				consumer.accept(player, plugin.getGetTeamMemberColor());
+				consumer.accept(p, PlayerRelation.FRIEND);
+				continue;
 			}
-			else if (plugin.isHighlightNonClanMembers() && !isClanMember)
+			if (clan.test(p))
 			{
-				consumer.accept(player, plugin.getGetNonClanMemberColor());
+				consumer.accept(p, PlayerRelation.CLAN);
+				continue;
 			}
-			else if (plugin.isHighlightTargets() && PvPUtil.isAttackable(client, player) &&
-				!client.isFriended(player.getName(), false) && !player.isClanMember())
+			if (team.test(p))
 			{
-				if (plugin.isSkulledTargetsOnly() && player.getSkullIcon() != null)
-				{
-					consumer.accept(player, plugin.getGetTargetColor());
-				}
-				else if (!plugin.isSkulledTargetsOnly())
-				{
-					consumer.accept(player, plugin.getGetTargetColor());
-				}
+				consumer.accept(p, PlayerRelation.TEAM);
+				continue;
 			}
-			if (plugin.isHighlightCallers() && plugin.getConfigCallers() != null && plugin.isCaller(player))
+			if (target.test(p))
 			{
-				consumer.accept(player, plugin.getCallerColor());
+				consumer.accept(p, PlayerRelation.TARGET);
 			}
 		}
+	}
+
+	private boolean highlight()
+	{
+		return plugin.isHighlightOwnPlayer() || plugin.isHighlightClan()
+			|| plugin.isHighlightFriends() || plugin.isHighlightOther() || plugin.isHighlightTargets()
+			|| plugin.isHighlightCallers() || plugin.isHighlightTeam() || plugin.isHighlightCallerTargets();
 	}
 }

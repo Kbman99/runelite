@@ -25,13 +25,14 @@
  */
 package net.runelite.client.plugins.timetracking.farming;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.runelite.api.ItemID;
 import net.runelite.api.NullItemID;
 
 @RequiredArgsConstructor
-@Getter
+@Getter(AccessLevel.PACKAGE)
 public enum Produce
 {
 	WEEDS("Weeds", ItemID.WEEDS, 5, 4),
@@ -129,7 +130,8 @@ public enum Produce
 	SPIRIT_TREE("Spirit tree", ItemID.SPIRIT_TREE, 320, 13),
 	CELASTRUS("Celastrus", ItemID.BATTLESTAFF, 160, 6, 0, 4),
 	REDWOOD("Redwood", ItemID.REDWOOD_LOGS, 640, 11),
-	HESPORI("Hespori", NullItemID.NULL_23044, 640, 4, 0, 2);
+	HESPORI("Hespori", NullItemID.NULL_23044, 640, 4, 0, 2),
+	CRYSTAL_TREE("Crystal tree", ItemID.CRYSTAL_SHARDS, 80, 7);
 
 	/**
 	 * User-visible name

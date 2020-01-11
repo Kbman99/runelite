@@ -47,9 +47,6 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.Date;
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -58,7 +55,6 @@ import javax.imageio.ImageIO;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.swing.SwingUtilities;
-
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -71,15 +67,16 @@ import net.runelite.api.Point;
 import net.runelite.api.SpriteID;
 import net.runelite.api.Varbits;
 import net.runelite.api.WorldType;
-import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.events.PlayerDeath;
 import net.runelite.api.events.WidgetLoaded;
+import net.runelite.api.util.Text;
 import net.runelite.api.widgets.Widget;
 import static net.runelite.api.widgets.WidgetID.BARROWS_REWARD_GROUP_ID;
 import static net.runelite.api.widgets.WidgetID.CHAMBERS_OF_XERIC_REWARD_GROUP_ID;
+import static net.runelite.api.widgets.WidgetID.CHATBOX_GROUP_ID;
 import static net.runelite.api.widgets.WidgetID.CLUE_SCROLL_REWARD_GROUP_ID;
 import static net.runelite.api.widgets.WidgetID.DIALOG_SPRITE_GROUP_ID;
 import static net.runelite.api.widgets.WidgetID.KINGDOM_GROUP_ID;
@@ -92,11 +89,13 @@ import static net.runelite.client.RuneLite.SCREENSHOT_DIR;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.config.Keybind;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.PlayerLootReceived;
 import net.runelite.client.game.SpriteManager;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.plugins.screenshot.imgur.ImageUploadRequest;
 import net.runelite.client.plugins.screenshot.imgur.ImageUploadResponse;
 import net.runelite.client.ui.ClientToolbar;
@@ -106,7 +105,6 @@ import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.HotkeyListener;
 import net.runelite.client.util.ImageUtil;
-import net.runelite.client.util.Text;
 import net.runelite.http.api.RuneLiteAPI;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -115,12 +113,14 @@ import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 @PluginDescriptor(
-		name = "Screenshot",
-		description = "Enable the manual and automatic taking of screenshots",
-		tags = {"external", "images", "imgur", "integration", "notifications"}
+	name = "Screenshot",
+	description = "Enable the manual and automatic taking of screenshots",
+	tags = {"external", "images", "imgur", "integration", "notifications"},
+	type = PluginType.MISCELLANEOUS
 )
 @Slf4j
 @Singleton
@@ -139,8 +139,8 @@ public class ScreenshotPlugin extends Plugin
 	private static final Pattern UNTRADEABLE_DROP_PATTERN = Pattern.compile(".*Untradeable drop: ([^<>]+)(?:</col>)?");
 	private static final Pattern DUEL_END_PATTERN = Pattern.compile("You have now (won|lost) ([0-9]+) duels?\\.");
 	private static final ImmutableList<String> PET_MESSAGES = ImmutableList.of("You have a funny feeling like you're being followed",
-			"You feel something weird sneaking into your backpack",
-			"You have a funny feeling like you would have been followed");
+		"You feel something weird sneaking into your backpack",
+		"You have a funny feeling like you would have been followed");
 
 	private static String format(Date date)
 	{
@@ -199,8 +199,6 @@ public class ScreenshotPlugin extends Plugin
 	@Getter(AccessLevel.PACKAGE)
 	private BufferedImage reportButton;
 
-	private Map<Player, Integer> dying = new HashMap<>();
-
 	private NavigationButton titleBarButton;
 
 	private final HotkeyListener hotkeyListener = new HotkeyListener(() -> this.hotkey)
@@ -222,7 +220,7 @@ public class ScreenshotPlugin extends Plugin
 	private boolean screenshotLevels;
 	private boolean screenshotKingdom;
 	private boolean screenshotPet;
-	private boolean uploadScreenshot;
+	private UploadStyle uploadScreenshot;
 	private boolean screenshotKills;
 	private boolean screenshotBossKills;
 	private boolean screenshotFriendDeath;
@@ -241,10 +239,10 @@ public class ScreenshotPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
-		
+
 		overlayManager.add(screenshotOverlay);
 		SCREENSHOT_DIR.mkdirs();
 		keyManager.registerKeyListener(hotkeyListener);
@@ -252,31 +250,33 @@ public class ScreenshotPlugin extends Plugin
 		final BufferedImage iconImage = ImageUtil.getResourceStreamFromClass(getClass(), "screenshot.png");
 
 		titleBarButton = NavigationButton.builder()
-				.tab(false)
-				.tooltip("Take screenshot")
-				.icon(iconImage)
-				.onClick(() -> takeScreenshot(format(new Date())))
-				.popup(ImmutableMap
-						.<String, Runnable>builder()
-						.put("Open screenshot folder...", () ->
-						{
-							try
-							{
-								Desktop.getDesktop().open(SCREENSHOT_DIR);
-							}
-							catch (IOException ex)
-							{
-								log.warn("Error opening screenshot dir", ex);
-							}
-						})
-						.build())
-				.build();
+			.tab(false)
+			.tooltip("Take screenshot")
+			.icon(iconImage)
+			.onClick(() -> takeScreenshot(format(new Date())))
+			.popup(ImmutableMap
+				.<String, Runnable>builder()
+				.put("Open screenshot folder...", () ->
+				{
+					try
+					{
+						Desktop.getDesktop().open(SCREENSHOT_DIR);
+					}
+					catch (IOException ex)
+					{
+						log.warn("Error opening screenshot dir", ex);
+					}
+				})
+				.build())
+			.build();
 
 		clientToolbar.addNavigation(titleBarButton);
+
+		spriteManager.getSpriteAsync(SpriteID.CHATBOX_REPORT_BUTTON, 0, s -> reportButton = s);
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(screenshotOverlay);
 		clientToolbar.removeNavigation(titleBarButton);
@@ -284,35 +284,18 @@ public class ScreenshotPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		if (event.getGameState() == GameState.LOGGED_IN
-				&& reportButton == null)
+			&& reportButton == null)
 		{
 			reportButton = spriteManager.getSprite(SpriteID.CHATBOX_REPORT_BUTTON, 0);
 		}
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick event)
+	void onGameTick(GameTick event)
 	{
-		if (this.screenshotFriendDeath)
-		{
-			for (Iterator<Player> it = dying.keySet().iterator(); it.hasNext();)
-			{
-				Player key = it.next();
-				if (key.getAnimation() != 836)
-				{
-					it.remove();
-				}
-				dying.replace(key, dying.get(key) - 1);
-				if (dying.get(key) == 0)
-				{
-					takeScreenshot(key.getName() + " ded " + format(new Date()), "Deaths");
-					it.remove();
-				}
-			}
-		}
 		if (!shouldTakeScreenshot)
 		{
 			return;
@@ -323,17 +306,21 @@ public class ScreenshotPlugin extends Plugin
 		String fileName = null;
 		if (client.getWidget(WidgetInfo.LEVEL_UP_LEVEL) != null)
 		{
-			fileName = parseLevelUpWidget(WidgetInfo.LEVEL_UP_LEVEL);
+			fileName = parseLevelUpWidget(client.getWidget(WidgetInfo.LEVEL_UP_LEVEL));
 		}
 		else if (client.getWidget(WidgetInfo.DIALOG_SPRITE_TEXT) != null)
 		{
-			fileName = parseLevelUpWidget(WidgetInfo.DIALOG_SPRITE_TEXT);
+			fileName = parseLevelUpWidget(client.getWidget(WidgetInfo.DIALOG_SPRITE_TEXT));
 		}
 		else if (client.getWidget(WidgetInfo.QUEST_COMPLETED_NAME_TEXT) != null)
 		{
 			// "You have completed The Corsair Curse!"
 			String text = client.getWidget(WidgetInfo.QUEST_COMPLETED_NAME_TEXT).getText();
 			fileName = "Quest(" + text.substring(19, text.length() - 1) + ")";
+		}
+		else if (client.getWidget(WidgetInfo.CHATBOX_CONTAINER).getChild(1) != null)
+		{
+			fileName = parseLevelUpWidget(client.getWidget(WidgetInfo.CHATBOX_CONTAINER).getChild(1));
 		}
 
 		if (fileName != null)
@@ -343,48 +330,24 @@ public class ScreenshotPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onAnimationChanged(AnimationChanged e)
+	private void onPlayerDeath(PlayerDeath event)
 	{
-		//this got refactored somewhere, but some things were missing
-		if (!this.screenshotFriendDeath || !this.screenshotPlayerDeath)
-			return;
-
-		if (!(e.getActor() instanceof Player))
-			return;
-		Player p = (Player) e.getActor();
-
-
-		if (p.getAnimation() != 836)
+		if (event.getPlayer() == client.getLocalPlayer() && config.screenshotPlayerDeath())
 		{
-			return;
+			takeScreenshot(client.getLocalPlayer().getName() + " dead " + format(new Date()), "Deaths");
 		}
-		if (p.getName().equals(client.getLocalPlayer().getName()))
-		{
 
-			if (this.screenshotPlayerDeath)
-			{
-				dying.put(p, 3);
-				return;
-			}
-			else
-			{
-				return;
-			}
-		}
-		if (this.screenshotFriendDeath)
+		int tob = client.getVar(Varbits.THEATRE_OF_BLOOD);
+		if (this.screenshotFriendDeath && event.getPlayer().getName() != null
+			&& (event.getPlayer().isFriend() || event.getPlayer().isClanMember()
+			|| (client.getVar(Varbits.IN_RAID) == 1 || tob == 2 || tob == 3)))
 		{
-			int tob = client.getVar(Varbits.THEATRE_OF_BLOOD);
-
-			if (client.getVar(Varbits.IN_RAID) == 1 || tob == 2 || tob == 3 || p.isFriend())
-			{
-				//this is the same as the tick counter had, just want to make ss at right timing
-				dying.put(p, 3);
-			}
+			takeScreenshot(event.getPlayer().getName() + " dead " + format(new Date()), "Deaths");
 		}
 	}
 
 	@Subscribe
-	public void onPlayerLootReceived(final PlayerLootReceived playerLootReceived)
+	private void onPlayerLootReceived(final PlayerLootReceived playerLootReceived)
 	{
 		if (this.screenshotKills)
 		{
@@ -396,7 +359,7 @@ public class ScreenshotPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onChatMessage(ChatMessage event)
+	void onChatMessage(ChatMessage event)
 	{
 		if (event.getType() != ChatMessageType.GAMEMESSAGE && event.getType() != ChatMessageType.SPAM && event.getType() != ChatMessageType.TRADE)
 		{
@@ -462,7 +425,7 @@ public class ScreenshotPlugin extends Plugin
 			takeScreenshot(fileName);
 		}
 
-		if (this.screenshotBossKills )
+		if (this.screenshotBossKills)
 		{
 			Matcher m = BOSSKILL_MESSAGE_PATTERN.matcher(chatMessage);
 			if (m.matches())
@@ -510,7 +473,7 @@ public class ScreenshotPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onWidgetLoaded(WidgetLoaded event)
+	void onWidgetLoaded(WidgetLoaded event)
 	{
 		String fileName;
 		int groupId = event.getGroupId();
@@ -529,6 +492,7 @@ public class ScreenshotPlugin extends Plugin
 				break;
 			case LEVEL_UP_GROUP_ID:
 			case DIALOG_SPRITE_GROUP_ID:
+			case CHATBOX_GROUP_ID:
 				if (!this.screenshotLevels)
 				{
 					return;
@@ -547,7 +511,6 @@ public class ScreenshotPlugin extends Plugin
 			case KINGDOM_GROUP_ID:
 			{
 				fileName = "Kingdom " + LocalDate.now();
-				takeScreenshot(fileName);
 				break;
 			}
 			case CHAMBERS_OF_XERIC_REWARD_GROUP_ID:
@@ -594,6 +557,7 @@ public class ScreenshotPlugin extends Plugin
 			case LEVEL_UP_GROUP_ID:
 			case DIALOG_SPRITE_GROUP_ID:
 			case QUEST_COMPLETED_GROUP_ID:
+			case CHATBOX_GROUP_ID:
 			{
 				// level up widget gets loaded prior to the text being set, so wait until the next tick
 				shouldTakeScreenshot = true;
@@ -619,22 +583,21 @@ public class ScreenshotPlugin extends Plugin
 	}
 
 	/**
-	 * Receives a WidgetInfo pointing to the middle widget of the level-up dialog,
+	 * Receives a Widget containing the level-up dialog,
 	 * and parses it into a shortened string for filename usage.
 	 *
-	 * @param levelUpLevel WidgetInfo pointing to the required text widget,
-	 *                     with the format "Your Skill (level is/are) now 99."
+	 * @param levelUpWidget Widget containing the level-up text,
+	 *                      with the format "Your Skill (level is/are) now 99."
 	 * @return Shortened string in the format "Skill(99)"
 	 */
-	String parseLevelUpWidget(WidgetInfo levelUpLevel)
+	String parseLevelUpWidget(Widget levelUpWidget)
 	{
-		Widget levelChild = client.getWidget(levelUpLevel);
-		if (levelChild == null)
+		if (levelUpWidget == null)
 		{
 			return null;
 		}
 
-		Matcher m = LEVEL_UP_PATTERN.matcher(levelChild.getText());
+		Matcher m = LEVEL_UP_PATTERN.matcher(levelUpWidget.getText());
 		if (!m.matches())
 		{
 			return null;
@@ -649,7 +612,7 @@ public class ScreenshotPlugin extends Plugin
 	 * Saves a screenshot of the client window to the screenshot folder as a PNG,
 	 * and optionally uploads it to an image-hosting service.
 	 *
-	 * @param fileName    Filename to use, without file extension.
+	 * @param fileName Filename to use, without file extension.
 	 */
 	private void takeScreenshot(String fileName)
 	{
@@ -680,7 +643,7 @@ public class ScreenshotPlugin extends Plugin
 	 * Saves a screenshot of the client window to the screenshot folder as a PNG,
 	 * and optionally uploads it to an image-hosting service.
 	 *
-	 * @param fileName    Filename to use, without file extension.
+	 * @param fileName     Filename to use, without file extension.
 	 * @param subdirectory The subdirectory to save it in
 	 */
 	private void takeScreenshot(String fileName, String subdirectory)
@@ -695,7 +658,7 @@ public class ScreenshotPlugin extends Plugin
 		Consumer<Image> imageCallback = (img) ->
 		{
 			// This callback is on the game thread, move to executor thread
-				executor.submit(() -> takeScreenshot(fileName, img, subdirectory));
+			executor.submit(() -> takeScreenshot(fileName, img, subdirectory));
 
 		};
 
@@ -708,11 +671,12 @@ public class ScreenshotPlugin extends Plugin
 			drawManager.requestNextFrameListener(imageCallback);
 		}
 	}
+
 	private void takeScreenshot(String fileName, Image image, @Nullable String subdirectory)
 	{
 		BufferedImage screenshot = this.includeFrame
-				? new BufferedImage(clientUi.getWidth(), clientUi.getHeight(), BufferedImage.TYPE_INT_ARGB)
-				: new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+			? new BufferedImage(clientUi.getWidth(), clientUi.getHeight(), BufferedImage.TYPE_INT_ARGB)
+			: new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_ARGB);
 
 		Graphics graphics = screenshot.getGraphics();
 
@@ -744,15 +708,15 @@ public class ScreenshotPlugin extends Plugin
 		if (client.getLocalPlayer() != null && client.getLocalPlayer().getName() != null)
 		{
 			final EnumSet<WorldType> worldTypes = client.getWorldType();
-			final boolean dmm = worldTypes.contains(WorldType.DEADMAN);
-			final boolean sdmm = worldTypes.contains(WorldType.SEASONAL_DEADMAN);
-			final boolean dmmt = worldTypes.contains(WorldType.DEADMAN_TOURNAMENT);
-			final boolean isDmmWorld = dmm || sdmm || dmmt;
 
 			String playerDir = client.getLocalPlayer().getName();
-			if (isDmmWorld)
+			if (worldTypes.contains(WorldType.DEADMAN))
 			{
 				playerDir += "-Deadman";
+			}
+			else if (worldTypes.contains(WorldType.LEAGUE))
+			{
+				playerDir += "-League";
 			}
 			playerFolder = new File(SCREENSHOT_DIR, playerDir);
 		}
@@ -775,11 +739,31 @@ public class ScreenshotPlugin extends Plugin
 		{
 			File screenshotFile = new File(playerFolder, fileName + ".png");
 
-			ImageIO.write(screenshot, "PNG", screenshotFile);
+			// To make sure that screenshots don't get overwritten, check if file exists,
+			// and if it does create file with same name and suffix.
+			int i = 1;
+			while (screenshotFile.exists())
+			{
+				screenshotFile = new File(playerFolder, fileName + String.format("(%d)", i++) + ".png");
+			}
 
-			if (this.uploadScreenshot)
+			ImageIO.write(screenshot, "PNG", screenshotFile);
+			UploadStyle uploadStyle = this.uploadScreenshot;
+
+			if (uploadStyle == UploadStyle.IMGUR)
 			{
 				uploadScreenshot(screenshotFile);
+			}
+			else if (uploadStyle == UploadStyle.CLIPBOARD)
+			{
+				Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+				TransferableBufferedImage transferableBufferedImage = new TransferableBufferedImage(screenshot);
+				clipboard.setContents(transferableBufferedImage, null);
+
+				if (this.notifyWhenTaken)
+				{
+					notifier.notify("A screenshot was saved and inserted into your clipboard!", TrayIcon.MessageType.INFO);
+				}
 			}
 			else if (this.notifyWhenTaken)
 			{
@@ -799,55 +783,55 @@ public class ScreenshotPlugin extends Plugin
 	 * @param screenshotFile Image file to upload.
 	 * @throws IOException Thrown if the file cannot be read.
 	 */
+	/**
+	 * Uploads a screenshot to the Imgur image-hosting service,
+	 * and copies the image link to the clipboard.
+	 *
+	 * @param screenshotFile Image file to upload.
+	 * @throws IOException Thrown if the file cannot be read.
+	 */
 	private void uploadScreenshot(File screenshotFile) throws IOException
 	{
 		String json = RuneLiteAPI.GSON.toJson(new ImageUploadRequest(screenshotFile));
 
-		Request request = null;
-		if (IMGUR_IMAGE_UPLOAD_URL != null)
-		{
-			request = new Request.Builder()
-					.url(IMGUR_IMAGE_UPLOAD_URL)
-					.addHeader("Authorization", "Client-ID " + IMGUR_CLIENT_ID)
-					.post(RequestBody.create(JSON, json))
-					.build();
-		}
+		Request request = new Request.Builder()
+			.url(IMGUR_IMAGE_UPLOAD_URL)
+			.addHeader("Authorization", "Client-ID " + IMGUR_CLIENT_ID)
+			.post(RequestBody.create(JSON, json))
+			.build();
 
-		if (request != null)
+		RuneLiteAPI.CLIENT.newCall(request).enqueue(new Callback()
 		{
-			RuneLiteAPI.CLIENT.newCall(request).enqueue(new Callback()
+			@Override
+			public void onFailure(@NotNull Call call, @NotNull IOException ex)
 			{
-				@Override
-				public void onFailure(Call call, IOException ex)
-				{
-					log.warn("error uploading screenshot", ex);
-				}
+				log.warn("error uploading screenshot", ex);
+			}
 
-				@Override
-				public void onResponse(Call call, Response response) throws IOException
+			@Override
+			public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException
+			{
+				try (InputStream in = response.body().byteStream())
 				{
-					try (InputStream in = response.body().byteStream())
+					ImageUploadResponse imageUploadResponse = RuneLiteAPI.GSON
+						.fromJson(new InputStreamReader(in), ImageUploadResponse.class);
+
+					if (imageUploadResponse.isSuccess())
 					{
-						ImageUploadResponse imageUploadResponse = RuneLiteAPI.GSON
-								.fromJson(new InputStreamReader(in), ImageUploadResponse.class);
+						String link = imageUploadResponse.getData().getLink();
 
-						if (imageUploadResponse.isSuccess())
+						StringSelection selection = new StringSelection(link);
+						Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+						clipboard.setContents(selection, selection);
+
+						if (notifyWhenTaken)
 						{
-							String link = imageUploadResponse.getData().getLink();
-
-							StringSelection selection = new StringSelection(link);
-							Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-							clipboard.setContents(selection, selection);
-
-							if (notifyWhenTaken)
-							{
-								notifier.notify("A screenshot was uploaded and inserted into your clipboard!", TrayIcon.MessageType.INFO);
-							}
+							notifier.notify("A screenshot was uploaded and inserted into your clipboard!", TrayIcon.MessageType.INFO);
 						}
 					}
 				}
-			});
-		}
+			}
+		});
 	}
 
 	@VisibleForTesting
@@ -887,7 +871,7 @@ public class ScreenshotPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("screenshot"))
 		{
@@ -896,7 +880,7 @@ public class ScreenshotPlugin extends Plugin
 
 		updateConfig();
 	}
-	
+
 	private void updateConfig()
 	{
 		this.includeFrame = config.includeFrame();

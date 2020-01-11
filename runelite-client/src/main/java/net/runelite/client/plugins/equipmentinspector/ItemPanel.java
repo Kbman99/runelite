@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, https://runelitepl.us
+ * Copyright (c) 2018, https://openosrs.com
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,9 +30,9 @@ import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import net.runelite.api.ItemDefinition;
 import net.runelite.api.kit.KitType;
-import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
+import net.runelite.client.util.AsyncBufferedImage;
 import org.apache.commons.lang3.StringUtils;
 
 class ItemPanel extends JPanel

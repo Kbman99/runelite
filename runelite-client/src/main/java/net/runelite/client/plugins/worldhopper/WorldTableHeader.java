@@ -52,13 +52,13 @@ class WorldTableHeader extends JPanel
 	private static final ImageIcon HIGHLIGHT_ARROW_UP;
 
 	private static final Color ARROW_COLOR = ColorScheme.LIGHT_GRAY_COLOR;
-	private static final Color HIGHLIGHT_COLOR = ColorScheme.BRAND_ORANGE;
+	private static final Color HIGHLIGHT_COLOR = ColorScheme.BRAND_BLUE;
 
 	static
 	{
 		final BufferedImage arrowDown = ImageUtil.getResourceStreamFromClass(WorldHopperPlugin.class, "arrow_down.png");
 		final BufferedImage arrowUp = ImageUtil.rotateImage(arrowDown, Math.PI);
-		final BufferedImage arrowUpFaded = ImageUtil.grayscaleOffset(arrowUp, -80);
+		final BufferedImage arrowUpFaded = ImageUtil.luminanceOffset(arrowUp, -80);
 		ARROW_UP = new ImageIcon(arrowUpFaded);
 
 		final BufferedImage highlightArrowDown = ImageUtil.fillImage(arrowDown, HIGHLIGHT_COLOR);
@@ -104,13 +104,11 @@ class WorldTableHeader extends JPanel
 		});
 
 		textLabel.setText(title);
-		textLabel.setFont(FontManager.getSmallFont(getFont()));
+		textLabel.setFont(FontManager.getRunescapeSmallFont());
 
 		final JMenuItem refresh = new JMenuItem("Refresh worlds");
 		refresh.addActionListener(e ->
-		{
-			onRefresh.run();
-		});
+			onRefresh.run());
 
 		final JPopupMenu popupMenu = new JPopupMenu();
 		popupMenu.setBorder(new EmptyBorder(5, 5, 5, 5));

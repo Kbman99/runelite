@@ -5,7 +5,7 @@ import net.runelite.mapping.Import;
 
 public interface RSSprite extends Sprite
 {
-	@Import("drawAt2")
+	@Import("drawTransBgAt")
 	@Override
 	void drawAt(int x, int y);
 
@@ -25,14 +25,34 @@ public interface RSSprite extends Sprite
 	void setRaster();
 
 	@Import("width")
+	@Override
+	int getMaxWidth();
+
+	@Import("width")
+	@Override
 	void setMaxWidth(int maxWidth);
 
 	@Import("height")
+	@Override
+	int getMaxHeight();
+
+	@Import("height")
+	@Override
 	void setMaxHeight(int maxHeight);
 
-	@Import("yOffset")
-	void setOffsetX(int offsetX); // <-- I don't even know
+	@Import("xOffset")
+	@Override
+	int getOffsetX(); ;
 
 	@Import("xOffset")
-	void setOffsetY(int offsetY); // <-- I don't even know
+	@Override
+	void setOffsetX(int offsetX);
+
+	@Import("yOffset")
+	@Override
+	int getOffsetY(); ;
+
+	@Import("yOffset")
+	@Override
+	void setOffsetY(int offsetY);
 }

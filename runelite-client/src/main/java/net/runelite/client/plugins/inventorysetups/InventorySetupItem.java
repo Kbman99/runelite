@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2018-2019, Ethan <https://github.com/Wea1thRS/>
- * Copyright (c) 2018, https://runelitepl.us
+ * Copyright (c) 2018, https://openosrs.com
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,16 +25,17 @@
  */
 package net.runelite.client.plugins.inventorysetups;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @AllArgsConstructor
 public class InventorySetupItem
 {
-	@Getter
+	@Getter(AccessLevel.PUBLIC)
 	private final int id;
-	@Getter
+	@Getter(AccessLevel.PUBLIC)
 	private final String name;
-	@Getter
+	@Getter(AccessLevel.PUBLIC)
 	private final int quantity;
 }

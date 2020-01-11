@@ -39,21 +39,23 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.task.Schedule;
 
 @PluginDescriptor(
 	name = "Report Button",
 	description = "Replace the text on the Report button with the current time",
-	tags = {"time", "utc"}
+	tags = {"time", "utc"},
+	type = PluginType.MISCELLANEOUS
 )
 @Singleton
 public class ReportButtonPlugin extends Plugin
@@ -87,6 +89,7 @@ public class ReportButtonPlugin extends Plugin
 	@Override
 	public void startUp()
 	{
+
 		this.timeStyle = config.time();
 		clientThread.invoke(this::updateReportButtonTime);
 	}
@@ -105,7 +108,7 @@ public class ReportButtonPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		GameState state = event.getGameState();
 
@@ -206,9 +209,9 @@ public class ReportButtonPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
-		if (event.getGroup().equals("regenmeter"))
+		if (event.getGroup().equals("reportButton"))
 		{
 			this.timeStyle = config.time();
 		}

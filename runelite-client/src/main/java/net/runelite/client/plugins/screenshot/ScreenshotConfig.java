@@ -111,15 +111,14 @@ public interface ScreenshotConfig extends Config
 
 	@ConfigItem(
 		keyName = "uploadScreenshot",
-		name = "Upload To Imgur",
-		description = "Configures whether or not screenshots are uploaded to Imgur and copied into your clipboard",
+		name = "Upload",
+		description = "Configures whether or not screenshots are uploaded to Imgur, or placed on your clipboard",
 		position = 7
 	)
-	default boolean uploadScreenshot()
+	default UploadStyle uploadScreenshot()
 	{
-		return false;
+		return UploadStyle.NEITHER;
 	}
-
 
 	@ConfigItem(
 		keyName = "kills",
@@ -155,15 +154,16 @@ public interface ScreenshotConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "playerDeath",
-			name = "Screenshot Deaths",
-			description = "Configures whether or not screenshots are automatically taken when you die.",
-			position = 11
+		keyName = "playerDeath",
+		name = "Screenshot Deaths",
+		description = "Configures whether or not screenshots are automatically taken when you die.",
+		position = 11
 	)
 	default boolean screenshotPlayerDeath()
 	{
 		return false;
 	}
+
 	@ConfigItem(
 		keyName = "duels",
 		name = "Screenshot Duels",

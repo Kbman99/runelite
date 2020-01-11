@@ -2,148 +2,162 @@ import net.runelite.mapping.Export;
 import net.runelite.mapping.ObfuscatedGetter;
 import net.runelite.mapping.ObfuscatedName;
 import net.runelite.mapping.ObfuscatedSignature;
+import net.runelite.rs.ScriptOpcodes;
 
-@ObfuscatedName("q")
+@ObfuscatedName("y")
 final class class2 implements class0 {
-   @ObfuscatedName("dj")
-   @ObfuscatedSignature(
-      signature = "Lit;"
-   )
-   @Export("indexCache14")
-   static IndexCache indexCache14;
-   @ObfuscatedName("ee")
-   @ObfuscatedGetter(
-      intValue = -753026759
-   )
-   @Export("port1")
-   static int port1;
-   @ObfuscatedName("fo")
-   @ObfuscatedSignature(
-      signature = "Lkk;"
-   )
-   @Export("fontBold12")
-   static Font fontBold12;
+	@ObfuscatedName("da")
+	@ObfuscatedSignature(
+		signature = "Lif;"
+	)
+	@Export("archive2")
+	static Archive archive2;
+	@ObfuscatedName("fk")
+	@ObfuscatedGetter(
+		longValue = -4799784442313615623L
+	)
+	static long field4;
 
-   @ObfuscatedName("m")
-   @ObfuscatedSignature(
-      signature = "(Ljava/lang/Object;Lgr;I)V",
-      garbageValue = "-223205903"
-   )
-   public void vmethod44(Object var1, Buffer var2) {
-      this.method21((Long)var1, var2);
-   }
+	@ObfuscatedName("f")
+	@ObfuscatedSignature(
+		signature = "(Ljava/lang/Object;Lkq;I)V",
+		garbageValue = "-685052934"
+	)
+	public void vmethod53(Object var1, Buffer var2) {
+		this.method22((Long)var1, var2);
+	}
 
-   @ObfuscatedName("f")
-   @ObfuscatedSignature(
-      signature = "(Lgr;I)Ljava/lang/Object;",
-      garbageValue = "704451908"
-   )
-   public Object vmethod46(Buffer var1) {
-      return var1.readLong();
-   }
+	@ObfuscatedName("i")
+	@ObfuscatedSignature(
+		signature = "(Lkq;I)Ljava/lang/Object;",
+		garbageValue = "390816352"
+	)
+	public Object vmethod60(Buffer var1) {
+		return var1.readLong();
+	}
 
-   @ObfuscatedName("g")
-   @ObfuscatedSignature(
-      signature = "(Ljava/lang/Long;Lgr;I)V",
-      garbageValue = "1518625016"
-   )
-   void method21(Long var1, Buffer var2) {
-      var2.writeLong(var1);
-   }
+	@ObfuscatedName("x")
+	@ObfuscatedSignature(
+		signature = "(Ljava/lang/Long;Lkq;I)V",
+		garbageValue = "-1352577432"
+	)
+	void method22(Long var1, Buffer var2) {
+		var2.writeLong(var1);
+	}
 
-   @ObfuscatedName("q")
-   @ObfuscatedSignature(
-      signature = "(Lir;Lir;ZII)V",
-      garbageValue = "-1535318699"
-   )
-   static void method27(AbstractIndexCache var0, AbstractIndexCache var1, boolean var2, int var3) {
-      if (Login.field465) {
-         if (var3 == 4) {
-            Login.loginIndex = 4;
-         }
-      } else {
-         Login.loginIndex = var3;
-         Rasterizer2D.Rasterizer2D_clear();
-         byte[] var4 = var0.takeRecordByNames("title.jpg", "");
-         Login.leftTitleSprite = class27.convertJpgToSprite(var4);
-         Fonts.rightTitleSprite = Login.leftTitleSprite.copy();
-         if ((Client.worldProperties & 536870912) != 0) {
-            WorldMapSectionType.logoSprite = MenuAction.loadIndexedSpriteByName(var1, "logo_deadman_mode", "");
-         } else {
-            WorldMapSectionType.logoSprite = MenuAction.loadIndexedSpriteByName(var1, "logo", "");
-         }
+	@ObfuscatedName("f")
+	@ObfuscatedSignature(
+		signature = "(Lfh;Llr;I)Lfz;",
+		garbageValue = "890540527"
+	)
+	@Export("getPacketBufferNode")
+	public static PacketBufferNode getPacketBufferNode(ClientPacket var0, IsaacCipher var1) {
+		PacketBufferNode var2;
+		if (PacketBufferNode.PacketBufferNode_packetBufferNodeCount == 0) {
+			var2 = new PacketBufferNode();
+		} else {
+			var2 = PacketBufferNode.PacketBufferNode_packetBufferNodes[--PacketBufferNode.PacketBufferNode_packetBufferNodeCount];
+		}
 
-         Login.titleboxSprite = MenuAction.loadIndexedSpriteByName(var1, "titlebox", "");
-         IndexCacheLoader.titlebuttonSprite = MenuAction.loadIndexedSpriteByName(var1, "titlebutton", "");
-         int var5 = var1.getArchiveId("runes");
-         int var6 = var1.getRecordId(var5, "");
-         IndexedSprite[] var7;
-         if (!SpriteMask.loadSprite(var1, var5, var6)) {
-            var7 = null;
-         } else {
-            var7 = WorldMapLabel.createIndexedSpriteArray();
-         }
+		var2.clientPacket = var0;
+		var2.clientPacketLength = var0.length;
+		if (var2.clientPacketLength == -1) {
+			var2.packetBuffer = new PacketBuffer(260);
+		} else if (var2.clientPacketLength == -2) {
+			var2.packetBuffer = new PacketBuffer(10000);
+		} else if (var2.clientPacketLength <= 18) {
+			var2.packetBuffer = new PacketBuffer(20);
+		} else if (var2.clientPacketLength <= 98) {
+			var2.packetBuffer = new PacketBuffer(100);
+		} else {
+			var2.packetBuffer = new PacketBuffer(260);
+		}
 
-         WorldMapEvent.runesSprite = var7;
-         var6 = var1.getArchiveId("title_mute");
-         int var8 = var1.getRecordId(var6, "");
-         IndexedSprite[] var9;
-         if (!SpriteMask.loadSprite(var1, var6, var8)) {
-            var9 = null;
-         } else {
-            var9 = WorldMapLabel.createIndexedSpriteArray();
-         }
+		var2.packetBuffer.setIsaacCipher(var1);
+		var2.packetBuffer.writeByteIsaac(var2.clientPacket.id);
+		var2.index = 0;
+		return var2;
+	}
 
-         KeyHandler.title_muteSprite = var9;
-         Login.options_buttons_0Sprite = MenuAction.loadIndexedSpriteByName(var1, "options_radio_buttons,0", "");
-         GraphicsObject.options_buttons_4Sprite = MenuAction.loadIndexedSpriteByName(var1, "options_radio_buttons,4", "");
-         class308.options_buttons_2Sprite = MenuAction.loadIndexedSpriteByName(var1, "options_radio_buttons,2", "");
-         KeyHandler.options_buttons_6Sprite = MenuAction.loadIndexedSpriteByName(var1, "options_radio_buttons,6", "");
-         class168.optionButtonSpriteSubWidth = Login.options_buttons_0Sprite.subWidth;
-         GroundItemPile.optionButtonSpriteSubHeight = Login.options_buttons_0Sprite.subHeight;
-         class16.loginScreenRunesAnimation = new LoginScreenAnimation(WorldMapEvent.runesSprite);
-         if (var2) {
-            Login.Login_username = "";
-            Login.Login_password = "";
-         }
+	@ObfuscatedName("a")
+	@Export("Entity_unpackID")
+	public static int Entity_unpackID(long var0) {
+		return (int)(var0 >>> 17 & 4294967295L);
+	}
 
-         class13.otpInt = 0;
-         Login.otp = "";
-         Login.field470 = true;
-         Login.worldSelectOpen = false;
-         if (!ReflectionCheck.clientPreferences.titleMusicDisabled) {
-            Canvas.method858(2, UserComparator3.indexCache6, "scape main", "", 255, false);
-         } else {
-            AbstractSocket.method3488(2);
-         }
+	@ObfuscatedName("l")
+	@ObfuscatedSignature(
+		signature = "(ILcu;ZB)I",
+		garbageValue = "43"
+	)
+	static int method34(int var0, Script var1, boolean var2) {
+		Widget var3 = var2 ? UserComparator7.field1946 : class197.field2398;
+		if (var0 == ScriptOpcodes.CC_GETX) {
+			Interpreter.Interpreter_intStack[++class188.Interpreter_intStackSize - 1] = var3.x;
+			return 1;
+		} else if (var0 == ScriptOpcodes.CC_GETY) {
+			Interpreter.Interpreter_intStack[++class188.Interpreter_intStackSize - 1] = var3.y;
+			return 1;
+		} else if (var0 == ScriptOpcodes.CC_GETWIDTH) {
+			Interpreter.Interpreter_intStack[++class188.Interpreter_intStackSize - 1] = var3.width;
+			return 1;
+		} else if (var0 == ScriptOpcodes.CC_GETHEIGHT) {
+			Interpreter.Interpreter_intStack[++class188.Interpreter_intStackSize - 1] = var3.height;
+			return 1;
+		} else if (var0 == ScriptOpcodes.CC_GETHIDE) {
+			Interpreter.Interpreter_intStack[++class188.Interpreter_intStackSize - 1] = var3.isHidden ? 1 : 0;
+			return 1;
+		} else if (var0 == ScriptOpcodes.CC_GETLAYER) {
+			Interpreter.Interpreter_intStack[++class188.Interpreter_intStackSize - 1] = var3.parentId;
+			return 1;
+		} else {
+			return 2;
+		}
+	}
 
-         UserComparator9.method3343(false);
-         Login.field465 = true;
-         Login.xPadding = (SoundCache.canvasWidth - 765) / 2;
-         Login.loginBoxX = Login.xPadding + 202;
-         Varps.loginBoxCenter = Login.loginBoxX + 180;
-         Login.leftTitleSprite.drawAt(Login.xPadding, 0);
-         Fonts.rightTitleSprite.drawAt(Login.xPadding + 382, 0);
-         WorldMapSectionType.logoSprite.drawAt(Login.xPadding + 382 - WorldMapSectionType.logoSprite.subWidth / 2, 18);
-      }
+	@ObfuscatedName("hj")
+	@ObfuscatedSignature(
+		signature = "(I)Z",
+		garbageValue = "32937024"
+	)
+	static boolean method27() {
+		return (Client.drawPlayerNames & 2) != 0;
+	}
 
-   }
+	@ObfuscatedName("jh")
+	@ObfuscatedSignature(
+		signature = "(Lha;III)V",
+		garbageValue = "65280"
+	)
+	@Export("alignWidgetPosition")
+	static void alignWidgetPosition(Widget var0, int var1, int var2) {
+		if (var0.xAlignment == 0) {
+			var0.x = var0.rawX;
+		} else if (var0.xAlignment == 1) {
+			var0.x = var0.rawX + (var1 - var0.width) / 2;
+		} else if (var0.xAlignment == 2) {
+			var0.x = var1 - var0.width - var0.rawX;
+		} else if (var0.xAlignment == 3) {
+			var0.x = var0.rawX * var1 >> 14;
+		} else if (var0.xAlignment == 4) {
+			var0.x = (var0.rawX * var1 >> 14) + (var1 - var0.width) / 2;
+		} else {
+			var0.x = var1 - var0.width - (var0.rawX * var1 >> 14);
+		}
 
-   @ObfuscatedName("w")
-   @ObfuscatedSignature(
-      signature = "(Lir;Ljava/lang/String;Ljava/lang/String;B)[Lln;",
-      garbageValue = "0"
-   )
-   public static Sprite[] method20(AbstractIndexCache var0, String var1, String var2) {
-      int var3 = var0.getArchiveId(var1);
-      int var4 = var0.getRecordId(var3, var2);
-      Sprite[] var5;
-      if (!SpriteMask.loadSprite(var0, var3, var4)) {
-         var5 = null;
-      } else {
-         var5 = UserComparator9.createSpriteArray();
-      }
+		if (var0.yAlignment == 0) {
+			var0.y = var0.rawY;
+		} else if (var0.yAlignment == 1) {
+			var0.y = (var2 - var0.height) / 2 + var0.rawY;
+		} else if (var0.yAlignment == 2) {
+			var0.y = var2 - var0.height - var0.rawY;
+		} else if (var0.yAlignment == 3) {
+			var0.y = var2 * var0.rawY >> 14;
+		} else if (var0.yAlignment == 4) {
+			var0.y = (var2 - var0.height) / 2 + (var2 * var0.rawY >> 14);
+		} else {
+			var0.y = var2 - var0.height - (var2 * var0.rawY >> 14);
+		}
 
-      return var5;
-   }
+	}
 }

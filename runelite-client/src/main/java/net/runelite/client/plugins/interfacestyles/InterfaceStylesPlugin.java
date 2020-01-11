@@ -34,10 +34,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.HealthBar;
-import net.runelite.api.SpriteID;
 import net.runelite.api.Sprite;
+import net.runelite.api.SpriteID;
 import net.runelite.api.events.BeforeMenuRender;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.PostHealthBar;
 import net.runelite.api.events.WidgetPositioned;
@@ -46,9 +45,11 @@ import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.SpriteManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.util.ImageUtil;
 
 @Slf4j
@@ -56,7 +57,8 @@ import net.runelite.client.util.ImageUtil;
 	name = "Interface Styles",
 	description = "Change the interface style to the 2005/2010 interface",
 	tags = {"2005", "2010", "skin", "theme", "ui"},
-	enabledByDefault = false
+	enabledByDefault = false,
+	type = PluginType.MISCELLANEOUS
 )
 @Singleton
 public class InterfaceStylesPlugin extends Plugin
@@ -87,14 +89,14 @@ public class InterfaceStylesPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 		clientThread.invoke(this::updateAllOverrides);
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		clientThread.invoke(() ->
 		{
@@ -106,7 +108,7 @@ public class InterfaceStylesPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged config)
+	private void onConfigChanged(ConfigChanged config)
 	{
 		if (config.getGroup().equals("interfaceStyles"))
 		{
@@ -116,13 +118,13 @@ public class InterfaceStylesPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onWidgetPositioned(WidgetPositioned widgetPositioned)
+	private void onWidgetPositioned(WidgetPositioned widgetPositioned)
 	{
 		adjustWidgetDimensions();
 	}
 
 	@Subscribe
-	public void onPostHealthBar(PostHealthBar postHealthBar)
+	private void onPostHealthBar(PostHealthBar postHealthBar)
 	{
 		if (!this.hdHealthBars)
 		{
@@ -141,7 +143,7 @@ public class InterfaceStylesPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged)
+	private void onGameStateChanged(GameStateChanged gameStateChanged)
 	{
 		if (gameStateChanged.getGameState() != GameState.LOGIN_SCREEN)
 		{
@@ -168,7 +170,7 @@ public class InterfaceStylesPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onBeforeMenuRender(BeforeMenuRender event)
+	private void onBeforeMenuRender(BeforeMenuRender event)
 	{
 		if (this.hdMenu)
 		{

@@ -25,6 +25,7 @@
 package net.runelite.client.plugins.tarnslair;
 
 import java.util.HashMap;
+import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.AccessLevel;
@@ -52,7 +53,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 	name = "Tarn's Lair",
 	description = "Mark tiles and clickboxes to help traverse the maze",
 	tags = {"agility", "maze", "minigame", "overlay"},
-	type = PluginType.UTILITY,
+	type = PluginType.MINIGAME,
 	enabledByDefault = false
 )
 @Singleton
@@ -63,13 +64,13 @@ public class TarnsLairPlugin extends Plugin
 	private static final int TARNS_LAIR_SOUTH_REGION = 12615;
 
 	@Getter(AccessLevel.PACKAGE)
-	private final HashMap<TileObject, Tile> staircases = new HashMap<>();
+	private final Map<TileObject, Tile> staircases = new HashMap<>();
 
 	@Getter(AccessLevel.PACKAGE)
-	private final HashMap<TileObject, Tile> wallTraps = new HashMap<>();
+	private final Map<TileObject, Tile> wallTraps = new HashMap<>();
 
 	@Getter(AccessLevel.PACKAGE)
-	private final HashMap<TileObject, Tile> floorTraps = new HashMap<>();
+	private final Map<TileObject, Tile> floorTraps = new HashMap<>();
 
 	@Getter(AccessLevel.PACKAGE)
 	private boolean inLair;
@@ -84,13 +85,13 @@ public class TarnsLairPlugin extends Plugin
 	private TarnsLairOverlay overlay;
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		overlayManager.add(overlay);
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
 		staircases.clear();
@@ -100,50 +101,50 @@ public class TarnsLairPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick event)
+	private void onGameTick(GameTick event)
 	{
 		int regionID = client.getLocalPlayer().getWorldLocation().getRegionID();
 		inLair = (regionID == TARNS_LAIR_NORTH_REGION || regionID == TARNS_LAIR_SOUTH_REGION);
 	}
 
 	@Subscribe
-	public void onGameObjectSpawned(GameObjectSpawned event)
+	private void onGameObjectSpawned(GameObjectSpawned event)
 	{
 		onTileObject(event.getTile(), null, event.getGameObject());
 	}
 
 	@Subscribe
-	public void onGameObjectChanged(GameObjectChanged event)
+	private void onGameObjectChanged(GameObjectChanged event)
 	{
 		onTileObject(event.getTile(), event.getPrevious(), event.getGameObject());
 	}
 
 	@Subscribe
-	public void onGameObjectDespawned(GameObjectDespawned event)
+	private void onGameObjectDespawned(GameObjectDespawned event)
 	{
 		onTileObject(event.getTile(), event.getGameObject(), null);
 	}
 
 	@Subscribe
-	public void onGroundObjectSpawned(GroundObjectSpawned event)
+	private void onGroundObjectSpawned(GroundObjectSpawned event)
 	{
 		onTileObject(event.getTile(), null, event.getGroundObject());
 	}
 
 	@Subscribe
-	public void onGroundObjectChanged(GroundObjectChanged event)
+	private void onGroundObjectChanged(GroundObjectChanged event)
 	{
 		onTileObject(event.getTile(), event.getPrevious(), event.getGroundObject());
 	}
 
 	@Subscribe
-	public void onGroundObjectDespawned(GroundObjectDespawned event)
+	private void onGroundObjectDespawned(GroundObjectDespawned event)
 	{
 		onTileObject(event.getTile(), event.getGroundObject(), null);
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		if (event.getGameState() == GameState.LOADING)
 		{

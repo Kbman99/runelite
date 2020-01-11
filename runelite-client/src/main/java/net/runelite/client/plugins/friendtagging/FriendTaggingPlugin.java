@@ -10,7 +10,6 @@
 package net.runelite.client.plugins.friendtagging;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.ObjectArrays;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.util.Arrays;
@@ -24,14 +23,14 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Friend;
 import net.runelite.api.Ignore;
-import net.runelite.api.MenuAction;
-import net.runelite.api.MenuEntry;
+import net.runelite.api.MenuOpcode;
 import net.runelite.api.Nameable;
+import net.runelite.api.events.FriendRemoved;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.NameableNameChanged;
-import net.runelite.api.events.RemovedFriend;
 import net.runelite.api.events.WidgetMenuOptionClicked;
+import net.runelite.api.util.Text;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -42,7 +41,6 @@ import net.runelite.client.menus.WidgetMenuOption;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginType;
-import net.runelite.client.util.Text;
 import org.apache.commons.lang3.ArrayUtils;
 
 @Slf4j
@@ -63,13 +61,13 @@ public class FriendTaggingPlugin extends Plugin
 	private static final String KEY_PREFIX = "tag_";
 	private static final String ADD_TAG = "Add Tag";
 	private static final String DELETE_TAG = "Delete Tag";
-	private WidgetMenuOption friendsTabMenuOption = new WidgetMenuOption("Copy to", "clipboard",
+	private final WidgetMenuOption friendsTabMenuOption = new WidgetMenuOption("Copy to", "clipboard",
 		WidgetInfo.FIXED_VIEWPORT_FRIENDS_TAB);
-	private WidgetMenuOption ignoreTabMenuOption = new WidgetMenuOption("Copy to", "clipboard",
+	private final WidgetMenuOption ignoreTabMenuOption = new WidgetMenuOption("Copy to", "clipboard",
 		WidgetInfo.FIXED_VIEWPORT_IGNORES_TAB);
-	private WidgetMenuOption friendTabResizableOption = new WidgetMenuOption("Copy to", "clipboard",
+	private final WidgetMenuOption friendTabResizableOption = new WidgetMenuOption("Copy to", "clipboard",
 		WidgetInfo.FIXED_VIEWPORT_FRIENDS_TAB);
-	private WidgetMenuOption ignoreTabResizableOption = new WidgetMenuOption("Copy to", "clipboard",
+	private final WidgetMenuOption ignoreTabResizableOption = new WidgetMenuOption("Copy to", "clipboard",
 		WidgetInfo.FIXED_VIEWPORT_IGNORES_TAB);
 
 	@Inject
@@ -85,8 +83,9 @@ public class FriendTaggingPlugin extends Plugin
 	private ChatboxPanelManager chatboxPanelManager;
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
+
 		menuManager.addManagedCustomMenu(friendsTabMenuOption);
 		menuManager.addManagedCustomMenu(ignoreTabMenuOption);
 		menuManager.addManagedCustomMenu(friendTabResizableOption);
@@ -95,7 +94,7 @@ public class FriendTaggingPlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		menuManager.removeManagedCustomMenu(friendsTabMenuOption);
 		menuManager.removeManagedCustomMenu(ignoreTabMenuOption);
@@ -104,9 +103,9 @@ public class FriendTaggingPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onMenuEntryAdded(MenuEntryAdded event)
+	private void onMenuEntryAdded(MenuEntryAdded event)
 	{
-		final int groupId = WidgetInfo.TO_GROUP(event.getActionParam1());
+		final int groupId = WidgetInfo.TO_GROUP(event.getParam1());
 
 		if (groupId == WidgetInfo.FRIENDS_LIST.getGroupId() && event.getOption().equals("Message"))
 		{
@@ -114,28 +113,29 @@ public class FriendTaggingPlugin extends Plugin
 			String friendName = Text.removeTags(event.getTarget());
 
 			// Build "Add Note" or "Edit Note" menu entry
-			final MenuEntry entry = new MenuEntry();
-			entry.setOption(friendName == null || getTag(friendName) == null ? ADD_TAG : DELETE_TAG);
-			entry.setType(MenuAction.RUNELITE.getId());
-			entry.setTarget(event.getTarget()); //Preserve color codes here
-			entry.setParam0(event.getActionParam0());
-			entry.setParam1(event.getActionParam1());
-
+			client.insertMenuItem(
+				friendName == null || getTag(friendName) == null ? ADD_TAG : DELETE_TAG,
+				event.getTarget(),
+				MenuOpcode.RUNELITE.getId(),
+				0,
+				event.getParam0(),
+				event.getParam1(),
+				false
+			);
 			// Add menu entry
-			final MenuEntry[] menuEntries = ObjectArrays.concat(client.getMenuEntries(), entry);
-			client.setMenuEntries(menuEntries);
+			// jk it is already added
 		}
 	}
 
 	@Subscribe
-	public void onRemovedFriend(RemovedFriend event)
+	private void onFriendRemoved(FriendRemoved event)
 	{
 		final String displayName = event.getName().trim().toLowerCase();
 		deleteTag(displayName);
 	}
 
 	@Subscribe
-	public void onNameableNameChanged(NameableNameChanged event)
+	private void onNameableNameChanged(NameableNameChanged event)
 	{
 		final Nameable nameable = event.getNameable();
 
@@ -151,7 +151,7 @@ public class FriendTaggingPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onWidgetMenuOptionClicked(WidgetMenuOptionClicked event)
+	private void onWidgetMenuOptionClicked(WidgetMenuOptionClicked event)
 	{
 		if (event.getWidget().getId() == WidgetInfo.FIXED_VIEWPORT_FRIENDS_TAB.getId() &&
 			Text.standardize(event.getMenuTarget()).equals(Text.standardize("clipboard")))
@@ -161,9 +161,9 @@ public class FriendTaggingPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onMenuOptionClicked(MenuOptionClicked event)
+	private void onMenuOptionClicked(MenuOptionClicked event)
 	{
-		if (WidgetInfo.TO_GROUP(event.getActionParam1()) == WidgetInfo.FRIENDS_LIST.getGroupId())
+		if (WidgetInfo.TO_GROUP(event.getParam1()) == WidgetInfo.FRIENDS_LIST.getGroupId())
 		{
 			if (Strings.isNullOrEmpty(event.getTarget()))
 			{

@@ -14,7 +14,7 @@ import java.awt.Graphics2D;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.runelite.api.Client;
-import net.runelite.api.MenuAction;
+import net.runelite.api.MenuOpcode;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayMenuEntry;
@@ -31,16 +31,16 @@ import net.runelite.client.ui.overlay.components.TitleComponent;
 @Singleton
 public class WhaleWatchersOverlay extends Overlay
 {
-	private Client client;
-	private WhaleWatchersPlugin plugin;
-	private PanelComponent panelComponent;
+	private final Client client;
+	private final WhaleWatchersPlugin plugin;
+	private final PanelComponent panelComponent;
 	private String lastOpponent = "-";
 
 
 	@Inject
 	public WhaleWatchersOverlay(final Client client, final WhaleWatchersPlugin plugin)
 	{
-		OverlayMenuEntry resetMenuEntry = new OverlayMenuEntry(MenuAction.RUNELITE_OVERLAY,
+		OverlayMenuEntry resetMenuEntry = new OverlayMenuEntry(MenuOpcode.RUNELITE_OVERLAY,
 			"Reset", "Damage Counter");
 		this.getMenuEntries().add(resetMenuEntry);
 		this.client = client;

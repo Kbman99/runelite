@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2018-2019, Ethan <https://github.com/Wea1thRS/>
- * Copyright (c) 2018, https://runelitepl.us
+ * Copyright (c) 2018, https://openosrs.com
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,9 +32,12 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.swing.JOptionPane;
@@ -46,14 +49,14 @@ import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.InventoryID;
 import net.runelite.api.Item;
-import net.runelite.api.ItemDefinition;
 import net.runelite.api.ItemContainer;
-import net.runelite.api.events.ConfigChanged;
+import net.runelite.api.ItemDefinition;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.ItemVariationMapping;
 import net.runelite.client.plugins.Plugin;
@@ -108,7 +111,7 @@ public class InventorySetupPlugin extends Plugin
 
 	private InventorySetupPluginPanel panel;
 
-	private Map<String, InventorySetup> inventorySetups = new HashMap<>();
+	private final Map<String, InventorySetup> inventorySetups = new HashMap<>();
 
 	private NavigationButton navButton;
 
@@ -205,14 +208,14 @@ public class InventorySetupPlugin extends Plugin
 
 		clientThread.invoke(() ->
 		{
-			ArrayList<InventorySetupItem> inv = getNormalizedContainer(InventoryID.INVENTORY);
-			ArrayList<InventorySetupItem> eqp = getNormalizedContainer(InventoryID.EQUIPMENT);
+			List<InventorySetupItem> inv = getNormalizedContainer(InventoryID.INVENTORY);
+			List<InventorySetupItem> eqp = getNormalizedContainer(InventoryID.EQUIPMENT);
 
 			final InventorySetup invSetup = new InventorySetup(inv, eqp);
 			SwingUtilities.invokeLater(() ->
 			{
 				inventorySetups.put(name, invSetup);
-				panel.addInventorySetup(name);
+				panel.addInventorySetupUnsorted(name);
 				panel.setCurrentInventorySetup(name);
 
 				updateConfig();
@@ -257,7 +260,7 @@ public class InventorySetupPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (event.getGroup().equals(CONFIG_GROUP))
 		{
@@ -299,13 +302,12 @@ public class InventorySetupPlugin extends Plugin
 			final Gson gson = new Gson();
 			Type type = new TypeToken<HashMap<String, InventorySetup>>()
 			{
-
 			}.getType();
 			inventorySetups.clear();
 			inventorySetups.putAll(gson.fromJson(json, type));
 		}
 
-		for (final String key : inventorySetups.keySet())
+		for (final String key : inventorySetups.keySet().stream().sorted(Comparator.comparing(String::toLowerCase)).collect(Collectors.toList()))
 		{
 			panel.addInventorySetup(key);
 		}
@@ -313,7 +315,7 @@ public class InventorySetupPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onItemContainerChanged(ItemContainerChanged event)
+	private void onItemContainerChanged(ItemContainerChanged event)
 	{
 
 		if (!highlightDifference || client.getGameState() != GameState.LOGGED_IN)
@@ -333,13 +335,13 @@ public class InventorySetupPlugin extends Plugin
 
 		if (container == client.getItemContainer(InventoryID.INVENTORY))
 		{
-			ArrayList<InventorySetupItem> normContainer = getNormalizedContainer(InventoryID.INVENTORY);
+			List<InventorySetupItem> normContainer = getNormalizedContainer(InventoryID.INVENTORY);
 			final InventorySetup setup = inventorySetups.get(selectedInventorySetup);
 			panel.highlightDifferences(normContainer, setup, InventoryID.INVENTORY);
 		}
 		else if (container == client.getItemContainer(InventoryID.EQUIPMENT))
 		{
-			ArrayList<InventorySetupItem> normContainer = getNormalizedContainer(InventoryID.EQUIPMENT);
+			List<InventorySetupItem> normContainer = getNormalizedContainer(InventoryID.EQUIPMENT);
 			final InventorySetup setup = inventorySetups.get(selectedInventorySetup);
 			panel.highlightDifferences(normContainer, setup, InventoryID.EQUIPMENT);
 		}
@@ -347,7 +349,7 @@ public class InventorySetupPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		switch (event.getGameState())
 		{
@@ -364,6 +366,12 @@ public class InventorySetupPlugin extends Plugin
 			default:
 				return;
 		}
+
+		if (panel == null)
+		{
+			return;
+		}
+
 		final String setupName = panel.getSelectedInventorySetup();
 		if (!setupName.isEmpty())
 		{
@@ -371,13 +379,13 @@ public class InventorySetupPlugin extends Plugin
 		}
 	}
 
-	public ArrayList<InventorySetupItem> getNormalizedContainer(final InventoryID id)
+	public List<InventorySetupItem> getNormalizedContainer(final InventoryID id)
 	{
 		assert id == InventoryID.INVENTORY || id == InventoryID.EQUIPMENT : "invalid inventory ID";
 
 		final ItemContainer container = client.getItemContainer(id);
 
-		ArrayList<InventorySetupItem> newContainer = new ArrayList<>();
+		List<InventorySetupItem> newContainer = new ArrayList<>();
 
 		Item[] items = null;
 		if (container != null)
@@ -406,11 +414,6 @@ public class InventorySetupPlugin extends Plugin
 		}
 
 		return newContainer;
-	}
-
-	public final InventorySetupConfig getConfig()
-	{
-		return config;
 	}
 
 	public boolean getHighlightDifference()

@@ -41,18 +41,19 @@ import net.runelite.api.Client;
 import net.runelite.api.NPC;
 import net.runelite.api.Skill;
 import net.runelite.api.WorldType;
-import net.runelite.api.events.ConfigChanged;
-import net.runelite.api.events.ExperienceChanged;
+import net.runelite.api.events.FakeXpDrop;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.HitsplatApplied;
-import net.runelite.api.events.ScriptCallbackEvent;
+import net.runelite.api.events.StatChanged;
+import net.runelite.api.util.Text;
 import net.runelite.client.chat.ChatColorType;
 import net.runelite.client.chat.ChatMessageBuilder;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.OverlayMenuClicked;
 import net.runelite.client.events.PartyChanged;
 import net.runelite.client.game.NPCManager;
@@ -60,7 +61,6 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
-import net.runelite.client.util.Text;
 import net.runelite.client.ws.PartyMember;
 import net.runelite.client.ws.PartyService;
 import net.runelite.client.ws.WSClient;
@@ -138,6 +138,7 @@ public class PerformanceStatsPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
+
 		this.submitTimeout = config.submitTimeout();
 
 		overlayManager.add(performanceTrackerOverlay);
@@ -154,7 +155,7 @@ public class PerformanceStatsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		switch (event.getGameState())
 		{
@@ -168,7 +169,7 @@ public class PerformanceStatsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onHitsplatApplied(HitsplatApplied e)
+	private void onHitsplatApplied(HitsplatApplied e)
 	{
 		if (isPaused())
 		{
@@ -188,7 +189,7 @@ public class PerformanceStatsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onExperienceChanged(ExperienceChanged c)
+	private void onStatChanged(StatChanged c)
 	{
 		if (isPaused() || hopping)
 		{
@@ -224,25 +225,9 @@ public class PerformanceStatsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onScriptCallbackEvent(ScriptCallbackEvent e)
+	private void onFakeXpDrop(FakeXpDrop fakeXpDrop)
 	{
-		// Handles Fake XP drops (Ironman in PvP, DMM Cap, 200m xp, etc)
-		if (isPaused())
-		{
-			return;
-		}
-
-		if (!"fakeXpDrop".equals(e.getEventName()))
-		{
-			return;
-		}
-
-		final int[] intStack = client.getIntStack();
-		final int intStackSize = client.getIntStackSize();
-
-		final int skillId = intStack[intStackSize - 2];
-		final Skill skill = Skill.values()[skillId];
-		if (skill.equals(Skill.HITPOINTS))
+		if (fakeXpDrop.getSkill().equals(Skill.HITPOINTS))
 		{
 			// Auto enables when player would have received hp exp
 			if (!isEnabled())
@@ -250,13 +235,13 @@ public class PerformanceStatsPlugin extends Plugin
 				enable();
 			}
 
-			final int exp = intStack[intStackSize - 1];
+			final int exp = fakeXpDrop.getXp();
 			performance.addDamageDealt(calculateDamageDealt(exp), client.getTickCount());
 		}
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick t)
+	private void onGameTick(GameTick t)
 	{
 		oldTarget = client.getLocalPlayer().getInteracting();
 
@@ -296,7 +281,7 @@ public class PerformanceStatsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onOverlayMenuClicked(OverlayMenuClicked c)
+	private void onOverlayMenuClicked(OverlayMenuClicked c)
 	{
 		if (!c.getOverlay().equals(performanceTrackerOverlay))
 		{
@@ -356,6 +341,7 @@ public class PerformanceStatsPlugin extends Plugin
 
 	/**
 	 * Calculates damage dealt based on HP xp gained accounting for multipliers such as DMM mode
+	 *
 	 * @param diff HP xp gained
 	 * @return damage dealt
 	 */
@@ -430,13 +416,13 @@ public class PerformanceStatsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onPerformance(final Performance performance)
+	private void onPerformance(final Performance performance)
 	{
 		partyDataMap.put(performance.getMemberId(), performance);
 	}
 
 	@Subscribe
-	public void onUserSync(final UserSync event)
+	private void onUserSync(final UserSync event)
 	{
 		if (isEnabled())
 		{
@@ -445,20 +431,20 @@ public class PerformanceStatsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onUserPart(final UserPart event)
+	private void onUserPart(final UserPart event)
 	{
 		partyDataMap.remove(event.getMemberId());
 	}
 
 	@Subscribe
-	public void onPartyChanged(final PartyChanged event)
+	private void onPartyChanged(final PartyChanged event)
 	{
 		// Reset party
 		partyDataMap.clear();
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("performancestats"))
 		{

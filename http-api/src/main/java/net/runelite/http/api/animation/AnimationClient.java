@@ -51,20 +51,21 @@ public class AnimationClient
 	{
 		String json = RuneLiteAPI.GSON.toJson(animationRequest);
 
-		HttpUrl url = RuneLiteAPI.getPlusApiBase().newBuilder()
+		HttpUrl url = RuneLiteAPI.getOpenOSRSApiBase().newBuilder()
 			.addPathSegment("animation")
 			.build();
 
 		logger.debug("Built URI: {}", url);
 
+		RequestBody body = RequestBody.Companion.create(json, JSON);
 		Request request = new Request.Builder()
-			.post(RequestBody.create(JSON, json))
+			.post(body)
 			.url(url)
 			.build();
 
 		try
 		{
-			try (Response response = RuneLiteAPI.RLP_CLIENT.newCall(request).execute())
+			try (Response response = RuneLiteAPI.CLIENT.newCall(request).execute())
 			{
 				logger.debug("animation response " + response.code());
 			}
@@ -74,7 +75,7 @@ public class AnimationClient
 			e.printStackTrace();
 		}
 
-		RuneLiteAPI.RLP_CLIENT.newCall(request).enqueue(new Callback()
+		RuneLiteAPI.CLIENT.newCall(request).enqueue(new Callback()
 		{
 			@Override
 			public void onFailure(Call call, IOException e)
@@ -102,7 +103,7 @@ public class AnimationClient
 
 	public List<AnimationKey> get() throws IOException
 	{
-		HttpUrl url = RuneLiteAPI.getPlusApiBase().newBuilder()
+		HttpUrl url = RuneLiteAPI.getOpenOSRSApiBase().newBuilder()
 			.addPathSegment("animation")
 			.build();
 
@@ -110,13 +111,11 @@ public class AnimationClient
 			.url(url)
 			.build();
 
-		try (Response response = RuneLiteAPI.RLP_CLIENT.newCall(request).execute())
+		try (Response response = RuneLiteAPI.CLIENT.newCall(request).execute())
 		{
 			InputStream in = response.body().byteStream();
 			// CHECKSTYLE:OFF
-			return RuneLiteAPI.GSON.fromJson(new InputStreamReader(in), new TypeToken<List<AnimationKey>>()
-			{
-			}.getType());
+			return RuneLiteAPI.GSON.fromJson(new InputStreamReader(in), new TypeToken<List<AnimationKey>>() {}.getType());
 			// CHECKSTYLE:ON
 		}
 		catch (JsonParseException ex)
@@ -127,7 +126,7 @@ public class AnimationClient
 
 	public AnimationKey get(int npcid) throws IOException
 	{
-		HttpUrl url = RuneLiteAPI.getPlusApiBase().newBuilder()
+		HttpUrl url = RuneLiteAPI.getOpenOSRSApiBase().newBuilder()
 			.addPathSegment("animation")
 			.addPathSegment(Integer.toString(npcid))
 			.build();
@@ -136,7 +135,7 @@ public class AnimationClient
 			.url(url)
 			.build();
 
-		try (Response response = RuneLiteAPI.RLP_CLIENT.newCall(request).execute())
+		try (Response response = RuneLiteAPI.CLIENT.newCall(request).execute())
 		{
 			InputStream in = response.body().byteStream();
 			return RuneLiteAPI.GSON.fromJson(new InputStreamReader(in), AnimationKey.class);

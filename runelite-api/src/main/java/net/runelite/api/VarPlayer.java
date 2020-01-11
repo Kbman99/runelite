@@ -28,12 +28,18 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * An enumeration of local player variables.
+ * Server controlled "content-developer" integers.
+ *
+ * VarPlayers are stored per RuneScape player save, and synchronized
+ * from the server to the client. The client can change them preemptively
+ * if it thinks they will change the next tick as a lag-hiding measure.
+ * The client CANNOT directly make the server change a varbit.
  */
 @AllArgsConstructor
 @Getter
 public enum VarPlayer
 {
+	POUCH_STATUS(261),
 	DUEL_PENDING(286),
 	ATTACK_STYLE(43),
 	QUEST_POINTS(101),
@@ -53,7 +59,13 @@ public enum VarPlayer
 	IN_RAID_PARTY(1427),
 
 	NMZ_REWARD_POINTS(1060),
-	
+
+	/**
+	 * The 11 least significant bits of this var correspond to the player
+	 * you're currently fighting. Value is -1 when not fighting any player.
+	 *
+	 * Client.getVar(ATTACKING_PLAYER) & 2047 == Client.getLocalInteractingIndex();
+	 */
 	ATTACKING_PLAYER(1075),
 
 	/**
@@ -167,6 +179,10 @@ public enum VarPlayer
 	MUSIC_TRACKS_UNLOCKED_18(1681),
 	MUSIC_TRACKS_UNLOCKED_19(2065),
 
+	MUSIC_VOLUME(168),
+	SOUND_EFFECT_VOLUME(169),
+	AREA_EFFECT_VOLUME(872),
+
 	/**
 	 * f2p Quest varbits, these don't hold the completion value.
 	 */
@@ -220,7 +236,7 @@ public enum VarPlayer
 	QUEST_MERLINS_CRYSTAL(14),
 	QUEST_MONKEY_MADNESS_I(365),
 	QUEST_MONKS_FRIEND(30),
-	QUEST_MOURNINGS_ENDS_PART_I(517),
+	QUEST_MOURNINGS_END_PART_I(517),
 	QUEST_MURDER_MYSTERY(192),
 	QUEST_NATURE_SPIRIT(307),
 	QUEST_OBSERVATORY_QUEST(112),
@@ -257,9 +273,12 @@ public enum VarPlayer
 	QUEST_ENTER_THE_ABYSS(492),
 	QUEST_ALFRED_GRIMHANDS_BARCRAWL(77),
 	QUEST_ALFRED_GRIMHANDS_BARCRAWL_STATE_76(76),
-	QUEST_THE_MAGE_ARENA(267);
+	QUEST_THE_MAGE_ARENA(267),
 
-
+	/**
+	 * 0 = 2 buttons, 1 = 1 button
+	 */
+	MOUSE_BUTTONS(170);
 
 	public final int id;
 }

@@ -24,18 +24,17 @@
  */
 package net.runelite.mixins;
 
-
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import net.runelite.api.Client;
 import static net.runelite.api.Opcodes.RUNELITE_EXECUTE;
 import net.runelite.api.events.ScriptCallbackEvent;
-import net.runelite.api.widgets.JavaScriptCallback;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import net.runelite.api.mixins.Copy;
 import net.runelite.api.mixins.Inject;
 import net.runelite.api.mixins.Mixin;
 import net.runelite.api.mixins.Replace;
 import net.runelite.api.mixins.Shadow;
+import net.runelite.api.widgets.JavaScriptCallback;
 import net.runelite.rs.api.RSClient;
 import net.runelite.rs.api.RSScript;
 import net.runelite.rs.api.RSScriptEvent;
@@ -101,19 +100,19 @@ public abstract class ScriptVMMixin implements RSClient
 			ScriptCallbackEvent event = new ScriptCallbackEvent();
 			event.setScript(currentScript);
 			event.setEventName(stringOp);
-			client.getCallbacks().post(event);
+			client.getCallbacks().post(ScriptCallbackEvent.class, event);
 			return true;
 		}
 		return false;
 	}
 
-	@Copy("runScript0")
+	@Copy("runScript")
 	static void rs$runScript(RSScriptEvent event, int maxExecutionTime)
 	{
 		throw new RuntimeException();
 	}
 
-	@Replace("runScript0")
+	@Replace("runScript")
 	static void rl$runScript(RSScriptEvent event, int maxExecutionTime)
 	{
 		Object[] arguments = event.getArguments();
@@ -142,15 +141,13 @@ public abstract class ScriptVMMixin implements RSClient
 
 	@Inject
 	@Override
-	public void runScript(int id, Object... args)
+	public void runScript(Object... args)
 	{
 		assert isClientThread();
 		assert currentScript == null;
-		Object[] cargs = new Object[args.length + 1];
-		cargs[0] = id;
-		System.arraycopy(args, 0, cargs, 1, args.length);
+		assert args[0] instanceof Integer || args[0] instanceof JavaScriptCallback : "The first argument should always be a ScriptID!";
 		RSScriptEvent se = createScriptEvent();
-		se.setArguments(cargs);
+		se.setArguments(args);
 		runScript(se, 5000000);
 	}
 }

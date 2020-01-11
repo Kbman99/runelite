@@ -33,15 +33,15 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.ui.overlay.infobox.Counter;
-import net.runelite.client.util.StackFormatter;
+import net.runelite.client.util.QuantityFormatter;
 
 class AmmoCounter extends Counter
 {
 	@Getter(AccessLevel.PACKAGE)
 	private int itemID;
-	private String name;
-	private int total;
-	private Instant time;
+	private final String name;
+	private final int total;
+	private final Instant time;
 	private BigDecimal ammoPerHour;
 
 	AmmoCounter(Plugin plugin, int itemID, int count, String name, BufferedImage image)
@@ -56,7 +56,7 @@ class AmmoCounter extends Counter
 	@Override
 	public String getText()
 	{
-		return StackFormatter.quantityToRSDecimalStack(getCount());
+		return QuantityFormatter.quantityToRSDecimalStack(getCount());
 	}
 
 	@Override

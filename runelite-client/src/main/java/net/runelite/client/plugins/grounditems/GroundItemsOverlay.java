@@ -36,10 +36,10 @@ import java.time.Instant;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.runelite.api.Client;
@@ -59,7 +59,7 @@ import net.runelite.client.ui.overlay.OverlayUtil;
 import net.runelite.client.ui.overlay.components.BackgroundComponent;
 import net.runelite.client.ui.overlay.components.ProgressPieComponent;
 import net.runelite.client.ui.overlay.components.TextComponent;
-import net.runelite.client.util.StackFormatter;
+import net.runelite.client.util.QuantityFormatter;
 
 @Singleton
 public class GroundItemsOverlay extends Overlay
@@ -109,14 +109,14 @@ public class GroundItemsOverlay extends Overlay
 		{
 			return null;
 		}
+
+		final FontMetrics fm = graphics.getFontMetrics();
 		final Player player = client.getLocalPlayer();
 
 		if (player == null || client.getViewportWidget() == null)
 		{
 			return null;
 		}
-
-		final FontMetrics fm = graphics.getFontMetrics();
 
 		offsetMap.clear();
 		final LocalPoint localLocation = player.getLocalLocation();
@@ -195,7 +195,36 @@ public class GroundItemsOverlay extends Overlay
 				continue;
 			}
 
-			final Color highlighted = plugin.getHighlighted(item.getName(), item.getGePrice(), item.getHaPrice());
+			Color highlighted = plugin.getHighlighted(item.getName(), item.getGePrice(), item.getHaPrice());
+
+			//Process skill items
+			if (!plugin.hiddenItems.getUnchecked(item.getName()))
+			{
+				if (plugin.highlightHerblore)
+				{
+					if (GroundItemsPlugin.herbloreItems.contains(item.getId()))
+					{
+						highlighted = plugin.getHerbloreColor();
+					}
+				}
+				if (plugin.highlightPrayer)
+				{
+					if (GroundItemsPlugin.prayerItems.contains(item.getId()))
+					{
+						highlighted = plugin.getPrayerColor();
+					}
+				}
+			}
+
+			// Value overrides skill
+			if (plugin.getHighlighted(item.getName(), item.getGePrice(), item.getHaPrice()) != null)
+			{
+				if (plugin.getHighlighted(item.getName(), item.getGePrice(), item.getHaPrice()).getRGB() != highlighted.getRGB())
+				{
+					highlighted = plugin.getHighlighted(item.getName(), item.getGePrice(), item.getHaPrice());
+				}
+			}
+
 			final Color hidden = plugin.getHidden(item.getName(), item.getGePrice(), item.getHaPrice(), item.isTradeable());
 
 			if (highlighted == null && !plugin.isHotKeyPressed())
@@ -241,7 +270,7 @@ public class GroundItemsOverlay extends Overlay
 				else
 				{
 					itemStringBuilder.append(" (")
-						.append(StackFormatter.quantityToStackSize(item.getQuantity()))
+						.append(QuantityFormatter.quantityToStackSize(item.getQuantity()))
 						.append(")");
 				}
 			}
@@ -251,14 +280,14 @@ public class GroundItemsOverlay extends Overlay
 				if (item.getGePrice() > 0)
 				{
 					itemStringBuilder.append(" (EX: ")
-						.append(StackFormatter.quantityToStackSize(item.getGePrice()))
+						.append(QuantityFormatter.quantityToStackSize(item.getGePrice()))
 						.append(" gp)");
 				}
 
 				if (item.getHaPrice() > 0)
 				{
 					itemStringBuilder.append(" (HA: ")
-						.append(StackFormatter.quantityToStackSize(item.getHaPrice()))
+						.append(QuantityFormatter.quantityToStackSize(item.getHaPrice()))
 						.append(" gp)");
 				}
 			}
@@ -272,7 +301,7 @@ public class GroundItemsOverlay extends Overlay
 				{
 					itemStringBuilder
 						.append(" (")
-						.append(StackFormatter.quantityToStackSize(price))
+						.append(QuantityFormatter.quantityToStackSize(price))
 						.append(" gp)");
 				}
 			}
@@ -280,8 +309,8 @@ public class GroundItemsOverlay extends Overlay
 			if (item.getTicks() > 0 && plugin.isShowTimer())
 			{
 				itemStringBuilder
-						.append(" - ")
-						.append(item.getTicks());
+					.append(" - ")
+					.append(item.getTicks());
 			}
 
 			final String itemString = itemStringBuilder.toString();
@@ -319,14 +348,14 @@ public class GroundItemsOverlay extends Overlay
 
 				// Item bounds
 				int x = textX - 2;
-				int y = textY - stringHeight - 2 + fm.getMaxDescent();
+				int y = textY - stringHeight - 2;
 				int width = stringWidth + 4;
 				int height = stringHeight + 4;
 				final Rectangle itemBounds = new Rectangle(x, y, width, height);
 
 				// Hidden box
 				x += width + 2;
-				y = textY - (fm.getMaxAscent() + RECTANGLE_SIZE) / 2;
+				y = textY - (RECTANGLE_SIZE + stringHeight) / 2;
 				width = height = RECTANGLE_SIZE;
 				final Rectangle itemHiddenBox = new Rectangle(x, y, width, height);
 
@@ -352,7 +381,11 @@ public class GroundItemsOverlay extends Overlay
 					plugin.setHighlightBoxBounds(new SimpleEntry<>(itemHighlightBox, item));
 				}
 
-				boolean topItem = topGroundItem == item;
+				boolean topItem = false;
+				if (topGroundItem != null)
+				{
+					topItem = topGroundItem.equals(item);
+				}
 
 				// Draw background if hovering
 				if (topItem && (mouseInBox || mouseInHiddenBox || mouseInHighlightBox))

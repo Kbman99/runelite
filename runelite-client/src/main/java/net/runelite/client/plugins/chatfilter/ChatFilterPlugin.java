@@ -25,11 +25,12 @@
  */
 package net.runelite.client.plugins.chatfilter;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import com.google.inject.Provides;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -41,20 +42,22 @@ import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.MessageNode;
 import net.runelite.api.Player;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.OverheadTextChanged;
 import net.runelite.api.events.ScriptCallbackEvent;
+import net.runelite.api.util.Text;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.util.Text;
+import net.runelite.client.plugins.PluginType;
 import org.apache.commons.lang3.StringUtils;
 
 @PluginDescriptor(
 	name = "Chat Filter",
 	description = "Censor user configurable words or patterns from chat",
-	enabledByDefault = false
+	enabledByDefault = false,
+	type = PluginType.MISCELLANEOUS
 )
 @Singleton
 public class ChatFilterPlugin extends Plugin
@@ -66,8 +69,8 @@ public class ChatFilterPlugin extends Plugin
 
 	private static final String CENSOR_MESSAGE = "Hey, everyone, I just tried to say something very silly!";
 
-	private final JagexPrintableCharMatcher jagexPrintableCharMatcher = new JagexPrintableCharMatcher();
-	private final List<Pattern> filteredPatterns = new ArrayList<>();
+	private final CharMatcher jagexPrintableCharMatcher = Text.JAGEX_PRINTABLE_CHAR_MATCHER;
+	private final List<Pattern> filteredPatterns = new CopyOnWriteArrayList<>();
 
 	@Inject
 	private Client client;
@@ -93,20 +96,23 @@ public class ChatFilterPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
+
 		updateFilteredPatterns();
+		client.refreshChat();
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		filteredPatterns.clear();
+		client.refreshChat();
 	}
 
 	@Subscribe
-	public void onScriptCallbackEvent(ScriptCallbackEvent event)
+	private void onScriptCallbackEvent(ScriptCallbackEvent event)
 	{
 		if (!"chatFilterCheck".equals(event.getEventName()))
 		{
@@ -131,6 +137,13 @@ public class ChatFilterPlugin extends Plugin
 			case FRIENDSCHAT:
 			case GAMEMESSAGE:
 				break;
+			case LOGINLOGOUTNOTIFICATION:
+				if (config.filterLogin())
+				{
+					// Block the message
+					intStack[intStackSize - 3] = 0;
+				}
+				return;
 			default:
 				return;
 		}
@@ -163,9 +176,9 @@ public class ChatFilterPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onOverheadTextChanged(OverheadTextChanged event)
+	private void onOverheadTextChanged(OverheadTextChanged event)
 	{
-		if (!(event.getActor() instanceof Player) || !shouldFilterPlayerMessage(event.getActor().getName()))
+		if (!(event.getActor() instanceof Player) || event.getActor().getName() == null || !shouldFilterPlayerMessage(event.getActor().getName()))
 		{
 			return;
 		}
@@ -246,7 +259,7 @@ public class ChatFilterPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!"chatfilter".equals(event.getGroup()))
 		{
@@ -255,6 +268,9 @@ public class ChatFilterPlugin extends Plugin
 
 		updateConfig();
 		updateFilteredPatterns();
+
+		//Refresh chat after config change to reflect current rules
+		client.refreshChat();
 	}
 
 	private void updateConfig()

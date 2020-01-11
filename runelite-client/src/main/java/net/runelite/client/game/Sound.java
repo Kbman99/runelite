@@ -18,12 +18,13 @@ public enum Sound
 	LOW_PRAYER(14, "net/runelite/client/game/sounds/lowprayer.wav"),
 	OUT_OF_COMBAT(15, "net/runelite/client/game/sounds/outofcombat.wav"),
 	RESTORED_SPECIAL_ATTACK(16, "net/runelite/client/game/sounds/restorespec.wav"),
-	IDLE(17, "net/runelite/client/game/sounds/idle.wav");
+	IDLE(17, "net/runelite/client/game/sounds/idle.wav"),
+	BREAK(18, "net/runelite/client/game/sounds/break.wav");
 
-	private String filePath;
-	private int id;
+	private final String filePath;
+	private final int id;
 
-	private Sound(int id, String filePath)
+	Sound(int id, String filePath)
 	{
 		this.id = id;
 		this.filePath = filePath;

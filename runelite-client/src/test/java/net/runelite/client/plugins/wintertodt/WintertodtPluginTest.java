@@ -34,6 +34,7 @@ import net.runelite.api.Varbits;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.client.Notifier;
 import net.runelite.client.chat.ChatMessageManager;
+import net.runelite.client.config.OpenOSRSConfig;
 import net.runelite.client.ui.overlay.OverlayManager;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,7 +43,7 @@ import org.mockito.Mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class WintertodtPluginTest
@@ -73,6 +74,10 @@ public class WintertodtPluginTest
 	@Mock
 	@Bind
 	Client client;
+
+	@Mock
+	@Bind
+	private OpenOSRSConfig openOSRSConfig;
 
 	@Before
 	public void before()

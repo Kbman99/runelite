@@ -4,140 +4,184 @@ import net.runelite.mapping.Implements;
 import net.runelite.mapping.ObfuscatedName;
 import net.runelite.mapping.ObfuscatedSignature;
 
-@ObfuscatedName("bk")
+@ObfuscatedName("bq")
 @Implements("SecureRandomCallable")
 public class SecureRandomCallable implements Callable {
-   @ObfuscatedName("g")
-   @Export("indexedSpriteHeights")
-   static int[] indexedSpriteHeights;
+	@ObfuscatedName("de")
+	@ObfuscatedSignature(
+		signature = "Lfu;"
+	)
+	@Export("js5SocketTask")
+	static Task js5SocketTask;
+	@ObfuscatedName("ej")
+	@ObfuscatedSignature(
+		signature = "Lkc;"
+	)
+	@Export("spriteIds")
+	static GraphicsDefaults spriteIds;
 
-   @Export("call")
-   @ObfuscatedName("call")
-   public Object call() {
-      return AttackOption.method2034();
-   }
+	SecureRandomCallable() {
+	}
 
-   @ObfuscatedName("m")
-   @ObfuscatedSignature(
-      signature = "([BB)Laq;",
-      garbageValue = "64"
-   )
-   static class27 method1145(byte[] var0) {
-      return var0 == null ? new class27() : new class27(class27.convertJpgToSprite(var0).pixels);
-   }
+	public Object call() {
+		return GameShell.method1069();
+	}
 
-   @ObfuscatedName("m")
-   @ObfuscatedSignature(
-      signature = "(IB)Lix;",
-      garbageValue = "0"
-   )
-   public static VarpDefinition method1140(int var0) {
-      VarpDefinition var1 = (VarpDefinition)VarpDefinition.VarpDefinition_cached.get((long)var0);
-      if (var1 != null) {
-         return var1;
-      } else {
-         byte[] var2 = VarpDefinition.field943.takeRecord(16, var0);
-         var1 = new VarpDefinition();
-         if (var2 != null) {
-            var1.read(new Buffer(var2));
-         }
+	@ObfuscatedName("f")
+	@ObfuscatedSignature(
+		signature = "(IB)Lcu;",
+		garbageValue = "-120"
+	)
+	@Export("getScript")
+	static Script getScript(int var0) {
+		Script var1 = (Script)Script.Script_cached.get((long)var0);
+		if (var1 != null) {
+			return var1;
+		} else {
+			byte[] var2 = SoundSystem.archive12.takeFile(var0, 0);
+			if (var2 == null) {
+				return null;
+			} else {
+				var1 = Tiles.newScript(var2);
+				Script.Script_cached.put(var1, (long)var0);
+				return var1;
+			}
+		}
+	}
 
-         VarpDefinition.VarpDefinition_cached.put(var1, (long)var0);
-         return var1;
-      }
-   }
+	@ObfuscatedName("x")
+	@ObfuscatedSignature(
+		signature = "(Lhz;II)Lli;",
+		garbageValue = "-210217349"
+	)
+	public static IndexedSprite method1151(AbstractArchive var0, int var1) {
+		return !class4.method61(var0, var1) ? null : WorldMapDecoration.method327();
+	}
 
-   @ObfuscatedName("jx")
-   @ObfuscatedSignature(
-      signature = "(IIII)Lbx;",
-      garbageValue = "329127611"
-   )
-   static final WidgetGroupParent method1143(int var0, int var1, int var2) {
-      WidgetGroupParent var3 = new WidgetGroupParent();
-      var3.group = var1;
-      var3.type = var2;
-      Client.widgetGroupParents.put(var3, (long)var0);
-      DevicePcmPlayerProvider.method845(var1);
-      Widget var4 = Huffman.getWidget(var0);
-      class22.method295(var4);
-      if (Client.field127 != null) {
-         class22.method295(Client.field127);
-         Client.field127 = null;
-      }
+	@ObfuscatedName("hg")
+	@ObfuscatedSignature(
+		signature = "(ZLkl;B)V",
+		garbageValue = "-23"
+	)
+	@Export("loadRegions")
+	static final void loadRegions(boolean var0, PacketBuffer var1) {
+		Client.isInInstance = var0;
+		int var3;
+		int var4;
+		int var5;
+		int var6;
+		int var7;
+		int var8;
+		if (!Client.isInInstance) {
+			int var2 = var1.method5723();
+			var3 = var1.method5582();
+			var4 = var1.readUnsignedShort();
+			Canvas.xteaKeys = new int[var4][4];
 
-      int var5;
-      int var6;
-      for (var5 = 0; var5 < Client.menuOptionsCount; ++var5) {
-         if (WorldMapManager.isWidgetMenuOpcode(Client.menuOpcodes[var5])) {
-            if (var5 < Client.menuOptionsCount - 1) {
-               for (var6 = var5; var6 < Client.menuOptionsCount - 1; ++var6) {
-                  Client.menuActions[var6] = Client.menuActions[var6 + 1];
-                  Client.menuTargetNames[var6] = Client.menuTargetNames[var6 + 1];
-                  Client.menuOpcodes[var6] = Client.menuOpcodes[var6 + 1];
-                  Client.menuArguments0[var6] = Client.menuArguments0[var6 + 1];
-                  Client.menuArguments1[var6] = Client.menuArguments1[var6 + 1];
-                  Client.menuArguments2[var6] = Client.menuArguments2[var6 + 1];
-                  Client.menuShiftClick[var6] = Client.menuShiftClick[var6 + 1];
-               }
-            }
+			for (var5 = 0; var5 < var4; ++var5) {
+				for (var6 = 0; var6 < 4; ++var6) {
+					Canvas.xteaKeys[var5][var6] = var1.readInt();
+				}
+			}
 
-            --var5;
-            --Client.menuOptionsCount;
-         }
-      }
+			WorldMapSection2.regions = new int[var4];
+			SecureRandomFuture.regionMapArchiveIds = new int[var4];
+			class222.regionLandArchiveIds = new int[var4];
+			Projectile.regionLandArchives = new byte[var4][];
+			GrandExchangeOfferOwnWorldComparator.regionMapArchives = new byte[var4][];
+			boolean var16 = false;
+			if ((var3 / 8 == 48 || var3 / 8 == 49) && var2 / 8 == 48) {
+				var16 = true;
+			}
 
-      var5 = class214.menuWidth / 2 + class25.menuX;
-      var6 = GameShell.menuY;
-      int var7 = class2.fontBold12.stringWidth("Choose Option");
+			if (var3 / 8 == 48 && var2 / 8 == 148) {
+				var16 = true;
+			}
 
-      int var8;
-      for (var8 = 0; var8 < Client.menuOptionsCount; ++var8) {
-         Font var9 = class2.fontBold12;
-         String var10;
-         if (var8 < 0) {
-            var10 = "";
-         } else if (Client.menuTargetNames[var8].length() > 0) {
-            var10 = Client.menuActions[var8] + " " + Client.menuTargetNames[var8];
-         } else {
-            var10 = Client.menuActions[var8];
-         }
+			var4 = 0;
 
-         int var11 = var9.stringWidth(var10);
-         if (var11 > var7) {
-            var7 = var11;
-         }
-      }
+			for (var6 = (var3 - 6) / 8; var6 <= (var3 + 6) / 8; ++var6) {
+				for (var7 = (var2 - 6) / 8; var7 <= (var2 + 6) / 8; ++var7) {
+					var8 = var7 + (var6 << 8);
+					if (!var16 || var7 != 49 && var7 != 149 && var7 != 147 && var6 != 50 && (var6 != 49 || var7 != 47)) {
+						WorldMapSection2.regions[var4] = var8;
+						SecureRandomFuture.regionMapArchiveIds[var4] = AbstractWorldMapData.archive5.getGroupId("m" + var6 + "_" + var7);
+						class222.regionLandArchiveIds[var4] = AbstractWorldMapData.archive5.getGroupId("l" + var6 + "_" + var7);
+						++var4;
+					}
+				}
+			}
 
-      var7 += 8;
-      var8 = Client.menuOptionsCount * 15 + 22;
-      int var12 = var5 - var7 / 2;
-      if (var12 + var7 > SoundCache.canvasWidth) {
-         var12 = SoundCache.canvasWidth - var7;
-      }
+			UserComparator8.method3327(var3, var2, true);
+		} else {
+			boolean var15 = var1.method5675() == 1;
+			var3 = var1.method5583();
+			var4 = var1.readUnsignedShort();
+			var5 = var1.readUnsignedShort();
+			var1.importIndex();
 
-      if (var12 < 0) {
-         var12 = 0;
-      }
+			int var9;
+			for (var6 = 0; var6 < 4; ++var6) {
+				for (var7 = 0; var7 < 13; ++var7) {
+					for (var8 = 0; var8 < 13; ++var8) {
+						var9 = var1.readBits(1);
+						if (var9 == 1) {
+							Client.instanceChunkTemplates[var6][var7][var8] = var1.readBits(26);
+						} else {
+							Client.instanceChunkTemplates[var6][var7][var8] = -1;
+						}
+					}
+				}
+			}
 
-      int var13 = var6;
-      if (var8 + var6 > Huffman.canvasHeight) {
-         var13 = Huffman.canvasHeight - var8;
-      }
+			var1.exportIndex();
+			Canvas.xteaKeys = new int[var5][4];
 
-      if (var13 < 0) {
-         var13 = 0;
-      }
+			for (var6 = 0; var6 < var5; ++var6) {
+				for (var7 = 0; var7 < 4; ++var7) {
+					Canvas.xteaKeys[var6][var7] = var1.readInt();
+				}
+			}
 
-      class25.menuX = var12;
-      GameShell.menuY = var13;
-      class214.menuWidth = var7;
-      AbstractWorldMapIcon.menuHeight = Client.menuOptionsCount * 15 + 22;
-      class39.revalidateWidgetScroll(Widget.widgets[var0 >> 16], var4, false);
-      WorldMapSection3.runWidgetOnLoadListener(var1);
-      if (Client.rootWidgetGroup != -1) {
-         GrandExchangeEvents.method74(Client.rootWidgetGroup, 1);
-      }
+			WorldMapSection2.regions = new int[var5];
+			SecureRandomFuture.regionMapArchiveIds = new int[var5];
+			class222.regionLandArchiveIds = new int[var5];
+			Projectile.regionLandArchives = new byte[var5][];
+			GrandExchangeOfferOwnWorldComparator.regionMapArchives = new byte[var5][];
+			var5 = 0;
 
-      return var3;
-   }
+			for (var6 = 0; var6 < 4; ++var6) {
+				for (var7 = 0; var7 < 13; ++var7) {
+					for (var8 = 0; var8 < 13; ++var8) {
+						var9 = Client.instanceChunkTemplates[var6][var7][var8];
+						if (var9 != -1) {
+							int var10 = var9 >> 14 & 1023;
+							int var11 = var9 >> 3 & 2047;
+							int var12 = (var10 / 8 << 8) + var11 / 8;
+
+							int var13;
+							for (var13 = 0; var13 < var5; ++var13) {
+								if (WorldMapSection2.regions[var13] == var12) {
+									var12 = -1;
+									break;
+								}
+							}
+
+							if (var12 != -1) {
+								WorldMapSection2.regions[var5] = var12;
+								var13 = var12 >> 8 & 255;
+								int var14 = var12 & 255;
+								SecureRandomFuture.regionMapArchiveIds[var5] = AbstractWorldMapData.archive5.getGroupId("m" + var13 + "_" + var14);
+								class222.regionLandArchiveIds[var5] = AbstractWorldMapData.archive5.getGroupId("l" + var13 + "_" + var14);
+								++var5;
+							}
+						}
+					}
+				}
+			}
+
+			UserComparator8.method3327(var4, var3, !var15);
+		}
+
+	}
 }

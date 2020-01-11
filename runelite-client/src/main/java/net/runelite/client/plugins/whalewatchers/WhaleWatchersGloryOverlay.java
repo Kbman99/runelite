@@ -15,7 +15,6 @@ import java.awt.Graphics2D;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.runelite.api.ItemID;
-import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
@@ -24,12 +23,13 @@ import net.runelite.client.ui.overlay.OverlayPriority;
 import net.runelite.client.ui.overlay.components.ImageComponent;
 import net.runelite.client.ui.overlay.components.PanelComponent;
 import net.runelite.client.ui.overlay.components.TitleComponent;
+import net.runelite.client.util.AsyncBufferedImage;
 
 @Singleton
 public class WhaleWatchersGloryOverlay extends Overlay
 {
-	private WhaleWatchersPlugin plugin;
-	private PanelComponent panelComponent;
+	private final WhaleWatchersPlugin plugin;
+	private final PanelComponent panelComponent;
 
 	@Inject
 	private ItemManager itemManager;

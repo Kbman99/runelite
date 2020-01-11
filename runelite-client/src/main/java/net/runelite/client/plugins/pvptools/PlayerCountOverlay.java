@@ -1,11 +1,11 @@
 /*
  * ******************************************************************************
- *  * Copyright (c) 2019 RuneLitePlus
+ *  * Copyright (c) 2019 openosrs
  *  *  Redistributions and modifications of this software are permitted as long as this notice remains in its original unmodified state at the top of this file.
  *  *  If there are any questions comments, or feedback about this software, please direct all inquiries directly to the file authors:
  *  *  ST0NEWALL#9112
- *  *   RuneLitePlus Discord: https://discord.gg/Q7wFtCe
- *  *   RuneLitePlus website: https://runelitepl.us
+ *  *   openosrs Discord: https://discord.gg/Q7wFtCe
+ *  *   openosrs website: https://openosrs.com
  *  *****************************************************************************
  */
 
@@ -32,7 +32,7 @@ import org.apache.commons.lang3.ArrayUtils;
 @Singleton
 public class PlayerCountOverlay extends Overlay
 {
-	private static int[] CLAN_WARS_REGIONS = {9520, 13135, 13134, 13133, 13131, 13130, 13387, 13386};
+	private static final int[] CLAN_WARS_REGIONS = {9520, 13135, 13134, 13133, 13131, 13130, 13387, 13386};
 
 	private final PvpToolsPlugin pvpToolsPlugin;
 	private final Client client;
@@ -52,25 +52,23 @@ public class PlayerCountOverlay extends Overlay
 	@Override
 	public Dimension render(Graphics2D graphics)
 	{
-		if (pvpToolsPlugin.isCountPlayers())
-		{
-			if ((client.getVar(Varbits.IN_WILDERNESS) == 1) || WorldType.isPvpWorld(client.getWorldType())
+		if (pvpToolsPlugin.isCountPlayers() &&
+			(client.getVar(Varbits.IN_WILDERNESS) == 1 || WorldType.isPvpWorld(client.getWorldType())
 				|| ArrayUtils.contains(CLAN_WARS_REGIONS, client.getMapRegions()[0]) ||
-				WorldType.isDeadmanWorld(client.getWorldType()))
-			{
-				// Make this stop showing up when its not relevant
-				TableComponent tableComponent = new TableComponent();
-				TableElement[] firstRowElements = {
-					TableElement.builder().content("Friendly").color(Color.GREEN).build(),
-					TableElement.builder().content(String.valueOf(pvpToolsPlugin.getFriendlyPlayerCount())).build()};
-				TableRow firstRow = TableRow.builder().elements(Arrays.asList(firstRowElements)).build();
-				TableElement[] secondRowElements = {
-					TableElement.builder().content("Enemy").color(Color.RED).build(),
-					TableElement.builder().content(String.valueOf(pvpToolsPlugin.getEnemyPlayerCount())).build()};
-				TableRow secondRow = TableRow.builder().elements(Arrays.asList(secondRowElements)).build();
-				tableComponent.addRows(firstRow, secondRow);
-				return tableComponent.render(graphics);
-			}
+				WorldType.isDeadmanWorld(client.getWorldType())))
+		{
+			// Make this stop showing up when its not relevant
+			TableComponent tableComponent = new TableComponent();
+			TableElement[] firstRowElements = {
+				TableElement.builder().content("Friendly").color(Color.GREEN).build(),
+				TableElement.builder().content(String.valueOf(pvpToolsPlugin.getFriendlyPlayerCount())).build()};
+			TableRow firstRow = TableRow.builder().elements(Arrays.asList(firstRowElements)).build();
+			TableElement[] secondRowElements = {
+				TableElement.builder().content("Enemy").color(Color.RED).build(),
+				TableElement.builder().content(String.valueOf(pvpToolsPlugin.getEnemyPlayerCount())).build()};
+			TableRow secondRow = TableRow.builder().elements(Arrays.asList(secondRowElements)).build();
+			tableComponent.addRows(firstRow, secondRow);
+			return tableComponent.render(graphics);
 		}
 		return null;
 	}

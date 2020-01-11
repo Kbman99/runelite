@@ -1,58 +1,59 @@
 import java.net.URL;
 import net.runelite.mapping.Export;
 import net.runelite.mapping.Implements;
+import net.runelite.mapping.ObfuscatedGetter;
 import net.runelite.mapping.ObfuscatedName;
 import net.runelite.mapping.ObfuscatedSignature;
 
-@ObfuscatedName("ey")
+@ObfuscatedName("ex")
 @Implements("UrlRequest")
 public class UrlRequest {
-   @ObfuscatedName("bx")
-   @ObfuscatedSignature(
-      signature = "[Llq;"
-   )
-   @Export("worldSelectStars")
-   static IndexedSprite[] worldSelectStars;
-   @ObfuscatedName("m")
-   @Export("url")
-   final URL url;
-   @ObfuscatedName("f")
-   @Export("isDone0")
-   volatile boolean isDone0;
-   @ObfuscatedName("q")
-   @Export("response0")
-   volatile byte[] response0;
+	@ObfuscatedName("e")
+	@ObfuscatedSignature(
+		signature = "Lls;"
+	)
+	@Export("leftTitleSprite")
+	static Sprite leftTitleSprite;
+	@ObfuscatedName("d")
+	@Export("Tiles_hue")
+	static int[] Tiles_hue;
+	@ObfuscatedName("jr")
+	@ObfuscatedGetter(
+		intValue = -1130751947
+	)
+	@Export("Client_plane")
+	static int Client_plane;
+	@ObfuscatedName("f")
+	@Export("url")
+	final URL url;
+	@ObfuscatedName("i")
+	@Export("isDone0")
+	volatile boolean isDone0;
+	@ObfuscatedName("y")
+	@Export("response0")
+	volatile byte[] response0;
 
-   UrlRequest(URL var1) {
-      this.url = var1;
-   }
+	UrlRequest(URL var1) {
+		this.url = var1;
+	}
 
-   @ObfuscatedName("m")
-   @ObfuscatedSignature(
-      signature = "(I)Z",
-      garbageValue = "1588021801"
-   )
-   @Export("isDone")
-   public boolean isDone() {
-      return this.isDone0;
-   }
+	@ObfuscatedName("f")
+	@ObfuscatedSignature(
+		signature = "(I)Z",
+		garbageValue = "186206860"
+	)
+	@Export("isDone")
+	public boolean isDone() {
+		return this.isDone0;
+	}
 
-   @ObfuscatedName("f")
-   @ObfuscatedSignature(
-      signature = "(B)[B",
-      garbageValue = "-25"
-   )
-   @Export("getResponse")
-   public byte[] getResponse() {
-      return this.response0;
-   }
-
-   @ObfuscatedName("x")
-   @ObfuscatedSignature(
-      signature = "(CI)Z",
-      garbageValue = "-476632347"
-   )
-   public static boolean method3271(char var0) {
-      return var0 >= 'A' && var0 <= 'Z' || var0 >= 'a' && var0 <= 'z';
-   }
+	@ObfuscatedName("i")
+	@ObfuscatedSignature(
+		signature = "(I)[B",
+		garbageValue = "-2113635317"
+	)
+	@Export("getResponse")
+	public byte[] getResponse() {
+		return this.response0;
+	}
 }

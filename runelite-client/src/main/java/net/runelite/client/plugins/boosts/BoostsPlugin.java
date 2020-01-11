@@ -39,16 +39,17 @@ import net.runelite.api.Client;
 import net.runelite.api.Constants;
 import net.runelite.api.Prayer;
 import net.runelite.api.Skill;
-import net.runelite.api.events.BoostedLevelChanged;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.events.StatChanged;
 import net.runelite.client.Notifier;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.SkillIconManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 import net.runelite.client.util.ImageUtil;
@@ -56,7 +57,8 @@ import net.runelite.client.util.ImageUtil;
 @PluginDescriptor(
 	name = "Boosts Information",
 	description = "Show combat and/or skill boost information",
-	tags = {"combat", "notifications", "skilling", "overlay"}
+	tags = {"combat", "notifications", "skilling", "overlay"},
+	type = PluginType.UTILITY
 )
 @Singleton
 public class BoostsPlugin extends Plugin
@@ -73,6 +75,11 @@ public class BoostsPlugin extends Plugin
 		Skill.COOKING, Skill.CRAFTING, Skill.FIREMAKING, Skill.FLETCHING, Skill.WOODCUTTING, Skill.RUNECRAFT,
 		Skill.SLAYER, Skill.FARMING, Skill.CONSTRUCTION, Skill.HUNTER);
 
+	@Getter
+	private final Set<Skill> shownSkills = new LinkedHashSet<>();
+	private final int[] lastSkillLevels = new int[Skill.values().length - 1];
+	private final List<String> boostedSkillsChanged = new ArrayList<>();
+
 	@Inject
 	private Notifier notifier;
 
@@ -88,27 +95,22 @@ public class BoostsPlugin extends Plugin
 	@Inject
 	private BoostsOverlay boostsOverlay;
 
-	//made this a LinkedHashSet so the order stays consistent for my OCD
-	@Getter
-	private final Set<Skill> shownSkills = new LinkedHashSet<>();
 	@Inject
 	private BoostsConfig config;
 
 	@Inject
 	private SkillIconManager skillIconManager;
+
 	@Inject
 	private CombatIconsOverlay combatIconsOverlay;
 
 	private boolean isChangedDown = false;
 	private boolean isChangedUp = false;
-	private final int[] lastSkillLevels = new int[Skill.values().length - 1];
 	private int lastChangeDown = -1;
 	private int lastChangeUp = -1;
 	private boolean preserveBeenActive = false;
 	private long lastTickMillis;
-	private List<String> boostedSkillsChanged = new ArrayList<>();
-
-	private boolean enableSkill;
+	private BoostsConfig.DisplayBoosts displayBoosts;
 	@Getter(AccessLevel.PACKAGE)
 	private boolean useRelativeBoost;
 	@Getter(AccessLevel.PACKAGE)
@@ -130,7 +132,7 @@ public class BoostsPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 
@@ -154,7 +156,7 @@ public class BoostsPlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(boostsOverlay);
 		overlayManager.remove(combatIconsOverlay);
@@ -167,7 +169,7 @@ public class BoostsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		switch (event.getGameState())
 		{
@@ -180,7 +182,7 @@ public class BoostsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("boosts"))
 		{
@@ -202,9 +204,9 @@ public class BoostsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onBoostedLevelChanged(BoostedLevelChanged boostedLevelChanged)
+	private void onStatChanged(StatChanged statChanged)
 	{
-		Skill skill = boostedLevelChanged.getSkill();
+		Skill skill = statChanged.getSkill();
 
 		if (!BOOSTABLE_COMBAT_SKILLS.contains(skill) && !BOOSTABLE_NON_COMBAT_SKILLS.contains(skill))
 		{
@@ -252,7 +254,7 @@ public class BoostsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick event)
+	private void onGameTick(GameTick event)
 	{
 		lastTickMillis = System.currentTimeMillis();
 
@@ -324,16 +326,25 @@ public class BoostsPlugin extends Plugin
 
 	private void updateShownSkills()
 	{
-		if (this.enableSkill)
+		switch (this.displayBoosts)
 		{
-			shownSkills.addAll(BOOSTABLE_NON_COMBAT_SKILLS);
+			case NONE:
+				shownSkills.removeAll(BOOSTABLE_COMBAT_SKILLS);
+				shownSkills.removeAll(BOOSTABLE_NON_COMBAT_SKILLS);
+				break;
+			case COMBAT:
+				shownSkills.addAll(BOOSTABLE_COMBAT_SKILLS);
+				shownSkills.removeAll(BOOSTABLE_NON_COMBAT_SKILLS);
+				break;
+			case NON_COMBAT:
+				shownSkills.removeAll(BOOSTABLE_COMBAT_SKILLS);
+				shownSkills.addAll(BOOSTABLE_NON_COMBAT_SKILLS);
+				break;
+			case BOTH:
+				shownSkills.addAll(BOOSTABLE_COMBAT_SKILLS);
+				shownSkills.addAll(BOOSTABLE_NON_COMBAT_SKILLS);
+				break;
 		}
-		else
-		{
-			shownSkills.removeAll(BOOSTABLE_NON_COMBAT_SKILLS);
-		}
-
-		shownSkills.addAll(BOOSTABLE_COMBAT_SKILLS);
 	}
 
 	private void updateBoostedStats()
@@ -440,12 +451,12 @@ public class BoostsPlugin extends Plugin
 
 	private void updateConfig()
 	{
-		this.enableSkill = config.enableSkill();
+		this.displayBoosts = config.displayBoosts();
 		this.useRelativeBoost = config.useRelativeBoost();
 		this.displayInfoboxes = config.displayInfoboxes();
 		this.displayIcons = config.displayIcons();
 		this.boldIconFont = config.boldIconFont();
-		this.displayNextBuffChange = config.displayNextDebuffChange();
+		this.displayNextBuffChange = config.displayNextBuffChange();
 		this.displayNextDebuffChange = config.displayNextDebuffChange();
 		this.boostThreshold = config.boostThreshold();
 		this.groupNotifications = config.groupNotifications();

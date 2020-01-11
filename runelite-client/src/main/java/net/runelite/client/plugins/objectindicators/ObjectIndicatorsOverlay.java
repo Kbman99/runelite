@@ -28,8 +28,7 @@ package net.runelite.client.plugins.objectindicators;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
-import java.awt.Polygon;
-import java.awt.geom.Area;
+import java.awt.Shape;
 import static java.lang.Math.floor;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -37,6 +36,7 @@ import net.runelite.api.Client;
 import net.runelite.api.DecorativeObject;
 import net.runelite.api.GameObject;
 import net.runelite.api.TileObject;
+import net.runelite.api.WallObject;
 import net.runelite.client.graphics.ModelOutlineRenderer;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
@@ -101,12 +101,17 @@ class ObjectIndicatorsOverlay extends Overlay
 					}
 					break;
 				case HULL:
-					final Polygon polygon;
-					Polygon polygon2 = null;
+					final Shape polygon;
+					Shape polygon2 = null;
 
 					if (object instanceof GameObject)
 					{
 						polygon = ((GameObject) object).getConvexHull();
+					}
+					else if (object instanceof WallObject)
+					{
+						polygon = ((WallObject) object).getConvexHull();
+						polygon2 = ((WallObject) object).getConvexHull2();
 					}
 					else if (object instanceof DecorativeObject)
 					{
@@ -129,7 +134,7 @@ class ObjectIndicatorsOverlay extends Overlay
 					}
 					break;
 				case CLICKBOX:
-					Area clickbox = object.getClickbox();
+					Shape clickbox = object.getClickbox();
 					if (clickbox != null)
 					{
 						OverlayUtil.renderHoverableArea(graphics, object.getClickbox(), client.getMouseCanvasPosition(), TRANSPARENT, objectColor, objectColor.darker());

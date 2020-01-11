@@ -24,10 +24,10 @@
  */
 package net.runelite.rs.api;
 
-import net.runelite.api.Renderable;
+import net.runelite.api.Entity;
 import net.runelite.mapping.Import;
 
-public interface RSEntity extends RSNode, Renderable
+public interface RSEntity extends RSNode, Entity
 {
 	@Import("height")
 	int getModelHeight();
@@ -40,7 +40,7 @@ public interface RSEntity extends RSNode, Renderable
 	@Override
 	RSModel getModel();
 
-	@Import("renderDraw")
+	@Import("draw")
 	@Override
 	void draw(int orientation, int pitchSin, int pitchCos, int yawSin, int yawCos, int x, int y, int z, long hash);
 }

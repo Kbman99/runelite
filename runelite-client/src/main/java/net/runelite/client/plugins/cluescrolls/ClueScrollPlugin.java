@@ -36,12 +36,11 @@ import java.awt.Rectangle;
 import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
@@ -62,7 +61,6 @@ import net.runelite.api.TileObject;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ItemContainerChanged;
@@ -70,14 +68,17 @@ import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.events.WidgetLoaded;
+import net.runelite.api.util.Text;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetID;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.plugins.cluescrolls.clues.AnagramClue;
 import net.runelite.client.plugins.cluescrolls.clues.BeginnerMapClue;
 import net.runelite.client.plugins.cluescrolls.clues.CipherClue;
@@ -94,6 +95,7 @@ import net.runelite.client.plugins.cluescrolls.clues.MapClue;
 import net.runelite.client.plugins.cluescrolls.clues.MusicClue;
 import net.runelite.client.plugins.cluescrolls.clues.NpcClueScroll;
 import net.runelite.client.plugins.cluescrolls.clues.ObjectClueScroll;
+import net.runelite.client.plugins.cluescrolls.clues.SkillChallengeClue;
 import net.runelite.client.plugins.cluescrolls.clues.TextClueScroll;
 import net.runelite.client.plugins.cluescrolls.clues.ThreeStepCrypticClue;
 import net.runelite.client.ui.overlay.OverlayManager;
@@ -101,12 +103,13 @@ import net.runelite.client.ui.overlay.OverlayUtil;
 import net.runelite.client.ui.overlay.components.TextComponent;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
 import net.runelite.client.util.ImageUtil;
-import net.runelite.client.util.Text;
+import net.runelite.client.util.ItemUtil;
 
 @PluginDescriptor(
 	name = "Clue Scroll",
 	description = "Show answers to clue scroll riddles, anagrams, ciphers, and cryptic clues",
-	tags = {"arrow", "hints", "world", "map", "coordinates", "emotes"}
+	tags = {"arrow", "hints", "world", "map", "coordinates", "emotes"},
+	type = PluginType.UTILITY
 )
 @Slf4j
 @Singleton
@@ -115,24 +118,31 @@ public class ClueScrollPlugin extends Plugin
 	private static final Color HIGHLIGHT_BORDER_COLOR = Color.ORANGE;
 	private static final Color HIGHLIGHT_HOVER_BORDER_COLOR = HIGHLIGHT_BORDER_COLOR.darker();
 	private static final Color HIGHLIGHT_FILL_COLOR = new Color(0, 255, 0, 20);
-
-	@Getter
-	private ClueScroll clue;
-
-	@Getter
+	private static final int[] REGION_MIRRORS = {
+		// Prifddinas
+		12894, 8755,
+		12895, 8756,
+		13150, 9011,
+		13151, 9012
+	};
+	@Getter(AccessLevel.PUBLIC)
 	private final List<NPC> npcsToMark = new ArrayList<>();
 
-	@Getter
+	@Getter(AccessLevel.PUBLIC)
 	private final List<TileObject> objectsToMark = new ArrayList<>();
+	private final TextComponent textComponent = new TextComponent();
 
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
+	private ClueScroll clue;
+
+	@Getter(AccessLevel.PUBLIC)
 	private Item[] equippedItems;
 
-	@Getter
+	@Getter(AccessLevel.PUBLIC)
 	private Item[] inventoryItems;
 
 	@Inject
-	@Getter
+	@Getter(AccessLevel.PUBLIC)
 	private Client client;
 
 	@Inject
@@ -163,10 +173,32 @@ public class ClueScrollPlugin extends Plugin
 	private BufferedImage mapArrow;
 	private Integer clueItemId;
 	private boolean worldMapPointsSet = false;
-
-	private final TextComponent textComponent = new TextComponent();
-
 	private boolean displayHintArrows;
+
+	/**
+	 * Translate a coordinate either between overworld and real, or real and overworld
+	 *
+	 * @param worldPoint
+	 * @param toOverworld whether to convert to overworld coordinates, or to real coordinates
+	 * @return
+	 */
+	public static WorldPoint getMirrorPoint(WorldPoint worldPoint, boolean toOverworld)
+	{
+		int region = worldPoint.getRegionID();
+		for (int i = 0; i < REGION_MIRRORS.length; i += 2)
+		{
+			int real = REGION_MIRRORS[i];
+			int overworld = REGION_MIRRORS[i + 1];
+
+			// Test against what we are converting from
+			if (region == (toOverworld ? real : overworld))
+			{
+				return WorldPoint.fromRegion(toOverworld ? overworld : real,
+					worldPoint.getRegionX(), worldPoint.getRegionY(), worldPoint.getPlane());
+			}
+		}
+		return worldPoint;
+	}
 
 	@Provides
 	ClueScrollConfig getConfig(ConfigManager configManager)
@@ -181,8 +213,9 @@ public class ClueScrollPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
+
 		this.displayHintArrows = config.displayHintArrows();
 		overlayManager.add(clueScrollOverlay);
 		overlayManager.add(clueScrollEmoteOverlay);
@@ -191,7 +224,7 @@ public class ClueScrollPlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(clueScrollOverlay);
 		overlayManager.remove(clueScrollEmoteOverlay);
@@ -204,38 +237,39 @@ public class ClueScrollPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onChatMessage(ChatMessage event)
+	private void onChatMessage(ChatMessage event)
 	{
 		if (event.getType() != ChatMessageType.GAMEMESSAGE && event.getType() != ChatMessageType.SPAM)
 		{
 			return;
 		}
 
-		if (clue instanceof HotColdClue)
+		if (clue instanceof HotColdClue && ((HotColdClue) clue).update(event.getMessage(), this))
 		{
-			if (((HotColdClue) clue).update(event.getMessage(), this))
+			worldMapPointsSet = false;
+		}
+
+		if (clue instanceof SkillChallengeClue)
+		{
+			String text = Text.removeTags(event.getMessage());
+			if (text.equals("Skill challenge completed.") ||
+				text.equals("You have completed your master level challenge!") ||
+				text.startsWith("You have completed Charlie's task,") ||
+				text.equals("You have completed this challenge scroll."))
 			{
-				worldMapPointsSet = false;
+				((SkillChallengeClue) clue).setChallengeCompleted(true);
 			}
 		}
-
-		if (!event.getMessage().equals("The strange device cools as you find your treasure.")
-			&& !event.getMessage().equals("Well done, you've completed the Treasure Trail!"))
-		{
-			return;
-		}
-
-		resetClue(true);
 	}
 
 	@Subscribe
-	public void onMenuOptionClicked(final MenuOptionClicked event)
+	private void onMenuOptionClicked(final MenuOptionClicked event)
 	{
-		if (event.getMenuAction() != null && event.getMenuAction().equals("Read"))
+		if ("read".equalsIgnoreCase(event.getOption()))
 		{
-			final ItemDefinition itemComposition = itemManager.getItemDefinition(event.hashCode());
+			final ItemDefinition itemComposition = itemManager.getItemDefinition(event.getIdentifier());
 
-			if (itemComposition != null && itemComposition.getName().startsWith("Clue scroll"))
+			if (itemComposition != null && (itemComposition.getName().startsWith("Clue scroll") || itemComposition.getName().startsWith("Challenge scroll")))
 			{
 				clueItemId = itemComposition.getId();
 				updateClue(MapClue.forItemId(clueItemId));
@@ -244,7 +278,7 @@ public class ClueScrollPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onItemContainerChanged(final ItemContainerChanged event)
+	private void onItemContainerChanged(final ItemContainerChanged event)
 	{
 		if (event.getItemContainer() == client.getItemContainer(InventoryID.EQUIPMENT))
 		{
@@ -262,42 +296,37 @@ public class ClueScrollPlugin extends Plugin
 		// Check if item was removed from inventory
 		if (clue != null && clueItemId != null)
 		{
-			final Stream<Item> items = Arrays.stream(event.getItemContainer().getItems());
-
 			// Check if clue was removed from inventory
-			if (items.noneMatch(item -> itemManager.getItemDefinition(item.getId()).getId() == clueItemId))
+			if (!ItemUtil.containsItemId(event.getItemContainer().getItems(), clueItemId))
 			{
 				resetClue(true);
 			}
 		}
 
 		// if three step clue check for clue scroll pieces
-		if (clue instanceof ThreeStepCrypticClue)
+		if (clue instanceof ThreeStepCrypticClue && ((ThreeStepCrypticClue) clue).update(client, event, itemManager))
 		{
-			if (((ThreeStepCrypticClue) clue).update(client, event, itemManager))
+			worldMapPointsSet = false;
+			npcsToMark.clear();
+
+			if (this.displayHintArrows)
 			{
-				worldMapPointsSet = false;
-				npcsToMark.clear();
-
-				if (this.displayHintArrows)
-				{
-					client.clearHintArrow();
-				}
-
-				checkClueNPCs(clue, client.getCachedNPCs());
+				client.clearHintArrow();
 			}
+
+			checkClueNPCs(clue, client.getCachedNPCs());
 		}
 	}
 
 	@Subscribe
-	public void onNpcSpawned(final NpcSpawned event)
+	private void onNpcSpawned(final NpcSpawned event)
 	{
 		final NPC npc = event.getNpc();
 		checkClueNPCs(clue, npc);
 	}
 
 	@Subscribe
-	public void onNpcDespawned(final NpcDespawned event)
+	private void onNpcDespawned(final NpcDespawned event)
 	{
 		final boolean removed = npcsToMark.remove(event.getNpc());
 
@@ -316,7 +345,7 @@ public class ClueScrollPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (event.getGroup().equals("cluescroll"))
 		{
@@ -329,7 +358,7 @@ public class ClueScrollPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(final GameStateChanged event)
+	private void onGameStateChanged(final GameStateChanged event)
 	{
 		if (event.getGameState() == GameState.LOGIN_SCREEN)
 		{
@@ -338,7 +367,7 @@ public class ClueScrollPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(final GameTick event)
+	private void onGameTick(final GameTick event)
 	{
 		objectsToMark.clear();
 
@@ -370,12 +399,18 @@ public class ClueScrollPlugin extends Plugin
 
 		if (clue instanceof LocationClueScroll)
 		{
-			final WorldPoint location = ((LocationClueScroll) clue).getLocation();
+			final WorldPoint[] locations = ((LocationClueScroll) clue).getLocations();
 
-			if (location != null)
+			for (WorldPoint location : locations)
 			{
+				if (location == null)
+				{
+					continue;
+				}
+
 				// Only set the location hint arrow if we do not already have more accurate location
-				if (this.displayHintArrows
+				if (location.isInScene(client)
+					&& this.displayHintArrows
 					&& (client.getHintArrowNpc() == null
 					|| !npcsToMark.contains(client.getHintArrowNpc())))
 				{
@@ -396,13 +431,22 @@ public class ClueScrollPlugin extends Plugin
 			}
 		}
 
+		// Reset clue when receiving a new beginner or master clue
+		// These clues use a single item ID, so we cannot detect step changes based on the item ID changing
+		final Widget chatDialogClueItem = client.getWidget(WidgetInfo.DIALOG_SPRITE_SPRITE);
+		if (chatDialogClueItem != null
+			&& (chatDialogClueItem.getItemId() == ItemID.CLUE_SCROLL_BEGINNER || chatDialogClueItem.getItemId() == ItemID.CLUE_SCROLL_MASTER))
+		{
+			resetClue(true);
+		}
+
 		// If we have a clue, save that knowledge
 		// so the clue window doesn't have to be open.
 		updateClue(findClueScroll());
 	}
 
 	@Subscribe
-	public void onWidgetLoaded(WidgetLoaded event)
+	private void onWidgetLoaded(WidgetLoaded event)
 	{
 		if (event.getGroupId() < WidgetID.BEGINNER_CLUE_MAP_CHAMPIONS_GUILD
 			|| event.getGroupId() > WidgetID.BEGINNER_CLUE_MAP_WIZARDS_TOWER)
@@ -483,23 +527,9 @@ public class ClueScrollPlugin extends Plugin
 		final String text = Text.sanitizeMultilineText(clueScrollText.getText()).toLowerCase();
 
 		// Early return if this is same clue as already existing one
-		if (clue instanceof TextClueScroll)
+		if (clue instanceof TextClueScroll && ((TextClueScroll) clue).getText().equalsIgnoreCase(text))
 		{
-			if (((TextClueScroll) clue).getText().equalsIgnoreCase(text))
-			{
-				return clue;
-			}
-		}
-
-		// (This|The) anagram reveals who to speak to next:
-		if (text.contains("anagram reveals who to speak to next:"))
-		{
-			return AnagramClue.forText(text);
-		}
-
-		if (text.startsWith("the cipher reveals who to speak to next:"))
-		{
-			return CipherClue.forText(text);
+			return clue;
 		}
 
 		if (text.startsWith("i'd like to hear some music."))
@@ -510,6 +540,18 @@ public class ClueScrollPlugin extends Plugin
 		if (text.contains("degrees") && text.contains("minutes"))
 		{
 			return coordinatesToWorldPoint(text);
+		}
+
+		final AnagramClue anagramClue = AnagramClue.forText(text);
+		if (anagramClue != null)
+		{
+			return anagramClue;
+		}
+
+		final CipherClue cipherClue = CipherClue.forText(text);
+		if (cipherClue != null)
+		{
+			return cipherClue;
 		}
 
 		final CrypticClue crypticClue = CrypticClue.forText(text);
@@ -545,6 +587,13 @@ public class ClueScrollPlugin extends Plugin
 		if (hotColdClue != null)
 		{
 			return hotColdClue;
+		}
+
+		final SkillChallengeClue skillChallengeClue = SkillChallengeClue.forText(text, clueScrollText.getText());
+
+		if (skillChallengeClue != null)
+		{
+			return skillChallengeClue;
 		}
 
 		// three step cryptic clues need unedited text to check which steps are already done
@@ -599,7 +648,11 @@ public class ClueScrollPlugin extends Plugin
 			minX *= -1;
 		}
 
-		return new CoordinateClue(text, coordinatesToWorldPoint(degX, minX, degY, minY));
+		WorldPoint coordinate = coordinatesToWorldPoint(degX, minX, degY, minY);
+		// Convert from overworld to real
+		WorldPoint mirrorPoint = getMirrorPoint(coordinate, false);
+		// Use mirror point as mirrorLocation if there is one
+		return new CoordinateClue(text, coordinate, coordinate == mirrorPoint ? null : mirrorPoint);
 	}
 
 	/**
@@ -647,6 +700,11 @@ public class ClueScrollPlugin extends Plugin
 		final Tile[][][] tiles = scene.getTiles();
 		final Tile tile = tiles[client.getPlane()][localLocation.getSceneX()][localLocation.getSceneY()];
 		objectsToMark.clear();
+
+		if (tile == null || tile.getGameObjects() == null)
+		{
+			return;
+		}
 
 		for (GameObject object : tile.getGameObjects())
 		{
@@ -773,7 +831,7 @@ public class ClueScrollPlugin extends Plugin
 		textComponent.render(graphics);
 	}
 
-	void scrollToWidget(WidgetInfo list, WidgetInfo scrollbar, Widget ... toHighlight)
+	void scrollToWidget(WidgetInfo list, WidgetInfo scrollbar, Widget... toHighlight)
 	{
 		final Widget parent = client.getWidget(list);
 		int averageCentralY = 0;

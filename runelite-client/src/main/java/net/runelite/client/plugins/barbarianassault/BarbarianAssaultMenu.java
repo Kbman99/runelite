@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2019, 7ate9 <https://github.com/se7enAte9>
- * Copyright (c) 2019, https://runelitepl.us
+ * Copyright (c) 2019, https://openosrs.com
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,22 +26,22 @@
 package net.runelite.client.plugins.barbarianassault;
 
 import com.google.common.collect.Sets;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.Setter;
-import net.runelite.client.menus.ComparableEntry;
-import net.runelite.client.menus.MenuManager;
-
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import javax.inject.Inject;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
+import net.runelite.client.menus.AbstractComparableEntry;
+import net.runelite.client.menus.MenuManager;
 
 class BarbarianAssaultMenu
 {
 	private final MenuManager menuManager;
 	private final BarbarianAssaultPlugin game;
-	private final ArrayList<ComparableEntry> tracker = new ArrayList<>();
+	private final List<AbstractComparableEntry> tracker = new ArrayList<>();
 	@Getter(AccessLevel.PACKAGE)
 	@Setter(AccessLevel.PACKAGE)
 	private boolean hornUpdated = false;
@@ -58,7 +58,7 @@ class BarbarianAssaultMenu
 
 	private boolean isHornOptionHidden(String option)
 	{
-		if (game.isInGame() && game.getRole() != null && game.getRole().getTell(game.getLastCallText()).toLowerCase().equals(option))
+		if (game.isInGame() && game.getRole() != null && game.getRole().getTell(game.getLastCallText()).equalsIgnoreCase(option))
 		{
 			// This will force the menu to be rebuilt after the correct tell is found
 			// medic will be added to the menu if it wasn't there before
@@ -75,7 +75,7 @@ class BarbarianAssaultMenu
 	void clearHiddenMenus()
 	{
 		// Clears menus from MenuManager and tracker
-		for (Iterator<ComparableEntry> iterator = tracker.iterator(); iterator.hasNext();)
+		for (Iterator<AbstractComparableEntry> iterator = tracker.iterator(); iterator.hasNext(); )
 		{
 			menuManager.removeHiddenEntry(iterator.next());
 			iterator.remove();
@@ -118,7 +118,7 @@ class BarbarianAssaultMenu
 
 				case BLOCK_PENANCE_CAVE:
 					return ((role != Role.DEFENDER && role != null) && game.isRemoveUnusedMenus())
-							|| (role == Role.DEFENDER && game.isRemovePenanceCave());
+						|| (role == Role.DEFENDER && game.isRemovePenanceCave());
 
 				case DUNK_LAVA_CRATER:
 				case FIX:

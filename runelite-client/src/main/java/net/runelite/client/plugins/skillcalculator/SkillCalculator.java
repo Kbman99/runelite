@@ -1,17 +1,17 @@
-/*
+/**
  * Copyright (c) 2018, Kruithne <kruithne@gmail.com>
  * Copyright (c) 2018, Psikoi <https://github.com/psikoi>
  * All rights reserved.
- *
+ * <p>
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *
+ * <p>
  * 1. Redistributions of source code must retain the above copyright notice, this
- *    list of conditions and the following disclaimer.
+ * list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * <p>
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -28,24 +28,22 @@ package net.runelite.client.plugins.skillcalculator;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import javax.inject.Singleton;
+import java.util.function.Consumer;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import lombok.AccessLevel;
-import lombok.Getter;
 import net.runelite.api.Client;
 import net.runelite.api.Experience;
-import net.runelite.api.Skill;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.SpriteManager;
 import net.runelite.client.plugins.skillcalculator.beans.SkillData;
@@ -59,7 +57,6 @@ import net.runelite.client.ui.components.IconTextField;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
-@Singleton
 class SkillCalculator extends JPanel
 {
 	private static final int MAX_XP = 200_000_000;
@@ -71,10 +68,8 @@ class SkillCalculator extends JPanel
 	private final ItemManager itemManager;
 	private final List<UIActionSlot> uiActionSlots = new ArrayList<>();
 	private final CacheSkillData cacheSkillData = new CacheSkillData();
-	@Getter(AccessLevel.PACKAGE)
 	private final UICombinedActionSlot combinedActionSlot;
-	@Getter(AccessLevel.PACKAGE)
-	private final ArrayList<UIActionSlot> combinedActionSlots = new ArrayList<>();
+	private final List<UIActionSlot> combinedActionSlots = new ArrayList<>();
 	private final List<JCheckBox> bonusCheckBoxes = new ArrayList<>();
 	private final IconTextField searchBar = new IconTextField();
 
@@ -85,9 +80,8 @@ class SkillCalculator extends JPanel
 	private int targetXP = Experience.getXpForLevel(targetLevel);
 	private float xpFactor = 1.0f;
 	private float lastBonus = 0.0f;
-	private CalculatorType calculatorType;
 
-	SkillCalculator(final Client client, final UICalculatorInputArea uiInput, final SpriteManager spriteManager, final ItemManager itemManager)
+	SkillCalculator(Client client, UICalculatorInputArea uiInput, SpriteManager spriteManager, ItemManager itemManager)
 	{
 		this.client = client;
 		this.uiInput = uiInput;
@@ -100,6 +94,7 @@ class SkillCalculator extends JPanel
 		searchBar.setPreferredSize(new Dimension(PluginPanel.PANEL_WIDTH - 20, 30));
 		searchBar.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		searchBar.setHoverBackgroundColor(ColorScheme.DARK_GRAY_HOVER_COLOR);
+		searchBar.addClearListener(e -> onSearch());
 		searchBar.addKeyListener(e -> onSearch());
 
 		setLayout(new DynamicGridLayout(0, 1, 0, 5));
@@ -119,12 +114,16 @@ class SkillCalculator extends JPanel
 
 		uiInput.getUiFieldTargetLevel().addActionListener(e -> onFieldTargetLevelUpdated());
 		uiInput.getUiFieldTargetXP().addActionListener(e -> onFieldTargetXPUpdated());
+
+		// Register focus listeners to calculate xp when exiting a text field
+		uiInput.getUiFieldCurrentLevel().addFocusListener(buildFocusAdapter(e -> onFieldCurrentLevelUpdated()));
+		uiInput.getUiFieldCurrentXP().addFocusListener(buildFocusAdapter(e -> onFieldCurrentXPUpdated()));
+		uiInput.getUiFieldTargetLevel().addFocusListener(buildFocusAdapter(e -> onFieldTargetLevelUpdated()));
+		uiInput.getUiFieldTargetXP().addFocusListener(buildFocusAdapter(e -> onFieldTargetXPUpdated()));
 	}
 
 	void openCalculator(CalculatorType calculatorType)
 	{
-		this.calculatorType = calculatorType;
-
 		// Load the skill data.
 		skillData = cacheSkillData.getSkillData(calculatorType.getDataFile());
 
@@ -132,11 +131,10 @@ class SkillCalculator extends JPanel
 		xpFactor = 1.0f;
 
 		// Update internal skill/XP values.
-		updateInternalValues();
-
-		// BankedCalculator prevents these from being editable so just ensure they are editable.
-		uiInput.getUiFieldTargetLevel().setEditable(true);
-		uiInput.getUiFieldTargetXP().setEditable(true);
+		currentXP = client.getSkillExperience(calculatorType.getSkill());
+		currentLevel = Experience.getLevelForXp(currentXP);
+		targetLevel = enforceSkillBounds(currentLevel + 1);
+		targetXP = Experience.getXpForLevel(targetLevel);
 
 		// Remove all components (action slots) from this panel.
 		removeAll();
@@ -144,8 +142,8 @@ class SkillCalculator extends JPanel
 		// Clear the search bar
 		searchBar.setText(null);
 
-		// Clear the search bar
-		searchBar.setText(null);
+		// Clear the combined action slots
+		clearCombinedSlots();
 
 		// Add in checkboxes for available skill bonuses.
 		renderBonusOptions();
@@ -161,24 +159,6 @@ class SkillCalculator extends JPanel
 
 		// Update the input fields.
 		updateInputFields();
-	}
-
-	private void updateInternalValues()
-	{
-		updateCurrentValues();
-		updateTargetValues();
-	}
-
-	private void updateCurrentValues()
-	{
-		currentXP = client.getSkillExperience(calculatorType.getSkill());
-		currentLevel = Experience.getLevelForXp(currentXP);
-	}
-
-	private void updateTargetValues()
-	{
-		targetLevel = enforceSkillBounds(currentLevel + 1);
-		targetXP = Experience.getXpForLevel(targetLevel);
 	}
 
 	private void updateCombinedAction()
@@ -254,7 +234,7 @@ class SkillCalculator extends JPanel
 		JCheckBox uiCheckbox = new JCheckBox();
 
 		uiLabel.setForeground(Color.WHITE);
-		uiLabel.setFont(FontManager.getSmallFont(getFont()));
+		uiLabel.setFont(FontManager.getRunescapeSmallFont());
 
 		uiOption.setBorder(BorderFactory.createEmptyBorder(3, 7, 3, 0));
 		uiOption.setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -466,25 +446,15 @@ class SkillCalculator extends JPanel
 		return slot.getAction().getName().toLowerCase().contains(text.toLowerCase());
 	}
 
-	/**
-	 * Updates the current skill calculator (if present)
-	 * <p>
-	 * This method is invoked by the {@link SkillCalculatorPlugin} event subscriber
-	 * when an {@link ExperienceChanged} object is posted to the event bus
-	 */
-	void updateSkillCalculator(Skill skill)
+	private FocusAdapter buildFocusAdapter(Consumer<FocusEvent> focusLostConsumer)
 	{
-		// If the user has selected a calculator, update its fields
-		Optional.ofNullable(calculatorType).ifPresent(calc ->
+		return new FocusAdapter()
 		{
-			if (skill.equals(calculatorType.getSkill()))
+			@Override
+			public void focusLost(FocusEvent e)
 			{
-				// Update our model "current" values
-				updateCurrentValues();
-
-				// Update the UI to reflect our new model
-				updateInputFields();
+				focusLostConsumer.accept(e);
 			}
-		});
+		};
 	}
 }

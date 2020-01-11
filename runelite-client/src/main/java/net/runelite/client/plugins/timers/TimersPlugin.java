@@ -27,7 +27,7 @@
 package net.runelite.client.plugins.timers;
 
 import com.google.inject.Provides;
-import java.awt.image.BufferedImage;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -47,7 +47,6 @@ import net.runelite.api.ItemID;
 import net.runelite.api.NPC;
 import net.runelite.api.NpcID;
 import net.runelite.api.Player;
-import net.runelite.api.Prayer;
 import net.runelite.api.Skill;
 import net.runelite.api.SkullIcon;
 import net.runelite.api.VarPlayer;
@@ -55,16 +54,15 @@ import net.runelite.api.Varbits;
 import net.runelite.api.WorldType;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.AnimationChanged;
-import net.runelite.api.events.BoostedLevelChanged;
 import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
-import net.runelite.api.events.SpotAnimationChanged;
 import net.runelite.api.events.ItemContainerChanged;
-import net.runelite.api.events.LocalPlayerDeath;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.NpcDespawned;
+import net.runelite.api.events.PlayerDeath;
+import net.runelite.api.events.SpotAnimationChanged;
+import net.runelite.api.events.StatChanged;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.WidgetHiddenChanged;
 import net.runelite.api.widgets.Widget;
@@ -73,52 +71,21 @@ import net.runelite.api.widgets.WidgetInfo;
 import static net.runelite.api.widgets.WidgetInfo.PVP_WORLD_SAFE_ZONE;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.SpriteManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import static net.runelite.client.plugins.timers.GameIndicator.VENGEANCE_ACTIVE;
-import static net.runelite.client.plugins.timers.GameTimer.ABYSSAL_SIRE_STUN;
-import static net.runelite.client.plugins.timers.GameTimer.ANTIFIRE;
-import static net.runelite.client.plugins.timers.GameTimer.ANTIPOISON;
-import static net.runelite.client.plugins.timers.GameTimer.ANTIVENOM;
-import static net.runelite.client.plugins.timers.GameTimer.BIND;
-import static net.runelite.client.plugins.timers.GameTimer.CANNON;
-import static net.runelite.client.plugins.timers.GameTimer.CHARGE;
-import static net.runelite.client.plugins.timers.GameTimer.DMM_FULLTB;
-import static net.runelite.client.plugins.timers.GameTimer.DMM_HALFTB;
-import static net.runelite.client.plugins.timers.GameTimer.ENTANGLE;
-import static net.runelite.client.plugins.timers.GameTimer.EXANTIFIRE;
-import static net.runelite.client.plugins.timers.GameTimer.EXSUPERANTIFIRE;
-import static net.runelite.client.plugins.timers.GameTimer.FULLTB;
-import static net.runelite.client.plugins.timers.GameTimer.GOD_WARS_ALTAR;
-import static net.runelite.client.plugins.timers.GameTimer.HALFBIND;
-import static net.runelite.client.plugins.timers.GameTimer.HALFENTANGLE;
-import static net.runelite.client.plugins.timers.GameTimer.HALFSNARE;
-import static net.runelite.client.plugins.timers.GameTimer.HALFTB;
-import static net.runelite.client.plugins.timers.GameTimer.HOME_TELEPORT;
-import static net.runelite.client.plugins.timers.GameTimer.ICEBARRAGE;
-import static net.runelite.client.plugins.timers.GameTimer.ICEBLITZ;
-import static net.runelite.client.plugins.timers.GameTimer.ICEBURST;
-import static net.runelite.client.plugins.timers.GameTimer.ICERUSH;
-import static net.runelite.client.plugins.timers.GameTimer.IMBUEDHEART;
-import static net.runelite.client.plugins.timers.GameTimer.MAGICIMBUE;
-import static net.runelite.client.plugins.timers.GameTimer.MINIGAME_TELEPORT;
-import static net.runelite.client.plugins.timers.GameTimer.OVERLOAD;
-import static net.runelite.client.plugins.timers.GameTimer.OVERLOAD_RAID;
-import static net.runelite.client.plugins.timers.GameTimer.PRAYER_ENHANCE;
-import static net.runelite.client.plugins.timers.GameTimer.SKULL;
-import static net.runelite.client.plugins.timers.GameTimer.SNARE;
-import static net.runelite.client.plugins.timers.GameTimer.STAFF_OF_THE_DEAD;
-import static net.runelite.client.plugins.timers.GameTimer.STAMINA;
-import static net.runelite.client.plugins.timers.GameTimer.SUPERANTIFIRE;
-import static net.runelite.client.plugins.timers.GameTimer.VENGEANCE;
+import static net.runelite.client.plugins.timers.GameTimer.*;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 
 @PluginDescriptor(
 	name = "Timers",
 	description = "Show various timers in an infobox",
-	tags = {"combat", "items", "magic", "potions", "prayer", "overlay", "abyssal", "sire"}
+	tags = {"combat", "items", "magic", "potions", "prayer", "overlay", "abyssal", "sire"},
+	type = PluginType.MISCELLANEOUS
 )
 @Slf4j
 @Singleton
@@ -148,10 +115,12 @@ public class TimersPlugin extends Plugin
 	private static final String SUPER_ANTIFIRE_EXPIRED_MESSAGE = "<col=7f007f>Your super antifire potion has expired.</col>";
 	private static final int VENOM_VALUE_CUTOFF = -40; // Antivenom < -40 =< Antipoison < 0
 	private static final int POISON_TICK_LENGTH = 30;
-
-	private static final Pattern DEADMAN_HALF_TELEBLOCK_PATTERN = Pattern.compile("<col=4f006f>A Tele Block spell has been cast on you by (.+). It will expire in 1 minute, 15 seconds.</col>");
-	private static final Pattern FULL_TELEBLOCK_PATTERN = Pattern.compile("<col=4f006f>A Tele Block spell has been cast on you by (.+). It will expire in 5 minutes, 0 seconds.</col>");
-	private static final Pattern HALF_TELEBLOCK_PATTERN = Pattern.compile("<col=4f006f>A Tele Block spell has been cast on you by (.+). It will expire in 2 minutes, 30 seconds.</col>");
+	private static final String KILLED_TELEBLOCK_OPPONENT_TEXT = "<col=4f006f>Your Tele Block has been removed because you killed ";
+	private static final String PRAYER_ENHANCE_EXPIRED = "<col=ff0000>Your prayer enhance effect has worn off.</col>";
+	private static final Pattern DEADMAN_HALF_TELEBLOCK_PATTERN = Pattern.compile("<col=4f006f>A Tele Block spell has been cast on you by (.+)\\. It will expire in 1 minute, 15 seconds\\.</col>");
+	private static final Pattern FULL_TELEBLOCK_PATTERN = Pattern.compile("<col=4f006f>A Tele Block spell has been cast on you by (.+)\\. It will expire in 5 minutes\\.</col>");
+	private static final Pattern HALF_TELEBLOCK_PATTERN = Pattern.compile("<col=4f006f>A Tele Block spell has been cast on you by (.+)\\. It will expire in 2 minutes, 30 seconds\\.</col>");
+	private static final Pattern DIVINE_POTION_PATTERN = Pattern.compile("You drink some of your divine (.+) potion\\.");
 
 	private TimerTimer freezeTimer;
 	private int freezeTime = -1; // time frozen, in game ticks
@@ -184,7 +153,7 @@ public class TimersPlugin extends Plugin
 
 	@Inject
 	private InfoBoxManager infoBoxManager;
-	
+
 	private boolean showHomeMinigameTeleports;
 	private boolean showAntiPoison;
 	private boolean showAntiFire;
@@ -204,6 +173,7 @@ public class TimersPlugin extends Plugin
 	private boolean showSkull;
 	private boolean showStaffOfTheDead;
 	private boolean showAbyssalSireStun;
+	private boolean showDivine;
 
 	@Provides
 	TimersConfig getConfig(ConfigManager configManager)
@@ -212,13 +182,13 @@ public class TimersPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 	}
-	
+
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		infoBoxManager.removeIf(t -> t instanceof TimerTimer);
 		lastRaidVarb = -1;
@@ -233,7 +203,7 @@ public class TimersPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onVarbitChanged(VarbitChanged event)
+	private void onVarbitChanged(VarbitChanged event)
 	{
 		int raidVarb = client.getVar(Varbits.IN_RAID);
 		int vengCooldownVarb = client.getVar(Varbits.VENGEANCE_COOLDOWN);
@@ -321,7 +291,7 @@ public class TimersPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onWidgetHiddenChanged(WidgetHiddenChanged event)
+	private void onWidgetHiddenChanged(WidgetHiddenChanged event)
 	{
 		Widget widget = event.getWidget();
 		if (WorldType.isPvpWorld(client.getWorldType())
@@ -332,15 +302,15 @@ public class TimersPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("timers"))
 		{
 			return;
 		}
-		
+
 		updateConfig();
-		
+
 		if (!this.showHomeMinigameTeleports)
 		{
 			removeGameTimer(HOME_TELEPORT);
@@ -368,6 +338,16 @@ public class TimersPlugin extends Plugin
 		if (!this.showPrayerEnhance)
 		{
 			removeGameTimer(PRAYER_ENHANCE);
+		}
+
+		if (!this.showDivine)
+		{
+			removeGameTimer(DIVINE_SUPER_ATTACK);
+			removeGameTimer(DIVINE_SUPER_STRENGTH);
+			removeGameTimer(DIVINE_SUPER_DEFENCE);
+			removeGameTimer(DIVINE_SUPER_COMBAT);
+			removeGameTimer(DIVINE_RANGING);
+			removeGameTimer(DIVINE_MAGIC);
 		}
 
 		if (!this.showCannon)
@@ -413,11 +393,8 @@ public class TimersPlugin extends Plugin
 		if (!this.showFreezes)
 		{
 			removeGameTimer(BIND);
-			removeGameTimer(HALFBIND);
 			removeGameTimer(SNARE);
-			removeGameTimer(HALFSNARE);
 			removeGameTimer(ENTANGLE);
-			removeGameTimer(HALFENTANGLE);
 			removeGameTimer(ICERUSH);
 			removeGameTimer(ICEBURST);
 			removeGameTimer(ICEBLITZ);
@@ -432,12 +409,16 @@ public class TimersPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onMenuOptionClicked(MenuOptionClicked event)
+	private void onMenuOptionClicked(MenuOptionClicked event)
 	{
 		if (this.showStamina
 			&& event.getOption().contains("Drink")
 			&& (event.getIdentifier() == ItemID.STAMINA_MIX1
-			|| event.getIdentifier() == ItemID.STAMINA_MIX2))
+			|| event.getIdentifier() == ItemID.STAMINA_MIX2
+			|| event.getIdentifier() == ItemID.EGNIOL_POTION_1
+			|| event.getIdentifier() == ItemID.EGNIOL_POTION_2
+			|| event.getIdentifier() == ItemID.EGNIOL_POTION_3
+			|| event.getIdentifier() == ItemID.EGNIOL_POTION_4))
 		{
 			// Needs menu option hook because mixes use a common drink message, distinct from their standard potion messages
 			createGameTimer(STAMINA);
@@ -484,7 +465,7 @@ public class TimersPlugin extends Plugin
 			return;
 		}
 
-		TeleportWidget teleportWidget = TeleportWidget.of(event.getActionParam1());
+		TeleportWidget teleportWidget = TeleportWidget.of(event.getParam1());
 		if (teleportWidget != null)
 		{
 			lastTeleportClicked = teleportWidget;
@@ -499,7 +480,7 @@ public class TimersPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onChatMessage(ChatMessage event)
+	void onChatMessage(ChatMessage event)
 	{
 		if (event.getType() != ChatMessageType.SPAM && event.getType() != ChatMessageType.GAMEMESSAGE)
 		{
@@ -584,9 +565,7 @@ public class TimersPlugin extends Plugin
 			}
 			else if (HALF_TELEBLOCK_PATTERN.matcher(event.getMessage()).find())
 			{
-				if (client.getWorldType().contains(WorldType.DEADMAN)
-					&& !client.getWorldType().contains(WorldType.SEASONAL_DEADMAN)
-					&& !client.getWorldType().contains(WorldType.DEADMAN_TOURNAMENT))
+				if (client.getWorldType().contains(WorldType.DEADMAN))
 				{
 					createGameTimer(DMM_FULLTB);
 				}
@@ -598,6 +577,10 @@ public class TimersPlugin extends Plugin
 			else if (DEADMAN_HALF_TELEBLOCK_PATTERN.matcher(event.getMessage()).find())
 			{
 				createGameTimer(DMM_HALFTB);
+			}
+			else if (event.getMessage().startsWith(KILLED_TELEBLOCK_OPPONENT_TEXT))
+			{
+				removeTbTimers();
 			}
 		}
 
@@ -627,6 +610,11 @@ public class TimersPlugin extends Plugin
 			createGameTimer(PRAYER_ENHANCE);
 		}
 
+		if (this.showPrayerEnhance && event.getMessage().equals(PRAYER_ENHANCE_EXPIRED))
+		{
+			removeGameTimer(PRAYER_ENHANCE);
+		}
+
 		if (this.showCharge && event.getMessage().equals(CHARGE_MESSAGE))
 		{
 			createGameTimer(CHARGE);
@@ -652,14 +640,54 @@ public class TimersPlugin extends Plugin
 			freezeTimer = createGameTimer(ICEBARRAGE);
 			freezeTime = client.getTickCount();
 		}
+
+		if (config.showDivine())
+		{
+			Matcher mDivine = DIVINE_POTION_PATTERN.matcher(event.getMessage());
+			if (mDivine.find())
+			{
+				switch (mDivine.group(1))
+				{
+					case "super attack":
+						createGameTimer(DIVINE_SUPER_ATTACK);
+						break;
+
+					case "super strength":
+						createGameTimer(DIVINE_SUPER_STRENGTH);
+						break;
+
+					case "super defence":
+						createGameTimer(DIVINE_SUPER_DEFENCE);
+						break;
+
+					case "combat":
+						createGameTimer(DIVINE_SUPER_COMBAT);
+						break;
+
+					case "ranging":
+						createGameTimer(DIVINE_RANGING);
+						break;
+
+					case "magic":
+						createGameTimer(DIVINE_MAGIC);
+						break;
+				}
+			}
+		}
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick event)
+	private void onGameTick(GameTick event)
 	{
 		loggedInRace = false;
 
 		Player player = client.getLocalPlayer();
+
+		if (player == null)
+		{
+			return;
+		}
+
 		WorldPoint currentWorldPoint = player.getWorldLocation();
 
 		final boolean isSkulled = player.getSkullIcon() != null && player.getSkullIcon() != SkullIcon.SKULL_FIGHT_PIT;
@@ -677,15 +705,13 @@ public class TimersPlugin extends Plugin
 			}
 		}
 
-		if (freezeTimer != null)
-		{
+		if (freezeTimer != null &&
 			// assume movement means unfrozen
-			if (freezeTime != client.getTickCount()
-				&& !currentWorldPoint.equals(lastPoint))
-			{
-				removeGameTimer(freezeTimer.getTimer());
-				freezeTimer = null;
-			}
+			freezeTime != client.getTickCount()
+			&& !currentWorldPoint.equals(lastPoint))
+		{
+			removeGameTimer(freezeTimer.getTimer());
+			freezeTimer = null;
 		}
 
 		lastPoint = currentWorldPoint;
@@ -707,7 +733,7 @@ public class TimersPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged)
+	private void onGameStateChanged(GameStateChanged gameStateChanged)
 	{
 		switch (gameStateChanged.getGameState())
 		{
@@ -722,7 +748,7 @@ public class TimersPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onAnimationChanged(AnimationChanged event)
+	private void onAnimationChanged(AnimationChanged event)
 	{
 		Actor actor = event.getActor();
 
@@ -752,13 +778,15 @@ public class TimersPlugin extends Plugin
 			}
 		}
 
-		if (actor != client.getLocalPlayer())
+		Player player = client.getLocalPlayer();
+
+		if (player == null || actor != player)
 		{
 			return;
 		}
 
 		if (this.showHomeMinigameTeleports
-			&& client.getLocalPlayer().getAnimation() == AnimationID.IDLE
+			&& player.getAnimation() == AnimationID.IDLE
 			&& (lastAnimation == AnimationID.BOOK_HOME_TELEPORT_5
 			|| lastAnimation == AnimationID.COW_HOME_TELEPORT_6))
 		{
@@ -772,15 +800,21 @@ public class TimersPlugin extends Plugin
 			}
 		}
 
-		lastAnimation = client.getLocalPlayer().getAnimation();
+		if (config.showDFSSpecial() && lastAnimation == AnimationID.DRAGONFIRE_SHIELD_SPECIAL)
+		{
+			createGameTimer(DRAGON_FIRE_SHIELD);
+		}
+
+		lastAnimation = player.getAnimation();
 	}
 
 	@Subscribe
-	public void onSpotAnimationChanged(SpotAnimationChanged event)
+	private void onSpotAnimationChanged(SpotAnimationChanged event)
 	{
 		Actor actor = event.getActor();
+		Player player = client.getLocalPlayer();
 
-		if (actor != client.getLocalPlayer())
+		if (player == null || actor != client.getLocalPlayer())
 		{
 			return;
 		}
@@ -794,44 +828,17 @@ public class TimersPlugin extends Plugin
 		{
 			if (actor.getSpotAnimation() == BIND.getGraphicId())
 			{
-				if (client.isPrayerActive(Prayer.PROTECT_FROM_MAGIC)
-					&& !client.getWorldType().contains(WorldType.SEASONAL_DEADMAN)
-					&& !client.getWorldType().contains(WorldType.DEADMAN_TOURNAMENT))
-				{
-					createGameTimer(HALFBIND);
-				}
-				else
-				{
-					createGameTimer(BIND);
-				}
+				createGameTimer(BIND);
 			}
 
 			if (actor.getSpotAnimation() == SNARE.getGraphicId())
 			{
-				if (client.isPrayerActive(Prayer.PROTECT_FROM_MAGIC)
-					&& !client.getWorldType().contains(WorldType.SEASONAL_DEADMAN)
-					&& !client.getWorldType().contains(WorldType.DEADMAN_TOURNAMENT))
-				{
-					createGameTimer(HALFSNARE);
-				}
-				else
-				{
-					createGameTimer(SNARE);
-				}
+				createGameTimer(SNARE);
 			}
 
 			if (actor.getSpotAnimation() == ENTANGLE.getGraphicId())
 			{
-				if (client.isPrayerActive(Prayer.PROTECT_FROM_MAGIC)
-					&& !client.getWorldType().contains(WorldType.SEASONAL_DEADMAN)
-					&& !client.getWorldType().contains(WorldType.DEADMAN_TOURNAMENT))
-				{
-					createGameTimer(HALFENTANGLE);
-				}
-				else
-				{
-					createGameTimer(ENTANGLE);
-				}
+				createGameTimer(ENTANGLE);
 			}
 
 			// downgrade freeze based on graphic, if at the same tick as the freeze message
@@ -864,7 +871,7 @@ public class TimersPlugin extends Plugin
 	 * @param itemContainerChanged
 	 */
 	@Subscribe
-	public void onItemContainerChanged(ItemContainerChanged itemContainerChanged)
+	private void onItemContainerChanged(ItemContainerChanged itemContainerChanged)
 	{
 		ItemContainer container = itemContainerChanged.getItemContainer();
 		if (container == client.getItemContainer(InventoryID.EQUIPMENT))
@@ -900,7 +907,7 @@ public class TimersPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onNpcDespawned(NpcDespawned npcDespawned)
+	private void onNpcDespawned(NpcDespawned npcDespawned)
 	{
 		NPC npc = npcDespawned.getNpc();
 
@@ -918,13 +925,16 @@ public class TimersPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onLocalPlayerDeath(LocalPlayerDeath event)
+	private void onPlayerDeath(PlayerDeath playerDeath)
 	{
-		infoBoxManager.removeIf(t -> t instanceof TimerTimer && ((TimerTimer) t).getTimer().isRemovedOnDeath());
+		if (playerDeath.getPlayer() == client.getLocalPlayer())
+		{
+			infoBoxManager.removeIf(t -> t instanceof TimerTimer && ((TimerTimer) t).getTimer().isRemovedOnDeath());
+		}
 	}
 
 	@Subscribe
-	public void onBoostedLevelChanged(BoostedLevelChanged event)
+	private void onStatChanged(StatChanged event)
 	{
 		Skill skill = event.getSkill();
 
@@ -950,8 +960,16 @@ public class TimersPlugin extends Plugin
 	{
 		removeGameTimer(timer);
 
-		BufferedImage image = timer.getImage(itemManager, spriteManager);
-		TimerTimer t = new TimerTimer(timer, this, image);
+		TimerTimer t = new TimerTimer(timer, this);
+		switch (timer.getImageType())
+		{
+			case SPRITE:
+				spriteManager.getSpriteAsync(timer.getImageId(), 0, t);
+				break;
+			case ITEM:
+				t.setImage(itemManager.getImage(timer.getImageId()));
+				break;
+		}
 		t.setTooltip(timer.getDescription());
 		infoBoxManager.addInfoBox(t);
 		return t;
@@ -961,8 +979,16 @@ public class TimersPlugin extends Plugin
 	{
 		removeGameTimer(timer);
 
-		BufferedImage image = timer.getImage(itemManager, spriteManager);
-		TimerTimer t = new TimerTimer(timer, duration, this, image);
+		TimerTimer t = new TimerTimer(timer, duration, this);
+		switch (timer.getImageType())
+		{
+			case SPRITE:
+				spriteManager.getSpriteAsync(timer.getImageId(), 0, t);
+				break;
+			case ITEM:
+				t.setImage(itemManager.getImage(timer.getImageId()));
+				break;
+		}
 		t.setTooltip(timer.getDescription());
 		infoBoxManager.addInfoBox(t);
 		return t;
@@ -977,8 +1003,16 @@ public class TimersPlugin extends Plugin
 	{
 		removeGameIndicator(gameIndicator);
 
-		BufferedImage image = gameIndicator.getImage(itemManager, spriteManager);
-		IndicatorIndicator indicator = new IndicatorIndicator(gameIndicator, image, this);
+		IndicatorIndicator indicator = new IndicatorIndicator(gameIndicator, this);
+		switch (gameIndicator.getImageType())
+		{
+			case SPRITE:
+				spriteManager.getSpriteAsync(gameIndicator.getImageId(), 0, indicator);
+				break;
+			case ITEM:
+				indicator.setImage(itemManager.getImage(gameIndicator.getImageId()));
+				break;
+		}
 		indicator.setTooltip(gameIndicator.getDescription());
 		infoBoxManager.addInfoBox(indicator);
 
@@ -997,7 +1031,7 @@ public class TimersPlugin extends Plugin
 		removeGameTimer(DMM_FULLTB);
 		removeGameTimer(DMM_HALFTB);
 	}
-	
+
 	private void updateConfig()
 	{
 		this.showHomeMinigameTeleports = config.showHomeMinigameTeleports();
@@ -1018,5 +1052,6 @@ public class TimersPlugin extends Plugin
 		this.showSkull = config.showSkull();
 		this.showStaffOfTheDead = config.showStaffOfTheDead();
 		this.showAbyssalSireStun = config.showAbyssalSireStun();
+		this.showDivine = config.showDivine();
 	}
 }

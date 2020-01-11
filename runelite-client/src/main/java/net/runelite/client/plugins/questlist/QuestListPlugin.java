@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -47,6 +48,8 @@ import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.api.events.VarClientIntChanged;
 import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.util.Text;
+import net.runelite.api.vars.InterfaceTab;
 import net.runelite.api.widgets.JavaScriptCallback;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
@@ -58,11 +61,12 @@ import net.runelite.client.game.chatbox.ChatboxPanelManager;
 import net.runelite.client.game.chatbox.ChatboxTextInput;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.util.Text;
+import net.runelite.client.plugins.PluginType;
 
 @PluginDescriptor(
 	name = "Quest List",
-	description = "Adds searching and filtering to the quest list"
+	description = "Adds searching and filtering to the quest list",
+	type = PluginType.UTILITY
 )
 @Singleton
 public class QuestListPlugin extends Plugin
@@ -112,7 +116,7 @@ public class QuestListPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged e)
+	private void onGameStateChanged(GameStateChanged e)
 	{
 		if (e.getGameState() == GameState.LOGGING_IN)
 		{
@@ -121,7 +125,7 @@ public class QuestListPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onScriptCallbackEvent(ScriptCallbackEvent event)
+	private void onScriptCallbackEvent(ScriptCallbackEvent event)
 	{
 		if (!event.getEventName().equals("questProgressUpdated"))
 		{
@@ -171,7 +175,7 @@ public class QuestListPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onVarbitChanged(VarbitChanged varbitChanged)
+	private void onVarbitChanged(VarbitChanged varbitChanged)
 	{
 		if (isChatboxOpen() && isNotOnQuestTab())
 		{
@@ -180,14 +184,11 @@ public class QuestListPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onVarClientIntChanged(VarClientIntChanged varClientIntChanged)
+	private void onVarClientIntChanged(VarClientIntChanged varClientIntChanged)
 	{
-		if (varClientIntChanged.getIndex() == VarClientInt.INVENTORY_TAB.getIndex())
+		if (varClientIntChanged.getIndex() == VarClientInt.INTERFACE_TAB.getIndex() && isChatboxOpen() && isNotOnQuestTab())
 		{
-			if (isChatboxOpen() && isNotOnQuestTab())
-			{
-				chatboxPanelManager.close();
-			}
+			chatboxPanelManager.close();
 		}
 	}
 
@@ -211,7 +212,7 @@ public class QuestListPlugin extends Plugin
 
 	private boolean isNotOnQuestTab()
 	{
-		return client.getVar(Varbits.QUEST_TAB) != 0 || client.getVar(VarClientInt.INVENTORY_TAB) != 2;
+		return client.getVar(Varbits.QUEST_TAB) != 0 || client.getVar(VarClientInt.INTERFACE_TAB) != InterfaceTab.QUEST.getId();
 	}
 
 	private boolean isChatboxOpen()
@@ -314,11 +315,10 @@ public class QuestListPlugin extends Plugin
 
 		Collection<QuestWidget> quests = questSet.get(questContainer);
 
-		if (quests != null)
-		{
+		if (quests != null &&
 			// Check to make sure the list hasn't been rebuild since we were last her
 			// Do this by making sure the list's dynamic children are the same as when we last saw them
-			if (quests.stream().noneMatch(w ->
+			quests.stream().noneMatch(w ->
 			{
 				Widget codeWidget = w.getQuest();
 				if (codeWidget == null)
@@ -327,9 +327,8 @@ public class QuestListPlugin extends Plugin
 				}
 				return list.getChild(codeWidget.getIndex()) == codeWidget;
 			}))
-			{
-				quests = null;
-			}
+		{
+			quests = null;
 		}
 
 		if (quests == null)
@@ -359,7 +358,14 @@ public class QuestListPlugin extends Plugin
 			else
 			{
 				// Otherwise hide if it doesn't match the filter state
-				hidden = currentFilterState != QuestState.ALL && questState != currentFilterState;
+				if (currentFilterState == QuestState.NOT_COMPLETED)
+				{
+					hidden = questState == QuestState.COMPLETE;
+				}
+				else
+				{
+					hidden = currentFilterState != QuestState.ALL && questState != currentFilterState;
+				}
 			}
 
 			quest.setHidden(hidden);
@@ -376,7 +382,7 @@ public class QuestListPlugin extends Plugin
 	}
 
 	@AllArgsConstructor
-	@Getter
+	@Getter(AccessLevel.PRIVATE)
 	private enum QuestContainer
 	{
 		FREE_QUESTS(WidgetInfo.QUESTLIST_FREE_CONTAINER),
@@ -387,13 +393,14 @@ public class QuestListPlugin extends Plugin
 	}
 
 	@AllArgsConstructor
-	@Getter
+	@Getter(AccessLevel.PRIVATE)
 	private enum QuestState
 	{
 		NOT_STARTED(0xff0000, "Not started", SpriteID.MINIMAP_ORB_HITPOINTS),
 		IN_PROGRESS(0xffff00, "In progress", SpriteID.MINIMAP_ORB_HITPOINTS_DISEASE),
 		COMPLETE(0xdc10d, "Completed", SpriteID.MINIMAP_ORB_HITPOINTS_POISON),
-		ALL(0, "All", SpriteID.MINIMAP_ORB_PRAYER);
+		ALL(0, "All", SpriteID.MINIMAP_ORB_PRAYER),
+		NOT_COMPLETED(0, "Not Completed", SpriteID.MINIMAP_ORB_RUN);
 
 		private final int color;
 		private final String name;

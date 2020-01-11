@@ -30,6 +30,7 @@ import com.google.inject.testing.fieldbinder.BoundFieldModule;
 import javax.inject.Inject;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.events.ChatMessage;
+import net.runelite.client.config.OpenOSRSConfig;
 import net.runelite.client.ui.overlay.OverlayManager;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -37,7 +38,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SmeltingPluginTest
@@ -59,6 +60,10 @@ public class SmeltingPluginTest
 	@Mock
 	@Bind
 	OverlayManager overlayManager;
+
+	@Mock
+	@Bind
+	private OpenOSRSConfig openOSRSConfig;
 
 	@Before
 	public void before()

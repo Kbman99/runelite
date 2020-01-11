@@ -28,13 +28,20 @@ package net.runelite.client.plugins.loottracker;
 import com.google.common.base.Strings;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.image.BufferedImage;
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.function.BiConsumer;
 import javax.annotation.Nullable;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
@@ -44,72 +51,100 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import lombok.AccessLevel;
 import lombok.Getter;
-import net.runelite.client.game.AsyncBufferedImage;
+import net.runelite.api.util.Text;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
+import net.runelite.client.util.AsyncBufferedImage;
 import net.runelite.client.util.ImageUtil;
-import net.runelite.client.util.StackFormatter;
-import net.runelite.client.util.Text;
+import net.runelite.client.util.QuantityFormatter;
 
 class LootTrackerBox extends JPanel
 {
 	private static final int ITEMS_PER_ROW = 5;
+	private static final int TITLE_PADDING = 5;
 
 	private final JPanel itemContainer = new JPanel();
 	private final JLabel priceLabel = new JLabel();
 	private final JLabel subTitleLabel = new JLabel();
+	private final JPanel logTitle = new JPanel();
 	private final ItemManager itemManager;
 	@Getter(AccessLevel.PACKAGE)
 	private final String id;
+	private final LootTrackerPriceType priceType;
+	private final boolean showPriceType;
 
 	@Getter(AccessLevel.PACKAGE)
 	private final List<LootTrackerRecord> records = new ArrayList<>();
 
 	private long totalPrice;
-	private boolean hideIgnoredItems;
-	private BiConsumer<String, Boolean> onItemToggle;
+	private final boolean hideIgnoredItems;
+	private final BiConsumer<String, Boolean> onItemToggle;
 
 	LootTrackerBox(
+		final long timeStamp,
 		final ItemManager itemManager,
 		final String id,
 		@Nullable final String subtitle,
 		final boolean hideIgnoredItems,
+		final LootTrackerPriceType priceType,
+		final boolean showPriceType,
+		@Nullable final Boolean showDate,
 		final BiConsumer<String, Boolean> onItemToggle)
 	{
 		this.id = id;
 		this.itemManager = itemManager;
 		this.onItemToggle = onItemToggle;
 		this.hideIgnoredItems = hideIgnoredItems;
+		this.priceType = priceType;
+		this.showPriceType = showPriceType;
 
 		setLayout(new BorderLayout(0, 1));
 		setBorder(new EmptyBorder(5, 0, 0, 0));
 
-		final JPanel logTitle = new JPanel(new BorderLayout(5, 0));
+		logTitle.setLayout(new BoxLayout(logTitle, BoxLayout.X_AXIS));
 		logTitle.setBorder(new EmptyBorder(7, 7, 7, 7));
 		logTitle.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
 
-		final JLabel titleLabel = new JLabel(Text.removeTags(id));
-		titleLabel.setFont(FontManager.getSmallFont(getFont()));
+		JLabel titleLabel = new JLabel();
+		titleLabel.setText(Text.removeTags(id));
+		titleLabel.setFont(FontManager.getRunescapeSmallFont());
 		titleLabel.setForeground(Color.WHITE);
+		// Set a size to make BoxLayout truncate the name
+		titleLabel.setMinimumSize(new Dimension(1, titleLabel.getPreferredSize().height));
+		logTitle.add(titleLabel);
 
-		logTitle.add(titleLabel, BorderLayout.WEST);
-
-		subTitleLabel.setFont(FontManager.getSmallFont(getFont()));
+		subTitleLabel.setFont(FontManager.getRunescapeSmallFont());
 		subTitleLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-		logTitle.add(subTitleLabel, BorderLayout.CENTER);
+
+		JLabel dateLabel = new JLabel();
+		dateLabel.setFont(FontManager.getRunescapeSmallFont().deriveFont(Font.PLAIN, FontManager.getRunescapeSmallFont().getSize() - 2));
+		dateLabel.setForeground(Color.LIGHT_GRAY);
+		dateLabel.setText(DateFormat.getDateInstance().format(new Date(timeStamp)));
+
+		if (showDate)
+		{
+			logTitle.add(dateLabel, BorderLayout.SOUTH);
+		}
+
 
 		if (!Strings.isNullOrEmpty(subtitle))
 		{
 			subTitleLabel.setText(subtitle);
 		}
 
-		priceLabel.setFont(FontManager.getSmallFont(getFont()));
+		logTitle.add(Box.createRigidArea(new Dimension(TITLE_PADDING, 0)));
+		logTitle.add(subTitleLabel);
+		logTitle.add(Box.createHorizontalGlue());
+		logTitle.add(Box.createRigidArea(new Dimension(TITLE_PADDING, 0)));
+
+		priceLabel.setFont(FontManager.getRunescapeSmallFont());
 		priceLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-		logTitle.add(priceLabel, BorderLayout.EAST);
+		logTitle.add(priceLabel);
 
 		add(logTitle, BorderLayout.NORTH);
 		add(itemContainer, BorderLayout.CENTER);
+
 	}
 
 	/**
@@ -121,7 +156,7 @@ class LootTrackerBox extends JPanel
 	{
 		return hideIgnoredItems
 			? records.stream().filter(
-				r -> !Arrays.stream(r.getItems()).allMatch(LootTrackerItem::isIgnored)).count()
+			r -> !Arrays.stream(r.getItems()).allMatch(LootTrackerItem::isIgnored)).count()
 			: records.size();
 	}
 
@@ -170,8 +205,14 @@ class LootTrackerBox extends JPanel
 	{
 		buildItems();
 
-		priceLabel.setText(StackFormatter.quantityToStackSize(totalPrice) + " gp");
-		priceLabel.setToolTipText(StackFormatter.formatNumber(totalPrice) + " gp");
+		String priceTypeString = " ";
+		if (showPriceType)
+		{
+			priceTypeString = priceType == LootTrackerPriceType.HIGH_ALCHEMY ? "HA: " : "GE: ";
+		}
+
+		priceLabel.setText(priceTypeString + QuantityFormatter.quantityToStackSize(totalPrice) + " gp");
+		priceLabel.setToolTipText(QuantityFormatter.formatNumber(totalPrice) + " gp");
 
 		final long kills = getTotalKills();
 		if (kills > 1)
@@ -181,6 +222,39 @@ class LootTrackerBox extends JPanel
 
 		validate();
 		repaint();
+	}
+
+	void collapse()
+	{
+		if (!isCollapsed())
+		{
+			itemContainer.setVisible(false);
+			applyDimmer(false, logTitle);
+		}
+	}
+
+	void expand()
+	{
+		if (isCollapsed())
+		{
+			itemContainer.setVisible(true);
+			applyDimmer(true, logTitle);
+		}
+	}
+
+	boolean isCollapsed()
+	{
+		return !itemContainer.isVisible();
+	}
+
+	private void applyDimmer(boolean brighten, JPanel panel)
+	{
+		for (Component component : panel.getComponents())
+		{
+			Color color = component.getForeground();
+
+			component.setForeground(brighten ? color.brighter() : color.darker());
+		}
 	}
 
 	/**
@@ -217,7 +291,7 @@ class LootTrackerBox extends JPanel
 				continue;
 			}
 
-			totalPrice += entry.getPrice();
+			totalPrice += priceType == LootTrackerPriceType.HIGH_ALCHEMY ? entry.getHaPrice() : entry.getGePrice();
 
 			int quantity = 0;
 			for (final LootTrackerItem i : items)
@@ -233,9 +307,10 @@ class LootTrackerBox extends JPanel
 			if (quantity != 0)
 			{
 				int newQuantity = entry.getQuantity() + quantity;
-				long pricePerItem = entry.getPrice() == 0 ? 0 : (entry.getPrice() / entry.getQuantity());
+				long gePricePerItem = entry.getGePrice() == 0 ? 0 : (entry.getGePrice() / entry.getQuantity());
+				long haPricePerItem = entry.getHaPrice() == 0 ? 0 : (entry.getHaPrice() / entry.getQuantity());
 
-				items.add(new LootTrackerItem(entry.getId(), entry.getName(), newQuantity, pricePerItem * newQuantity, entry.isIgnored()));
+				items.add(new LootTrackerItem(entry.getId(), entry.getName(), newQuantity, gePricePerItem * newQuantity, haPricePerItem * newQuantity, entry.isIgnored()));
 			}
 			else
 			{
@@ -243,7 +318,14 @@ class LootTrackerBox extends JPanel
 			}
 		}
 
-		items.sort((i1, i2) -> Long.compare(i2.getPrice(), i1.getPrice()));
+		if (priceType == LootTrackerPriceType.HIGH_ALCHEMY)
+		{
+			items.sort((i1, i2) -> Long.compare(i2.getHaPrice(), i1.getHaPrice()));
+		}
+		else
+		{
+			items.sort((i1, i2) -> Long.compare(i2.getGePrice(), i1.getGePrice()));
+		}
 
 		// Calculates how many rows need to be display to fit all items
 		final int rowSize = ((items.size() % ITEMS_PER_ROW == 0) ? 0 : 1) + items.size() / ITEMS_PER_ROW;
@@ -273,7 +355,7 @@ class LootTrackerBox extends JPanel
 						BufferedImage transparentImage = ImageUtil.alphaOffset(itemImage, .3f);
 						imageLabel.setIcon(new ImageIcon(transparentImage));
 					};
-					itemImage.onChanged(addTransparency);
+					itemImage.onLoaded(addTransparency);
 					addTransparency.run();
 				}
 				else
@@ -308,8 +390,11 @@ class LootTrackerBox extends JPanel
 	{
 		final String name = item.getName();
 		final int quantity = item.getQuantity();
-		final long price = item.getPrice();
+		final long gePrice = item.getGePrice();
+		final long haPrice = item.getHaPrice();
 		final String ignoredLabel = item.isIgnored() ? " - Ignored" : "";
-		return name + " x " + quantity + " (" + StackFormatter.quantityToStackSize(price) + ") " + ignoredLabel;
+		return "<html>" + name + " x " + quantity + ignoredLabel
+			+ "<br>GE: " + QuantityFormatter.quantityToStackSize(gePrice)
+			+ "<br>HA: " + QuantityFormatter.quantityToStackSize(haPrice) + "</html>";
 	}
 }

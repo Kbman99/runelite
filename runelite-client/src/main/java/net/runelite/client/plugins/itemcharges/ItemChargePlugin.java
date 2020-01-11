@@ -26,6 +26,7 @@
  */
 package net.runelite.client.plugins.itemcharges;
 
+import com.google.common.primitives.Ints;
 import com.google.inject.Provides;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
@@ -43,52 +44,55 @@ import net.runelite.api.InventoryID;
 import net.runelite.api.Item;
 import net.runelite.api.ItemContainer;
 import net.runelite.api.ItemID;
+import static net.runelite.api.ItemID.RING_OF_RECOIL;
 import net.runelite.api.Varbits;
 import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameTick;
-import net.runelite.api.events.SpotAnimationChanged;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.ScriptCallbackEvent;
+import net.runelite.api.events.SpotAnimationChanged;
 import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.util.Text;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.Notifier;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
-import net.runelite.client.util.Text;
-
-import static net.runelite.api.ItemID.RING_OF_RECOIL;
 
 @PluginDescriptor(
 	name = "Item Charges",
 	description = "Show number of item charges remaining",
-	tags = {"inventory", "notifications", "overlay"}
+	tags = {"inventory", "notifications", "overlay"},
+	type = PluginType.UTILITY
 )
 @Singleton
 public class ItemChargePlugin extends Plugin
 {
 	private static final Pattern DODGY_CHECK_PATTERN = Pattern.compile(
 		"Your dodgy necklace has (\\d+) charges? left\\.");
-	private static final Pattern SLAUGHTER_CHECK_PATTERN = Pattern.compile(
+	private static final String CHAT_BRACELET_SLAUGHTER = "Your bracelet of slaughter prevents your slayer";
+	private static final Pattern CHAT_BRACELET_SLAUGHTER_REGEX = Pattern.compile(
+		"Your bracelet of slaughter prevents your slayer count decreasing. It has (\\d{1,2}) charge[s]? left.");
+	private static final String CHAT_BRACELET_EXPEDITIOUS = "Your expeditious bracelet helps you progress your";
+	private static final Pattern CHAT_BRACELET_EXPEDITIOUS_REGEX = Pattern.compile(
+		"Your expeditious bracelet helps you progress your slayer (?:task )?faster. It has (\\d{1,2}) charge[s]? left.");
+	private static final Pattern CHAT_BRACELET_SLAUGHTER_CHARGE_REGEX = Pattern.compile(
 		"Your bracelet of slaughter has (\\d{1,2}) charge[s]? left.");
-	private static final Pattern EXPEDITIOUS_CHECK_PATTERN = Pattern.compile(
+	private static final Pattern CHAT_BRACELET_EXPEDITIOUS_CHARGE_REGEX = Pattern.compile(
 		"Your expeditious bracelet has (\\d{1,2}) charge[s]? left.");
 	private static final Pattern DODGY_PROTECT_PATTERN = Pattern.compile(
 		"Your dodgy necklace protects you\\..*It has (\\d+) charges? left\\.");
-	private static final Pattern SLAUGHTER_ACTIVATE_PATTERN = Pattern.compile(
-		"Your bracelet of slaughter prevents your slayer count decreasing. It has (\\d{1,2}) charge[s]? left.");
-	private static final Pattern EXPEDITIOUS_ACTIVATE_PATTERN = Pattern.compile(
-		"Your expeditious bracelet helps you progress your slayer (?:task )?faster. It has (\\d{1,2}) charge[s]? left.");
 	private static final Pattern DODGY_BREAK_PATTERN = Pattern.compile(
 		"Your dodgy necklace protects you\\..*It then crumbles to dust\\.");
 	private static final String RING_OF_RECOIL_BREAK_MESSAGE = "<col=7f007f>Your Ring of Recoil has shattered.</col>";
-	private static Pattern BINDING_CHECK_PATTERN = Pattern.compile(
+	private static final Pattern BINDING_CHECK_PATTERN = Pattern.compile(
 		"You have ([0-9]+|one) charges? left before your Binding necklace disintegrates.");
 	private static final Pattern BINDING_USED_PATTERN = Pattern.compile(
 		"You bind the temple's power into (mud|lava|steam|dust|smoke|mist) runes\\.");
@@ -121,12 +125,17 @@ public class ItemChargePlugin extends Plugin
 		"You have one charge left in your book\\.");
 	private static final Pattern CHRONICLE_OUT_OF_CHARGES_PATTERN = Pattern.compile(
 		"Your book has run out of charges\\.");
+	private static final Pattern RING_OF_FORGING_CHECK_PATTERN = Pattern.compile(
+		"You can smelt ([0-9+]+|one) more pieces? of iron ore before a ring melts\\.");
+	private static final String RING_OF_FORGING_USED_TEXT = "You retrieve a bar of iron.";
+	private static final String RING_OF_FORGING_BREAK_TEXT = "<col=7f007f>Your Ring of Forging has melted.</col>";
 
 	private static final int MAX_DODGY_CHARGES = 10;
 	private static final int MAX_SLAUGHTER_CHARGES = 30;
 	private static final int MAX_EXPEDITIOUS_CHARGES = 30;
 	private static final int MAX_BINDING_CHARGES = 16;
 	private static final int MAX_EXPLORER_RING_CHARGES = 30;
+	private static final int MAX_RING_OF_FORGING_CHARGES = 140;
 
 	@Getter(AccessLevel.PACKAGE)
 	private boolean ringOfRecoilAvailable = false;
@@ -217,11 +226,19 @@ public class ItemChargePlugin extends Plugin
 	@Getter(AccessLevel.PACKAGE)
 	private boolean showChronicleCharges;
 	@Getter(AccessLevel.PACKAGE)
+	private boolean showKharedstsMemoirs;
+	@Getter(AccessLevel.PACKAGE)
 	private boolean showXericTalismanCharges;
 	@Getter(AccessLevel.PACKAGE)
 	private boolean showrecoil;
 	@Getter(AccessLevel.PACKAGE)
 	private int chronicle;
+	@Getter(AccessLevel.PACKAGE)
+	private int kharedstsMemoirs;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean showRingOfForgingCount;
+	@Getter(AccessLevel.PACKAGE)
+	private int ringOfForging;
 
 	@Provides
 	ItemChargeConfig getConfig(ConfigManager configManager)
@@ -240,7 +257,7 @@ public class ItemChargePlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
 		overlayManager.remove(recoilOverlay);
@@ -249,7 +266,7 @@ public class ItemChargePlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("itemCharge"))
 		{
@@ -294,18 +311,19 @@ public class ItemChargePlugin extends Plugin
 		{
 			removeInfobox(ItemWithSlot.EXPLORER_RING);
 		}
+
+		if (!this.showRingOfForgingCount)
+		{
+			removeInfobox(ItemWithSlot.RING_OF_FORGING);
+		}
 	}
 
 	@Subscribe
-	public void onChatMessage(ChatMessage event)
+	void onChatMessage(ChatMessage event)
 	{
 		String message = event.getMessage();
 		Matcher dodgyCheckMatcher = DODGY_CHECK_PATTERN.matcher(message);
-		Matcher slaughterCheckMatcher = SLAUGHTER_CHECK_PATTERN.matcher(message);
-		Matcher expeditiousCheckMatcher = EXPEDITIOUS_CHECK_PATTERN.matcher(message);
 		Matcher dodgyProtectMatcher = DODGY_PROTECT_PATTERN.matcher(message);
-		Matcher slaughterActivateMatcher = SLAUGHTER_ACTIVATE_PATTERN.matcher(message);
-		Matcher expeditiousActivateMatcher = EXPEDITIOUS_ACTIVATE_PATTERN.matcher(message);
 		Matcher dodgyBreakMatcher = DODGY_BREAK_PATTERN.matcher(message);
 		Matcher bindingNecklaceCheckMatcher = BINDING_CHECK_PATTERN.matcher(event.getMessage());
 		Matcher bindingNecklaceUsedMatcher = BINDING_USED_PATTERN.matcher(event.getMessage());
@@ -316,6 +334,11 @@ public class ItemChargePlugin extends Plugin
 		Matcher chronicleRechargeMatcher = CHRONICLE_ADD_CHARGE_PATTERN.matcher(message);
 		Matcher chronicleLastChargeMatcher = CHRONICLE_LAST_CHARGE_PATTERN.matcher(message);
 		Matcher chronicleOutOfChargesMatcher = CHRONICLE_OUT_OF_CHARGES_PATTERN.matcher(message);
+		Matcher ringOfForgingCheckMatcher = RING_OF_FORGING_CHECK_PATTERN.matcher(message);
+		Matcher slaughterMatcher = CHAT_BRACELET_SLAUGHTER_REGEX.matcher(Text.removeTags(message));
+		Matcher expeditiousMatcher = CHAT_BRACELET_EXPEDITIOUS_REGEX.matcher(Text.removeTags(message));
+		Matcher slaughterChargeMatcher = CHAT_BRACELET_SLAUGHTER_CHARGE_REGEX.matcher(Text.removeTags(message));
+		Matcher expeditiousChargeMatcher = CHAT_BRACELET_EXPEDITIOUS_CHARGE_REGEX.matcher(Text.removeTags(message));
 
 		if (event.getType() == ChatMessageType.GAMEMESSAGE || event.getType() == ChatMessageType.SPAM)
 		{
@@ -323,29 +346,29 @@ public class ItemChargePlugin extends Plugin
 			{
 				notifier.notify("Your Ring of Recoil has shattered");
 			}
+			else if (Text.removeTags(message).startsWith(CHAT_BRACELET_SLAUGHTER))
+			{
+				updateBraceletOfSlaughterCharges(slaughterMatcher.find() ? Integer.parseInt(slaughterMatcher.group(1)) : MAX_SLAUGHTER_CHARGES);
+			}
+			else if (Text.removeTags(message).startsWith(CHAT_BRACELET_EXPEDITIOUS))
+			{
+				updateExpeditiousCharges(expeditiousMatcher.find() ? Integer.parseInt(expeditiousMatcher.group(1)) : MAX_EXPEDITIOUS_CHARGES);
+			}
+			else if (slaughterChargeMatcher.find())
+			{
+				updateBraceletOfSlaughterCharges(Integer.parseInt(slaughterChargeMatcher.group(1)));
+			}
+			else if (expeditiousChargeMatcher.find())
+			{
+				updateExpeditiousCharges(Integer.parseInt(expeditiousChargeMatcher.group(1)));
+			}
 			else if (dodgyCheckMatcher.find())
 			{
 				updateDodgyNecklaceCharges(Integer.parseInt(dodgyCheckMatcher.group(1)));
 			}
-			else if (slaughterCheckMatcher.find())
-			{
-				updateBraceletOfSlaughterCharges(Integer.parseInt(slaughterCheckMatcher.group(1)));
-			}
-			else if (expeditiousCheckMatcher.find())
-			{
-				updateExpeditiousCharges(Integer.parseInt(expeditiousCheckMatcher.group(1)));
-			}
 			else if (dodgyProtectMatcher.find())
 			{
 				updateDodgyNecklaceCharges(Integer.parseInt(dodgyProtectMatcher.group(1)));
-			}
-			else if (slaughterActivateMatcher.find())
-			{
-				updateBraceletOfSlaughterCharges(Integer.parseInt(slaughterActivateMatcher.group(1)));
-			}
-			else if (expeditiousActivateMatcher.find())
-			{
-				updateExpeditiousCharges(Integer.parseInt(expeditiousActivateMatcher.group(1)));
 			}
 			else if (dodgyBreakMatcher.find())
 			{
@@ -417,11 +440,49 @@ public class ItemChargePlugin extends Plugin
 				final int chronicleCharges = 0;
 				updateChronicleCharges(chronicleCharges);
 			}
+			else if (ringOfForgingCheckMatcher.find())
+			{
+				final String match = ringOfForgingCheckMatcher.group(1);
+
+				int charges = 1;
+				if (!match.equals("one"))
+				{
+					charges = Integer.parseInt(match);
+				}
+				updateRingOfForgingCharges(charges);
+			}
+			else if (message.equals(RING_OF_FORGING_USED_TEXT))
+			{
+				final ItemContainer equipment = client.getItemContainer(InventoryID.EQUIPMENT);
+
+				// Determine if the player smelted with a Ring of Forging equipped.
+				if (equipment == null)
+				{
+					return;
+				}
+
+				Item[] items = equipment.getItems();
+				if (EquipmentInventorySlot.RING.getSlotIdx() < items.length
+					&& items[EquipmentInventorySlot.RING.getSlotIdx()].getId() == ItemID.RING_OF_FORGING)
+				{
+					int charges = Ints.constrainToRange(this.ringOfForging - 1, 0, MAX_RING_OF_FORGING_CHARGES);
+					updateRingOfForgingCharges(charges);
+				}
+			}
+			else if (message.equals(RING_OF_FORGING_BREAK_TEXT))
+			{
+				if (config.ringOfForgingNotification())
+				{
+					notifier.notify("Your ring of forging has melted.");
+				}
+
+				updateRingOfForgingCharges(MAX_RING_OF_FORGING_CHARGES);
+			}
 		}
 	}
 
 	@Subscribe
-	public void onItemContainerChanged(ItemContainerChanged event)
+	private void onItemContainerChanged(ItemContainerChanged event)
 	{
 		if (event.getItemContainer() != client.getItemContainer(InventoryID.EQUIPMENT) || !this.showInfoboxes)
 		{
@@ -460,10 +521,15 @@ public class ItemChargePlugin extends Plugin
 		{
 			updateJewelleryInfobox(ItemWithSlot.EXPLORER_RING, items);
 		}
+
+		if (this.showRingOfForgingCount)
+		{
+			updateJewelleryInfobox(ItemWithSlot.RING_OF_FORGING, items);
+		}
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick event)
+	private void onGameTick(GameTick event)
 	{
 		Widget braceletBreakWidget = client.getWidget(WidgetInfo.DIALOG_SPRITE_TEXT);
 
@@ -487,27 +553,25 @@ public class ItemChargePlugin extends Plugin
 		ringOfRecoilAvailable = false;
 		ringOfRecoilEquipped = false;
 
-		Item ring = null;
-		if (equipment != null && equipment.getItems().length >= EquipmentInventorySlot.RING.getSlotIdx())
+		if (equipment != null && inventory != null)
 		{
-			ring = equipment.getItems()[EquipmentInventorySlot.RING.getSlotIdx()];
-		}
-		if (ring != null && ring.getId() == RING_OF_RECOIL)
-		{
-			ringOfRecoilEquipped = true;
-			ringOfRecoilAvailable = true;
-		}
-		Item[] items = new Item[0];
-		if (inventory != null)
-		{
-			items = inventory.getItems();
-		}
-		for (Item item : items)
-		{
-			if (item.getId() == RING_OF_RECOIL)
+			for (Item item : equipment.getItems())
 			{
-				ringOfRecoilAvailable = true;
-				break;
+				if (item.getId() == RING_OF_RECOIL)
+				{
+					ringOfRecoilEquipped = true;
+					ringOfRecoilAvailable = true;
+					break;
+				}
+			}
+
+			for (Item item : inventory.getItems())
+			{
+				if (item.getId() == RING_OF_RECOIL)
+				{
+					ringOfRecoilAvailable = true;
+					break;
+				}
 			}
 		}
 
@@ -565,15 +629,12 @@ public class ItemChargePlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onSpotAnimationChanged(SpotAnimationChanged event)
+	private void onSpotAnimationChanged(SpotAnimationChanged event)
 	{
-		if (event.getActor() == client.getLocalPlayer())
+		if (event.getActor() == client.getLocalPlayer() && client.getLocalPlayer().getSpotAnimation() == GraphicID.XERIC_TELEPORT)
 		{
-			if (client.getLocalPlayer().getSpotAnimation() == GraphicID.XERIC_TELEPORT)
-			{
-				final int xericCharges = Math.max(this.xericTalisman - 1, 0);
-				updateXericCharges(xericCharges);
-			}
+			final int xericCharges = Math.max(this.xericTalisman - 1, 0);
+			updateXericCharges(xericCharges);
 		}
 	}
 
@@ -599,8 +660,11 @@ public class ItemChargePlugin extends Plugin
 		int lastExplorerRingCharge = -1;
 		if (lastExplorerRingCharge != explorerRingCharge)
 		{
+			lastExplorerRingCharge = explorerRingCharge;
 			updateExplorerRingCharges(explorerRingCharge);
 		}
+
+		this.kharedstsMemoirs = client.getVar(Varbits.KHAREDSTS_MEMOIRS_CHARGES);
 	}
 
 	private void updateDodgyNecklaceCharges(final int value)
@@ -674,7 +738,7 @@ public class ItemChargePlugin extends Plugin
 			updateJewelleryInfobox(ItemWithSlot.BINDING_NECKLACE, itemContainer.getItems());
 		}
 	}
-	
+
 	private void updateXericCharges(int xericCharges)
 	{
 		config.xericTalisman(xericCharges);
@@ -692,7 +756,7 @@ public class ItemChargePlugin extends Plugin
 		config.chronicle(chronicleCharges);
 		this.chronicle = chronicleCharges;
 	}
-	
+
 	private void updateExplorerRingCharges(final int value)
 	{
 		// Note: Varbit counts upwards. We count down from the maximum charges.
@@ -803,6 +867,24 @@ public class ItemChargePlugin extends Plugin
 		infoBoxManager.addInfoBox(infobox);
 	}
 
+	private void updateRingOfForgingCharges(final int value)
+	{
+		config.ringOfForging(value);
+		this.ringOfForging = value;
+
+		if (this.showInfoboxes && this.showRingOfForgingCount)
+		{
+			final ItemContainer itemContainer = client.getItemContainer(InventoryID.EQUIPMENT);
+
+			if (itemContainer == null)
+			{
+				return;
+			}
+
+			updateJewelleryInfobox(ItemWithSlot.RING_OF_FORGING, itemContainer.getItems());
+		}
+	}
+
 	private void removeInfobox(final ItemWithSlot item)
 	{
 		infoBoxManager.removeIf(t -> t instanceof ItemChargeInfobox && ((ItemChargeInfobox) t).getItem() == item);
@@ -866,8 +948,11 @@ public class ItemChargePlugin extends Plugin
 		this.showSoulBearerCharges = config.showSoulBearerCharges();
 		this.soulBearer = config.soulBearer();
 		this.showChronicleCharges = config.showChronicleCharges();
+		this.showKharedstsMemoirs = config.showKharedstsMemoirsCharges();
 		this.showXericTalismanCharges = config.showXericTalismanCharges();
 		this.showrecoil = config.showrecoil();
 		this.chronicle = config.chronicle();
+		this.showBasketCharges = config.showBasketCharges();
+		this.showSackCharges = config.showSackCharges();
 	}
 }

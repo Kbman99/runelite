@@ -26,16 +26,18 @@ package net.runelite.client.plugins.roguesden;
 
 import java.util.HashMap;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import lombok.AccessLevel;
 import lombok.Getter;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.InventoryID;
-import net.runelite.api.Item;
-import net.runelite.api.ItemID;
+import static net.runelite.api.ItemID.MYSTIC_JEWEL;
 import net.runelite.api.Tile;
 import net.runelite.api.TileObject;
+import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.DecorativeObjectChanged;
+import net.runelite.api.events.DecorativeObjectDespawned;
+import net.runelite.api.events.DecorativeObjectSpawned;
 import net.runelite.api.events.GameObjectChanged;
 import net.runelite.api.events.GameObjectDespawned;
 import net.runelite.api.events.GameObjectSpawned;
@@ -44,17 +46,22 @@ import net.runelite.api.events.GroundObjectChanged;
 import net.runelite.api.events.GroundObjectDespawned;
 import net.runelite.api.events.GroundObjectSpawned;
 import net.runelite.api.events.ItemContainerChanged;
+import net.runelite.api.events.WallObjectChanged;
+import net.runelite.api.events.WallObjectDespawned;
+import net.runelite.api.events.WallObjectSpawned;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
+import net.runelite.client.util.ItemUtil;
 
 @PluginDescriptor(
-		name = "Rogues' Den",
-		description = "Mark tiles and clickboxes to help traverse the maze",
-		tags = {"agility", "maze", "minigame", "overlay", "thieving"}
+	name = "Rogues' Den",
+	description = "Mark tiles and clickboxes to help traverse the maze",
+	tags = {"agility", "maze", "minigame", "overlay", "thieving"},
+	type = PluginType.MINIGAME
 )
-@Singleton
 public class RoguesDenPlugin extends Plugin
 {
 	@Getter(AccessLevel.PACKAGE)
@@ -75,79 +82,40 @@ public class RoguesDenPlugin extends Plugin
 	@Inject
 	private RoguesDenOverlay overlay;
 
+	@Inject
+	private RoguesDenMinimapOverlay minimapOverlay;
+
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
+
 		overlayManager.add(overlay);
+		overlayManager.add(minimapOverlay);
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
+		overlayManager.remove(minimapOverlay);
 		obstaclesHull.clear();
 		obstaclesTile.clear();
 		hasGem = false;
 	}
 
 	@Subscribe
-	public void onItemContainerChanged(ItemContainerChanged event)
+	private void onItemContainerChanged(ItemContainerChanged event)
 	{
 		if (event.getItemContainer() != client.getItemContainer(InventoryID.INVENTORY))
 		{
 			return;
 		}
 
-		for (Item item : event.getItemContainer().getItems())
-		{
-			if (item.getId() == ItemID.MYSTIC_JEWEL)
-			{
-				hasGem = true;
-				return;
-			}
-		}
-
-		hasGem = false;
+		hasGem = ItemUtil.containsItemId(event.getItemContainer().getItems(), MYSTIC_JEWEL);
 	}
 
 	@Subscribe
-	public void onGameObjectSpawned(GameObjectSpawned event)
-	{
-		onTileObject(event.getTile(), null, event.getGameObject());
-	}
-
-	@Subscribe
-	public void onGameObjectChanged(GameObjectChanged event)
-	{
-		onTileObject(event.getTile(), event.getPrevious(), event.getGameObject());
-	}
-
-	@Subscribe
-	public void onGameObjectDespawned(GameObjectDespawned event)
-	{
-		onTileObject(event.getTile(), event.getGameObject(), null);
-	}
-
-	@Subscribe
-	public void onGroundObjectSpawned(GroundObjectSpawned event)
-	{
-		onTileObject(event.getTile(), null, event.getGroundObject());
-	}
-
-	@Subscribe
-	public void onGroundObjectChanged(GroundObjectChanged event)
-	{
-		onTileObject(event.getTile(), event.getPrevious(), event.getGroundObject());
-	}
-
-	@Subscribe
-	public void onGroundObjectDespawned(GroundObjectDespawned event)
-	{
-		onTileObject(event.getTile(), event.getGroundObject(), null);
-	}
-
-	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		if (event.getGameState() == GameState.LOADING)
 		{
@@ -156,18 +124,90 @@ public class RoguesDenPlugin extends Plugin
 		}
 	}
 
-	private void onTileObject(Tile tile, TileObject oldObject, TileObject newObject)
+	@Subscribe
+	private void onGameObjectSpawned(GameObjectSpawned event)
+	{
+		onTileObject(event.getTile(), null, event.getGameObject());
+	}
+
+	@Subscribe
+	private void onGameObjectChanged(GameObjectChanged event)
+	{
+		onTileObject(event.getTile(), event.getPrevious(), event.getGameObject());
+	}
+
+	@Subscribe
+	private void onGameObjectDespawned(GameObjectDespawned event)
+	{
+		onTileObject(event.getTile(), event.getGameObject(), null);
+	}
+
+	@Subscribe
+	private void onGroundObjectSpawned(GroundObjectSpawned event)
+	{
+		onTileObject(event.getTile(), null, event.getGroundObject());
+	}
+
+	@Subscribe
+	private void onGroundObjectChanged(GroundObjectChanged event)
+	{
+		onTileObject(event.getTile(), event.getPrevious(), event.getGroundObject());
+	}
+
+	@Subscribe
+	private void onGroundObjectDespawned(GroundObjectDespawned event)
+	{
+		onTileObject(event.getTile(), event.getGroundObject(), null);
+	}
+
+	@Subscribe
+	private void onWallObjectSpawned(WallObjectSpawned event)
+	{
+		onTileObject(event.getTile(), null, event.getWallObject());
+	}
+
+	@Subscribe
+	private void onWallObjectChanged(WallObjectChanged event)
+	{
+		onTileObject(event.getTile(), event.getPrevious(), event.getWallObject());
+	}
+
+	@Subscribe
+	private void onWallObjectDespawned(WallObjectDespawned event)
+	{
+		onTileObject(event.getTile(), event.getWallObject(), null);
+	}
+
+	@Subscribe
+	private void onDecorativeObjectSpawned(DecorativeObjectSpawned event)
+	{
+		onTileObject(event.getTile(), null, event.getDecorativeObject());
+	}
+
+	@Subscribe
+	private void onDecorativeObjectChanged(DecorativeObjectChanged event)
+	{
+		onTileObject(event.getTile(), event.getPrevious(), event.getDecorativeObject());
+	}
+
+	@Subscribe
+	private void onDecorativeObjectDespawned(DecorativeObjectDespawned event)
+	{
+		onTileObject(event.getTile(), event.getDecorativeObject(), null);
+	}
+
+	private void onTileObject(final Tile tile, final TileObject oldObject, final TileObject newObject)
 	{
 		obstaclesHull.remove(oldObject);
-		if (newObject != null && Obstacles.OBSTACLE_IDS_HULL.contains(newObject.getId()))
+		if (newObject != null)
 		{
-			obstaclesHull.put(newObject, tile);
-		}
+			WorldPoint point = tile.getWorldLocation();
 
-		obstaclesTile.remove(oldObject);
-		if (newObject != null && Obstacles.OBSTACLE_IDS_TILE.contains(newObject.getId()))
-		{
-			obstaclesTile.put(newObject, tile);
+			Obstacles.Obstacle obstacle = Obstacles.TILE_MAP.get(point);
+			if (obstacle != null && obstacle.getObjectId() == newObject.getId())
+			{
+				obstaclesHull.put(newObject, tile);
+			}
 		}
 	}
 }

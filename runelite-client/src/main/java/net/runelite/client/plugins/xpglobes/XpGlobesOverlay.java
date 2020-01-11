@@ -42,7 +42,7 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.runelite.api.Client;
-import static net.runelite.api.MenuAction.RUNELITE_OVERLAY_CONFIG;
+import static net.runelite.api.MenuOpcode.RUNELITE_OVERLAY_CONFIG;
 import net.runelite.api.Point;
 import net.runelite.client.game.SkillIconManager;
 import net.runelite.client.plugins.xptracker.XpActionType;
@@ -261,25 +261,34 @@ public class XpGlobesOverlay extends Overlay
 		{
 			XpActionType xpActionType = xpTrackerService.getActionType(mouseOverSkill.getSkill());
 
-			int actionsLeft = xpTrackerService.getActionsLeft(mouseOverSkill.getSkill());
-			if (actionsLeft != Integer.MAX_VALUE)
+			if (plugin.isShowActionsLeft())
 			{
-				String actionsLeftString = decimalFormat.format(actionsLeft);
+				int actionsLeft = xpTrackerService.getActionsLeft(mouseOverSkill.getSkill());
+				if (actionsLeft != Integer.MAX_VALUE)
+				{
+					String actionsLeftString = decimalFormat.format(actionsLeft);
 
-				tableComponent.addRow(ColorUtil.prependColorTag(xpActionType.getLabel() + " left:", Color.ORANGE), actionsLeftString);
+					tableComponent.addRow(ColorUtil.prependColorTag(xpActionType.getLabel() + " left:", Color.ORANGE), actionsLeftString);
+				}
 			}
 
-			int xpLeft = goalXp - mouseOverSkill.getCurrentXp();
-			String skillXpToLvl = decimalFormat.format(xpLeft);
-			tableComponent.addRow(ColorUtil.prependColorTag("XP left:", Color.ORANGE), skillXpToLvl);
-
-			int xpHr = xpTrackerService.getXpHr(mouseOverSkill.getSkill());
-			if (xpHr != 0)
+			if (plugin.isShowXpLeft())
 			{
-				String xpHrString = decimalFormat.format(xpHr);
-				tableComponent.addRow(ColorUtil.prependColorTag("XP per hour:", Color.ORANGE), xpHrString);
+				int xpLeft = goalXp - mouseOverSkill.getCurrentXp();
+				String skillXpToLvl = decimalFormat.format(xpLeft);
+				tableComponent.addRow(ColorUtil.prependColorTag("XP left:", Color.ORANGE), skillXpToLvl);
 			}
-			
+
+			if (plugin.isShowXpHour())
+			{
+				int xpHr = xpTrackerService.getXpHr(mouseOverSkill.getSkill());
+				if (xpHr != 0)
+				{
+					String xpHrString = decimalFormat.format(xpHr);
+					tableComponent.addRow(ColorUtil.prependColorTag("XP per hour:", Color.ORANGE), xpHrString);
+				}
+			}
+
 			if (plugin.isEnableTimeToLevel())
 			{
 				String timeLeft = xpTrackerService.getTimeTillGoal(mouseOverSkill.getSkill());

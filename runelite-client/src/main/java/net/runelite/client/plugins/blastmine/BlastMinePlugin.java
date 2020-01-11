@@ -45,12 +45,14 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @PluginDescriptor(
 	name = "Blast Mine",
 	description = "Show helpful information for the Blast Mine minigame",
-	tags = {"explode", "explosive", "mining", "minigame", "skilling"}
+	tags = {"explode", "explosive", "mining", "minigame", "skilling"},
+	type = PluginType.MINIGAME
 )
 @Singleton
 public class BlastMinePlugin extends Plugin
@@ -73,12 +75,6 @@ public class BlastMinePlugin extends Plugin
 	@Inject
 	private BlastMinePluginConfig config;
 
-	@Provides
-	BlastMinePluginConfig getConfig(ConfigManager configManager)
-	{
-		return configManager.getConfig(BlastMinePluginConfig.class);
-	}
-
 	@Getter(AccessLevel.PACKAGE)
 	private boolean showOreOverlay;
 	@Getter(AccessLevel.PACKAGE)
@@ -92,8 +88,14 @@ public class BlastMinePlugin extends Plugin
 	@Getter(AccessLevel.PACKAGE)
 	private Color warningColor;
 
+	@Provides
+	BlastMinePluginConfig getConfig(ConfigManager configManager)
+	{
+		return configManager.getConfig(BlastMinePluginConfig.class);
+	}
+
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 
@@ -102,7 +104,7 @@ public class BlastMinePlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(blastMineRockOverlay);
 		overlayManager.remove(blastMineOreCountOverlay);
@@ -115,7 +117,7 @@ public class BlastMinePlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameObjectSpawned(GameObjectSpawned event)
+	private void onGameObjectSpawned(GameObjectSpawned event)
 	{
 		final GameObject gameObject = event.getGameObject();
 		BlastMineRockType blastMineRockType = BlastMineRockType.getRockType(gameObject.getId());
@@ -134,7 +136,7 @@ public class BlastMinePlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		if (event.getGameState() == GameState.LOADING)
 		{
@@ -143,7 +145,7 @@ public class BlastMinePlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick gameTick)
+	private void onGameTick(GameTick gameTick)
 	{
 		if (rocks.isEmpty())
 		{

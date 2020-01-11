@@ -40,6 +40,7 @@ import net.runelite.api.Player;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.task.Schedule;
 import net.runelite.client.ui.overlay.OverlayManager;
 
@@ -47,7 +48,8 @@ import net.runelite.client.ui.overlay.OverlayManager;
 	name = "Team Capes",
 	description = "Show the different team capes in your area and the amount of each",
 	tags = {"overlay", "players"},
-	enabledByDefault = false
+	enabledByDefault = false,
+	type = PluginType.MISCELLANEOUS
 )
 @Singleton
 public class TeamCapesPlugin extends Plugin
@@ -71,13 +73,13 @@ public class TeamCapesPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		overlayManager.add(overlay);
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
 		teams.clear();

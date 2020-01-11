@@ -26,34 +26,35 @@ import net.runelite.client.ui.overlay.OverlayManager;
 public class LootAssistPlugin extends Plugin
 {
 	@Inject
-	OverlayManager overlayManager;
+	private OverlayManager overlayManager;
 
 	@Inject
-	LootAssistOverlay lootAssistOverlay;
+	private LootAssistOverlay lootAssistOverlay;
 
-	static ConcurrentHashMap<WorldPoint, LootPile> lootPiles = new ConcurrentHashMap<>();
+	static final ConcurrentHashMap<WorldPoint, LootPile> lootPiles = new ConcurrentHashMap<>();
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
+
 		overlayManager.add(lootAssistOverlay);
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		lootPiles.clear();
 		overlayManager.remove(lootAssistOverlay);
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	private void onGameStateChanged(GameStateChanged event)
 	{
 		lootPiles.clear();
 	}
 
 	@Subscribe
-	public void onAnimationChanged(AnimationChanged event)
+	private void onAnimationChanged(AnimationChanged event)
 	{
 		final Actor actor = event.getActor();
 		if (actor.getAnimation() == AnimationID.DEATH && actor instanceof Player)

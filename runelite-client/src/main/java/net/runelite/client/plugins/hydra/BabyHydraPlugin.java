@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, https://runelitepl.us
+ * Copyright (c) 2018, https://openosrs.com
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,11 +35,11 @@ import net.runelite.api.Actor;
 import net.runelite.api.Client;
 import net.runelite.api.NPC;
 import net.runelite.api.events.AnimationChanged;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginType;
@@ -94,7 +94,7 @@ public class BabyHydraPlugin extends Plugin
 	private boolean PrayerHelper;
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 
@@ -110,7 +110,7 @@ public class BabyHydraPlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(hydraOverlay);
 		overlayManager.remove(hydraPrayOverlay);
@@ -120,7 +120,7 @@ public class BabyHydraPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("hydra"))
 		{
@@ -156,41 +156,32 @@ public class BabyHydraPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onNpcSpawned(NpcSpawned event)
+	private void onNpcSpawned(NpcSpawned event)
 	{
 		NPC hydra = event.getNpc();
-		if (hydra.getCombatLevel() != 0 && hydra.getName() != null)
+		if (hydra.getCombatLevel() != 0 && hydra.getName() != null && hydra.getName().equalsIgnoreCase("Hydra") && !hydras.containsKey(hydra.getIndex()))
 		{
-			if (hydra.getName().equalsIgnoreCase("Hydra"))
-			{
-				if (!hydras.containsKey(hydra.getIndex()))
-				{
-					hydras.put(hydra.getIndex(), 3);
-				}
-			}
+			hydras.put(hydra.getIndex(), 3);
 		}
 	}
 
 	@Subscribe
-	public void onNpcDespawned(NpcDespawned event)
+	private void onNpcDespawned(NpcDespawned event)
 	{
 		NPC hydra = event.getNpc();
-		if (hydra.getCombatLevel() != 0 && hydra.getName() != null)
+		if (hydra.getCombatLevel() != 0 && hydra.getName() != null && hydra.getName().equalsIgnoreCase("Hydra"))
 		{
-			if (hydra.getName().equalsIgnoreCase("Hydra"))
-			{
-				hydras.remove(hydra.getIndex());
-				hydraattacks.remove(hydra.getIndex());
-			}
+			hydras.remove(hydra.getIndex());
+			hydraattacks.remove(hydra.getIndex());
 		}
 	}
 
 	@Subscribe
-	public void onAnimationChanged(AnimationChanged event)
+	private void onAnimationChanged(AnimationChanged event)
 	{
 		Actor monster = event.getActor();
 		Actor local = client.getLocalPlayer();
-		if (!(monster instanceof NPC))
+		if (!(monster instanceof NPC) || local == null)
 		{
 			return;
 		}
@@ -211,7 +202,7 @@ public class BabyHydraPlugin extends Plugin
 			return;
 		}
 
-		if (hydra.getInteracting().equals(local))
+		if (hydra.getInteracting() != null && hydra.getInteracting() == local)
 		{
 			this.hydra = hydra;
 		}

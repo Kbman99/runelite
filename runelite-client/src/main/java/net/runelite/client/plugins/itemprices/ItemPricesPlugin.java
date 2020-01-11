@@ -29,18 +29,20 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.AccessLevel;
 import lombok.Getter;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @PluginDescriptor(
 	name = "Item Prices",
 	description = "Show prices on hover for items in your inventory and bank",
 	tags = {"bank", "inventory", "overlay", "high", "alchemy", "grand", "exchange", "tooltips"},
-	enabledByDefault = false
+	enabledByDefault = false,
+	type = PluginType.UTILITY
 )
 @Singleton
 public class ItemPricesPlugin extends Plugin
@@ -64,6 +66,8 @@ public class ItemPricesPlugin extends Plugin
 	private boolean hideInventory;
 	@Getter(AccessLevel.PACKAGE)
 	private boolean showAlchProfit;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean showWhileAlching;
 
 	@Provides
 	ItemPricesConfig getConfig(ConfigManager configManager)
@@ -72,20 +76,20 @@ public class ItemPricesPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		updateConfig();
 		overlayManager.add(overlay);
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	private void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals("itemprices"))
 		{
@@ -102,5 +106,6 @@ public class ItemPricesPlugin extends Plugin
 		this.showEA = config.showEA();
 		this.hideInventory = config.hideInventory();
 		this.showAlchProfit = config.showAlchProfit();
+		this.showWhileAlching = config.showWhileAlching();
 	}
 }

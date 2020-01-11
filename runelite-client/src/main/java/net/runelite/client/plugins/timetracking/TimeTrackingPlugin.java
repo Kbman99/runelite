@@ -36,16 +36,17 @@ import javax.inject.Inject;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.UsernameChanged;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginType;
 import static net.runelite.client.plugins.timetracking.TimeTrackingConfig.CONFIG_GROUP;
 import static net.runelite.client.plugins.timetracking.TimeTrackingConfig.STOPWATCHES;
 import static net.runelite.client.plugins.timetracking.TimeTrackingConfig.TIMERS;
@@ -60,7 +61,8 @@ import net.runelite.client.util.ImageUtil;
 @PluginDescriptor(
 	name = "Time Tracking",
 	description = "Enable the Time Tracking panel, which contains timers, stopwatches, and farming and bird house trackers",
-	tags = {"birdhouse", "farming", "hunter", "notifications", "skilling", "stopwatches", "timers", "panel"}
+	tags = {"birdhouse", "farming", "hunter", "notifications", "skilling", "stopwatches", "timers", "panel"},
+	type = PluginType.MISCELLANEOUS
 )
 public class TimeTrackingPlugin extends Plugin
 {
@@ -104,8 +106,9 @@ public class TimeTrackingPlugin extends Plugin
 	}
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
+
 		clockManager.loadTimers();
 		clockManager.loadStopwatches();
 		birdHouseTracker.loadFromConfig();
@@ -128,7 +131,7 @@ public class TimeTrackingPlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		lastTickLocation = null;
 		lastTickPostLogin = false;
@@ -143,7 +146,7 @@ public class TimeTrackingPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged e)
+	private void onConfigChanged(ConfigChanged e)
 	{
 		if (!e.getGroup().equals(CONFIG_GROUP))
 		{
@@ -161,7 +164,7 @@ public class TimeTrackingPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick t)
+	private void onGameTick(GameTick t)
 	{
 		if (client.getGameState() != GameState.LOGGED_IN)
 		{
@@ -201,11 +204,14 @@ public class TimeTrackingPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onUsernameChanged(UsernameChanged e)
+	private void onUsernameChanged(UsernameChanged e)
 	{
 		farmingTracker.loadCompletionTimes();
 		birdHouseTracker.loadFromConfig();
-		panel.update();
+		if (panel != null)
+		{
+			panel.update();
+		}
 	}
 
 	@Schedule(period = 10, unit = ChronoUnit.SECONDS)

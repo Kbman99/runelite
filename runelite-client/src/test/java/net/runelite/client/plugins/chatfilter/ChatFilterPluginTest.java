@@ -31,6 +31,7 @@ import com.google.inject.testing.fieldbinder.BoundFieldModule;
 import javax.inject.Inject;
 import net.runelite.api.Client;
 import net.runelite.api.Player;
+import net.runelite.client.config.OpenOSRSConfig;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -39,8 +40,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ChatFilterPluginTest
@@ -55,6 +57,9 @@ public class ChatFilterPluginTest
 
 	@Mock
 	@Bind
+	private OpenOSRSConfig openOSRSConfig;
+
+	@Mock
 	private Player localPlayer;
 
 	@Inject
@@ -122,10 +127,20 @@ public class ChatFilterPluginTest
 	}
 
 	@Test
+	public void testReplayedMessage()
+	{
+		chatFilterPlugin.setFilterType(ChatFilterType.REMOVE_MESSAGE);
+		chatFilterPlugin.setFilteredWords("hello osrs");
+
+		chatFilterPlugin.updateFilteredPatterns();
+		assertNull(chatFilterPlugin.censorMessage("hello\u00A0osrs"));
+	}
+
+	@Test
 	public void testMessageFromFriendIsFiltered()
 	{
-		when(client.isFriended("Iron Mammal", false)).thenReturn(true);
 		chatFilterPlugin.setFilterFriends(true);
+		when(client.isClanMember("Iron Mammal")).thenReturn(false);
 		assertTrue(chatFilterPlugin.shouldFilterPlayerMessage("Iron Mammal"));
 	}
 
@@ -140,15 +155,14 @@ public class ChatFilterPluginTest
 	@Test
 	public void testMessageFromClanIsFiltered()
 	{
-		when(client.isClanMember("B0aty")).thenReturn(true);
-		chatFilterPlugin.setFilterClan(true);
+		when(client.isFriended("B0aty", false)).thenReturn(false);
 		assertTrue(chatFilterPlugin.shouldFilterPlayerMessage("B0aty"));
 	}
 
 	@Test
 	public void testMessageFromClanIsNotFiltered()
 	{
-		when(client.isClanMember("B0aty")).thenReturn(true);
+		lenient().when(client.isClanMember("B0aty")).thenReturn(true);
 		chatFilterPlugin.setFilterClan(false);
 		assertFalse(chatFilterPlugin.shouldFilterPlayerMessage("B0aty"));
 	}
@@ -156,15 +170,15 @@ public class ChatFilterPluginTest
 	@Test
 	public void testMessageFromSelfIsNotFiltered()
 	{
-		when(localPlayer.getName()).thenReturn("Swampletics");
+		lenient().when(localPlayer.getName()).thenReturn("Swampletics");
 		assertFalse(chatFilterPlugin.shouldFilterPlayerMessage("Swampletics"));
 	}
 
 	@Test
 	public void testMessageFromNonFriendNonClanIsFiltered()
 	{
-		when(client.isFriended("Woox", false)).thenReturn(false);
-		when(client.isClanMember("Woox")).thenReturn(false);
+		lenient().when(client.isFriended("Woox", false)).thenReturn(false);
+		lenient().when(client.isClanMember("Woox")).thenReturn(false);
 		assertTrue(chatFilterPlugin.shouldFilterPlayerMessage("Woox"));
 	}
 }

@@ -25,21 +25,33 @@
 package net.runelite.client.callback;
 
 import com.google.inject.Inject;
+import io.reactivex.plugins.RxJavaPlugins;
+import io.reactivex.schedulers.Schedulers;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
 import java.util.function.BooleanSupplier;
+import javax.annotation.Nullable;
 import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import org.jetbrains.annotations.NotNull;
 
 @Singleton
 @Slf4j
-public class ClientThread
+public class ClientThread implements Executor
 {
-	private ConcurrentLinkedQueue<BooleanSupplier> invokes = new ConcurrentLinkedQueue<>();
+	private final ConcurrentLinkedQueue<BooleanSupplier> invokes = new ConcurrentLinkedQueue<>();
 
 	@Inject
+	@Nullable
 	private Client client;
+
+	@Inject
+	private ClientThread()
+	{
+		RxJavaPlugins.setSingleSchedulerHandler(old -> Schedulers.from(this));
+	}
 
 	public void invoke(Runnable r)
 	{
@@ -58,7 +70,7 @@ public class ClientThread
 	{
 		if (client.isClientThread())
 		{
-			if (r.getAsBoolean())
+			if (!r.getAsBoolean())
 			{
 				invokes.add(r);
 			}
@@ -111,5 +123,15 @@ public class ClientThread
 				ir.remove();
 			}
 		}
+	}
+
+	@Override
+	public void execute(@NotNull Runnable r)
+	{
+		invoke(() ->
+		{
+			r.run();
+			return true;
+		});
 	}
 }

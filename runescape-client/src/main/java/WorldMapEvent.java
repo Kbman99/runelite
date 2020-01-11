@@ -1,271 +1,130 @@
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import net.runelite.mapping.Export;
 import net.runelite.mapping.Implements;
 import net.runelite.mapping.ObfuscatedGetter;
 import net.runelite.mapping.ObfuscatedName;
 import net.runelite.mapping.ObfuscatedSignature;
 
-@ObfuscatedName("ap")
+@ObfuscatedName("al")
 @Implements("WorldMapEvent")
 public class WorldMapEvent {
-   @ObfuscatedName("w")
-   @ObfuscatedSignature(
-      signature = "[Llq;"
-   )
-   @Export("runesSprite")
-   static IndexedSprite[] runesSprite;
-   @ObfuscatedName("m")
-   @ObfuscatedGetter(
-      intValue = 264384233
-   )
-   @Export("mapElement")
-   public int mapElement;
-   @ObfuscatedName("f")
-   @ObfuscatedSignature(
-      signature = "Lhu;"
-   )
-   @Export("coord1")
-   public TileLocation coord1;
-   @ObfuscatedName("q")
-   @ObfuscatedSignature(
-      signature = "Lhu;"
-   )
-   @Export("coord2")
-   public TileLocation coord2;
+	@ObfuscatedName("gu")
+	@ObfuscatedSignature(
+		signature = "[Lli;"
+	)
+	@Export("modIconSprites")
+	static IndexedSprite[] modIconSprites;
+	@ObfuscatedName("f")
+	@ObfuscatedGetter(
+		intValue = -458237055
+	)
+	@Export("mapElement")
+	public int mapElement;
+	@ObfuscatedName("i")
+	@ObfuscatedSignature(
+		signature = "Lht;"
+	)
+	@Export("coord1")
+	public Coord coord1;
+	@ObfuscatedName("y")
+	@ObfuscatedSignature(
+		signature = "Lht;"
+	)
+	@Export("coord2")
+	public Coord coord2;
 
-   @ObfuscatedSignature(
-      signature = "(ILhu;Lhu;)V"
-   )
-   public WorldMapEvent(int var1, TileLocation var2, TileLocation var3) {
-      this.mapElement = var1;
-      this.coord1 = var2;
-      this.coord2 = var3;
-   }
+	@ObfuscatedSignature(
+		signature = "(ILht;Lht;)V"
+	)
+	public WorldMapEvent(int var1, Coord var2, Coord var3) {
+		this.mapElement = var1;
+		this.coord1 = var2;
+		this.coord2 = var3;
+	}
 
-   @ObfuscatedName("m")
-   @ObfuscatedSignature(
-      signature = "(II)I",
-      garbageValue = "-782761258"
-   )
-   public static int method780(int var0) {
-      return UnitPriceComparator.method134(ViewportMouse.ViewportMouse_entityTags[var0]);
-   }
+	@ObfuscatedName("t")
+	@ObfuscatedSignature(
+		signature = "(B)V",
+		garbageValue = "111"
+	)
+	static final void method764() {
+		if (!ViewportMouse.ViewportMouse_false0) {
+			int var0 = Scene.Scene_cameraPitchSine;
+			int var1 = Scene.Scene_cameraPitchCosine;
+			int var2 = Scene.Scene_cameraYawSine;
+			int var3 = Scene.Scene_cameraYawCosine;
+			byte var4 = 50;
+			short var5 = 3500;
+			int var6 = (ViewportMouse.ViewportMouse_x - Rasterizer3D.Rasterizer3D_clipMidX) * var4 / Rasterizer3D.Rasterizer3D_zoom;
+			int var7 = (ViewportMouse.ViewportMouse_y - Rasterizer3D.Rasterizer3D_clipMidY) * var4 / Rasterizer3D.Rasterizer3D_zoom;
+			int var8 = (ViewportMouse.ViewportMouse_x - Rasterizer3D.Rasterizer3D_clipMidX) * var5 / Rasterizer3D.Rasterizer3D_zoom;
+			int var9 = (ViewportMouse.ViewportMouse_y - Rasterizer3D.Rasterizer3D_clipMidY) * var5 / Rasterizer3D.Rasterizer3D_zoom;
+			int var10 = Rasterizer3D.method3019(var7, var4, var1, var0);
+			int var11 = Rasterizer3D.method3020(var7, var4, var1, var0);
+			var7 = var10;
+			var10 = Rasterizer3D.method3019(var9, var5, var1, var0);
+			int var12 = Rasterizer3D.method3020(var9, var5, var1, var0);
+			var9 = var10;
+			var10 = Rasterizer3D.method3017(var6, var11, var3, var2);
+			var11 = Rasterizer3D.method3083(var6, var11, var3, var2);
+			var6 = var10;
+			var10 = Rasterizer3D.method3017(var8, var12, var3, var2);
+			var12 = Rasterizer3D.method3083(var8, var12, var3, var2);
+			ViewportMouse.field1717 = (var10 + var6) / 2;
+			class30.field245 = (var9 + var7) / 2;
+			ViewportMouse.field1718 = (var12 + var11) / 2;
+			ViewportMouse.field1719 = (var10 - var6) / 2;
+			WorldMapCacheName.field293 = (var9 - var7) / 2;
+			class40.field336 = (var12 - var11) / 2;
+			ViewportMouse.field1720 = Math.abs(ViewportMouse.field1719);
+			class247.field3261 = Math.abs(WorldMapCacheName.field293);
+			MusicPatch.field2472 = Math.abs(class40.field336);
+		}
+	}
 
-   @ObfuscatedName("iy")
-   @ObfuscatedSignature(
-      signature = "(IIIIB)V",
-      garbageValue = "2"
-   )
-   @Export("addSceneMenuOptions")
-   static final void addSceneMenuOptions(int var0, int var1, int var2, int var3) {
-      if (Client.isItemSelected == 0 && !Client.isSpellSelected) {
-         Tiles.insertMenuItemNoShift("Walk here", "", 23, 0, var0 - var2, var1 - var3);
-      }
+	@ObfuscatedName("ah")
+	@ObfuscatedSignature(
+		signature = "(Lfl;IIS)Lcw;",
+		garbageValue = "14902"
+	)
+	public static final PcmPlayer method763(TaskHandler var0, int var1, int var2) {
+		if (var1 >= 0 && var1 < 2) {
+			if (var2 < 256) {
+				var2 = 256;
+			}
 
-      long var4 = -1L;
-      long var6 = -1L;
-      int var8 = 0;
+			try {
+				PcmPlayer var3 = ChatChannel.pcmPlayerProvider.player();
+				var3.samples = new int[(SoundCache.PcmPlayer_stereo ? 2 : 1) * 256];
+				var3.field1373 = var2;
+				var3.init();
+				var3.capacity = (var2 & -1024) + 1024;
+				if (var3.capacity > 16384) {
+					var3.capacity = 16384;
+				}
 
-      while (true) {
-         int var9 = ViewportMouse.ViewportMouse_entityCount;
-         if (var8 >= var9) {
-            if (-1L != var4) {
-               var8 = UnitPriceComparator.method134(var4);
-               int var29 = (int)(var4 >>> 7 & 127L);
-               Player var11 = Client.players[Client.combatTargetPlayerIndex];
-               TotalQuantityComparator.addPlayerToMenu(var11, Client.combatTargetPlayerIndex, var8, var29);
-            }
+				var3.open(var3.capacity);
+				if (NPC.field1103 > 0 && HealthBar.soundSystem == null) {
+					HealthBar.soundSystem = new SoundSystem();
+					FriendSystem.soundSystemExecutor = Executors.newScheduledThreadPool(1);
+					FriendSystem.soundSystemExecutor.scheduleAtFixedRate(HealthBar.soundSystem, 0L, 10L, TimeUnit.MILLISECONDS);
+				}
 
-            return;
-         }
+				if (HealthBar.soundSystem != null) {
+					if (HealthBar.soundSystem.players[var1] != null) {
+						throw new IllegalArgumentException();
+					}
 
-         long tag = ViewportMouse.ViewportMouse_entityTags[var8];
-         if (var6 != tag) {
-            label276: {
-               var6 = tag;
-               int x = method780(var8);
-               long var13 = ViewportMouse.ViewportMouse_entityTags[var8];
-               int y = (int)(var13 >>> 7 & 127L);
-               y = y;
-               int var16 = GrandExchangeEvent.method80(var8);
-               int identifier = ClientPreferences.method1808(var8);
-               if (var16 == 2 && class65.scene.getObjectFlags(SoundSystem.plane, x, y, tag) >= 0) {
-                  ObjectDefinition var18 = class50.getObjectDefinition(identifier);
-                  if (var18.transforms != null) {
-                     var18 = var18.transform();
-                  }
+					HealthBar.soundSystem.players[var1] = var3;
+				}
 
-                  if (var18 == null) {
-                     break label276;
-                  }
-
-                  if (Client.isItemSelected == 1) {
-                     Tiles.insertMenuItemNoShift("Use", Client.selectedItemName + " -> " + BufferedFile.colorStartTag(65535) + var18.name, 1, identifier, x, y);
-                  } else if (Client.isSpellSelected) {
-                     if ((FloorDecoration.selectedSpellFlags & 4) == 4) {
-                        Tiles.insertMenuItemNoShift(Client.selectedSpellActionName, Client.selectedSpellName + " -> " + BufferedFile.colorStartTag(65535) + var18.name, 2, identifier, x, y);
-                     }
-                  } else {
-                     String[] var19 = var18.actions;
-                     if (var19 != null) {
-                        for (int var20 = 4; var20 >= 0; --var20) {
-                           if (var19[var20] != null) {
-                              short var21 = 0;
-                              if (var20 == 0) {
-                                 var21 = 3;
-                              }
-
-                              if (var20 == 1) {
-                                 var21 = 4;
-                              }
-
-                              if (var20 == 2) {
-                                 var21 = 5;
-                              }
-
-                              if (var20 == 3) {
-                                 var21 = 6;
-                              }
-
-                              if (var20 == 4) {
-                                 var21 = 1001;
-                              }
-
-                              Tiles.insertMenuItemNoShift(var19[var20], BufferedFile.colorStartTag(65535) + var18.name, var21, identifier, x, y);
-                           }
-                        }
-                     }
-
-                     Tiles.insertMenuItemNoShift("Examine", BufferedFile.colorStartTag(65535) + var18.name, 1002, var18.id, x, y);
-                  }
-               }
-
-               int var22;
-               int var30;
-               NPC var31;
-               Player var32;
-               int[] var34;
-               if (var16 == 1) {
-                  NPC var23 = Client.npcs[identifier];
-                  if (var23 == null) {
-                     break label276;
-                  }
-
-                  if (var23.definition.size == 1 && (var23.x & 127) == 64 && (var23.y & 127) == 64) {
-                     for (var30 = 0; var30 < Client.npcCount; ++var30) {
-                        var31 = Client.npcs[Client.npcIndices[var30]];
-                        if (var31 != null && var23 != var31 && var31.definition.size == 1 && var31.x == var23.x && var31.y == var23.y) {
-                           Tile.addNpcToMenu(var31.definition, Client.npcIndices[var30], x, y);
-                        }
-                     }
-
-                     var30 = Players.Players_count;
-                     var34 = Players.Players_indices;
-
-                     for (var22 = 0; var22 < var30; ++var22) {
-                        var32 = Client.players[var34[var22]];
-                        if (var32 != null && var32.x == var23.x && var32.y == var23.y) {
-                           TotalQuantityComparator.addPlayerToMenu(var32, var34[var22], x, y);
-                        }
-                     }
-                  }
-
-                  Tile.addNpcToMenu(var23.definition, identifier, x, y);
-               }
-
-               if (var16 == 0) {
-                  Player var33 = Client.players[identifier];
-                  if (var33 == null) {
-                     break label276;
-                  }
-
-                  if ((var33.x & 127) == 64 && (var33.y & 127) == 64) {
-                     for (var30 = 0; var30 < Client.npcCount; ++var30) {
-                        var31 = Client.npcs[Client.npcIndices[var30]];
-                        if (var31 != null && var31.definition.size == 1 && var33.x == var31.x && var33.y == var31.y) {
-                           Tile.addNpcToMenu(var31.definition, Client.npcIndices[var30], x, y);
-                        }
-                     }
-
-                     var30 = Players.Players_count;
-                     var34 = Players.Players_indices;
-
-                     for (var22 = 0; var22 < var30; ++var22) {
-                        var32 = Client.players[var34[var22]];
-                        if (var32 != null && var32 != var33 && var32.x == var33.x && var32.y == var33.y) {
-                           TotalQuantityComparator.addPlayerToMenu(var32, var34[var22], x, y);
-                        }
-                     }
-                  }
-
-                  if (identifier != Client.combatTargetPlayerIndex) {
-                     TotalQuantityComparator.addPlayerToMenu(var33, identifier, x, y);
-                  } else {
-                     var4 = tag;
-                  }
-               }
-
-               if (var16 == 3) {
-                  NodeDeque var35 = Client.groundItems[SoundSystem.plane][x][y];
-                  if (var35 != null) {
-                     for (GroundItem var24 = (GroundItem)var35.first(); var24 != null; var24 = (GroundItem)var35.next()) {
-                        ItemDefinition var25 = Skills.getItemDefinition(var24.id);
-                        if (Client.isItemSelected == 1) {
-                           Tiles.insertMenuItemNoShift("Use", Client.selectedItemName + " -> " + BufferedFile.colorStartTag(16748608) + var25.name, 16, var24.id, x, y);
-                        } else if (Client.isSpellSelected) {
-                           if ((FloorDecoration.selectedSpellFlags & 1) == 1) {
-                              Tiles.insertMenuItemNoShift(Client.selectedSpellActionName, Client.selectedSpellName + " -> " + BufferedFile.colorStartTag(16748608) + var25.name, 17, var24.id, x, y);
-                           }
-                        } else {
-                           String[] var26 = var25.groundActions;
-
-                           for (int var27 = 4; var27 >= 0; --var27) {
-                              if (var26 != null && var26[var27] != null) {
-                                 byte var28 = 0;
-                                 if (var27 == 0) {
-                                    var28 = 18;
-                                 }
-
-                                 if (var27 == 1) {
-                                    var28 = 19;
-                                 }
-
-                                 if (var27 == 2) {
-                                    var28 = 20;
-                                 }
-
-                                 if (var27 == 3) {
-                                    var28 = 21;
-                                 }
-
-                                 if (var27 == 4) {
-                                    var28 = 22;
-                                 }
-
-                                 Tiles.insertMenuItemNoShift(var26[var27], BufferedFile.colorStartTag(16748608) + var25.name, var28, var24.id, x, y);
-                              } else if (var27 == 2) {
-                                 Tiles.insertMenuItemNoShift("Take", BufferedFile.colorStartTag(16748608) + var25.name, 20, var24.id, x, y);
-                              }
-                           }
-
-                           Tiles.insertMenuItemNoShift("Examine", BufferedFile.colorStartTag(16748608) + var25.name, 1004, var24.id, x, y);
-                        }
-                     }
-                  }
-               }
-            }
-         }
-
-         ++var8;
-      }
-   }
-
-   @ObfuscatedName("jw")
-   @ObfuscatedSignature(
-      signature = "(B)Z",
-      garbageValue = "43"
-   )
-   @Export("isShiftPressed")
-   static boolean isShiftPressed() {
-      return Client.tapToDrop || KeyHandler.KeyHandler_pressedKeys[81];
-   }
+				return var3;
+			} catch (Throwable var4) {
+				return new PcmPlayer();
+			}
+		} else {
+			throw new IllegalArgumentException();
+		}
+	}
 }

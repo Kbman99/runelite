@@ -32,24 +32,46 @@ import net.runelite.client.config.ConfigItem;
 public interface SkillCalculatorConfig extends Config
 {
 	@ConfigItem(
-		keyName = "showBankedXp",
-		name = "Show Banked xp Tab",
-		description = "Shows the Banked xp tab inside the Calculator Panel",
+		keyName = "enabledBankedXp",
+		name = "Add Banked XP Panel",
+		description = "Adds the Banked XP Panel to the side bar",
 		position = 0
 	)
 	default boolean showBankedXp()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "cascadeBankedXp",
+		name = "Include output items",
+		description = "Includes output items in the item quantity calculations",
+		position = 1
+	)
+	default boolean cascadeBankedXp()
 	{
 		return true;
 	}
 
 	@ConfigItem(
-		keyName = "limitedBankedSecondaries",
-		name = "Limit Banked xp to Secondaries",
-		description = "Limits the Banked xp shown based on secondaries banked as well",
-		position = 1
+		keyName = "showSecondaries",
+		name = "Show required secondaries",
+		description = "Toggles whether the Secondaries will be displayed for the selected item",
+		position = 2
 	)
-	default boolean limitedBankedSecondaries()
+	default boolean showSecondaries()
 	{
 		return false;
+	}
+
+	@ConfigItem(
+		keyName = "limitToCurrentLevel",
+		name = "Respect level requirements",
+		description = "Toggles whether the exp calculation will limit to your current skill level",
+		position = 3
+	)
+	default boolean limitToCurrentLevel()
+	{
+		return true;
 	}
 }

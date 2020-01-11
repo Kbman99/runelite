@@ -24,6 +24,7 @@
  */
 package net.runelite.deob;
 
+import java.util.List;
 import net.runelite.asm.ClassFile;
 import net.runelite.asm.Field;
 import net.runelite.asm.Method;
@@ -32,8 +33,6 @@ import net.runelite.asm.attributes.Annotations;
 import net.runelite.asm.attributes.annotation.Annotation;
 import net.runelite.asm.attributes.annotation.Element;
 import net.runelite.asm.signature.Signature;
-
-import java.util.List;
 
 public class DeobAnnotations
 {
@@ -83,11 +82,6 @@ public class DeobAnnotations
 		return getAnnotationValue(cf.getAnnotations(), IMPLEMENTS);
 	}
 
-	public static String getHookName(Annotations an)
-	{
-		return getAnnotationValue(an, HOOK);
-	}
-
 	public static Number getObfuscatedGetter(Field field)
 	{
 		if (field == null || field.getAnnotations() == null)
@@ -100,11 +94,11 @@ public class DeobAnnotations
 		{
 			return null;
 		}
-		
+
 		return (Number) an.getElement().getValue();
 	}
 
-	public static String getObfuscatedValue(Method method)
+	public static String getDecoder(Method method)
 	{
 		if (method == null || method.getAnnotations() == null)
 		{
@@ -126,7 +120,7 @@ public class DeobAnnotations
 		return (String) elements.get(1).getValue();
 	}
 
-	private static String getAnnotationValue(Annotations an, Type type)
+	public static String getAnnotationValue(Annotations an, Type type)
 	{
 		if (an == null)
 		{
