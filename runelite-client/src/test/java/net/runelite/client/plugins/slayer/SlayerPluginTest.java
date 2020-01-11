@@ -331,7 +331,7 @@ public class SlayerPluginTest
 
 		ChatMessage chatMessageEvent = new ChatMessage(null, GAMEMESSAGE, "Perterter", TASK_POINTS, null, 0);
 		slayerPlugin.onChatMessage(chatMessageEvent);
-		VarbitChanged varbitChanged = VarbitChanged.INSTANCE;
+		VarbitChanged varbitChanged = new VarbitChanged();
 		slayerPlugin.onVarbitChanged(varbitChanged);
 
 		assertEquals(9, slayerPlugin.getStreak());
@@ -347,7 +347,7 @@ public class SlayerPluginTest
 
 		ChatMessage chatMessageEvent = new ChatMessage(null, GAMEMESSAGE, "Perterter", TASK_LARGE_STREAK, null, 0);
 		slayerPlugin.onChatMessage(chatMessageEvent);
-		VarbitChanged varbitChanged = VarbitChanged.INSTANCE;
+		VarbitChanged varbitChanged = new VarbitChanged();
 		slayerPlugin.onVarbitChanged(varbitChanged);
 
 		assertEquals(2465, slayerPlugin.getStreak());
@@ -387,11 +387,11 @@ public class SlayerPluginTest
 	{
 		ChatMessage chatMessageEvent = new ChatMessage(null, GAMEMESSAGE, "Superior", SUPERIOR_MESSAGE, null, 0);
 
-		when(slayerConfig.showSuperiorNotification()).thenReturn(true);
+		slayerPlugin.setShowSuperiorNotification(true);
 		slayerPlugin.onChatMessage(chatMessageEvent);
 		verify(notifier).notify(SUPERIOR_MESSAGE);
 
-		when(slayerConfig.showSuperiorNotification()).thenReturn(false);
+		slayerPlugin.setShowSuperiorNotification(false);
 		slayerPlugin.onChatMessage(chatMessageEvent);
 		verifyNoMoreInteractions(notifier);
 	}
@@ -405,10 +405,10 @@ public class SlayerPluginTest
 		task.setAmount(42);
 		task.setInitialAmount(42);
 
-		when(slayerConfig.taskCommand()).thenReturn(true);
+		slayerPlugin.setTaskCommand(true);
 		when(chatClient.getTask(anyString())).thenReturn(task);
 
-		ChatMessage setMessage = ChatMessage.INSTANCE;
+		ChatMessage setMessage = new ChatMessage();
 		setMessage.setType(ChatMessageType.PUBLICCHAT);
 		setMessage.setName("Adam");
 		setMessage.setMessageNode(mock(MessageNode.class));
@@ -430,7 +430,7 @@ public class SlayerPluginTest
 		when(slayerConfig.taskCommand()).thenReturn(true);
 		when(chatClient.getTask(anyString())).thenReturn(task);
 
-		ChatMessage chatMessage = ChatMessage.INSTANCE;
+		ChatMessage chatMessage = new ChatMessage();
 		chatMessage.setType(ChatMessageType.PUBLICCHAT);
 		chatMessage.setName("Adam");
 		chatMessage.setMessageNode(mock(MessageNode.class));

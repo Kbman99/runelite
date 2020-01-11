@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.Player;
@@ -27,7 +28,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 	type = PluginType.PVP,
 	enabledByDefault = false
 )
-
+@Singleton
 public class ClanManModePlugin extends Plugin
 {
 	@Inject
@@ -67,7 +68,6 @@ public class ClanManModePlugin extends Plugin
 		overlayManager.add(ClanManModeOverlay);
 		overlayManager.add(ClanManModeTileOverlay);
 		overlayManager.add(ClanManModeMinimapOverlay);
-		client.setHideFriendAttackOptions(config.hideAtkOpt());
 	}
 
 	@Override
@@ -76,7 +76,6 @@ public class ClanManModePlugin extends Plugin
 		overlayManager.remove(ClanManModeOverlay);
 		overlayManager.remove(ClanManModeTileOverlay);
 		overlayManager.remove(ClanManModeMinimapOverlay);
-		client.setHideFriendAttackOptions(false);
 		clan.clear();
 		ticks = 0;
 		wildernessLevel = 0;
@@ -92,8 +91,6 @@ public class ClanManModePlugin extends Plugin
 		{
 			return;
 		}
-
-		client.setHideFriendAttackOptions(config.hideAtkOpt());
 	}
 
 	@Subscribe

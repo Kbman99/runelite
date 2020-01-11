@@ -25,11 +25,14 @@
 package net.runelite.client.plugins.raidsthieving;
 
 import com.google.inject.Provides;
+import java.awt.Color;
 import java.text.MessageFormat;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
+import javax.inject.Singleton;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
@@ -60,7 +63,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 	type = PluginType.PVM,
 	enabledByDefault = false
 )
-
+@Singleton
 public class RaidsThievingPlugin extends Plugin
 {
 	@Inject
@@ -78,22 +81,28 @@ public class RaidsThievingPlugin extends Plugin
 	@Inject
 	private RaidsThievingConfig config;
 
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private final Map<WorldPoint, ThievingChest> chests = new HashMap<>();
 
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private Instant lastActionTime = Instant.ofEpochMilli(0);
 
 	private boolean inRaidChambers;
 
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private boolean batsFound;
 
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private BatSolver solver;
 
-	@Getter
+	@Getter(AccessLevel.PACKAGE)
 	private ChestIdentifier mapper;
+
+	@Getter(AccessLevel.PACKAGE)
+	private Color getPotentialBatColor;
+	@Getter(AccessLevel.PACKAGE)
+	private Color getPoisonTrapColor;
+	private boolean batFoundNotify;
 
 
 	@Provides
@@ -105,6 +114,8 @@ public class RaidsThievingPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
+		updateConfig();
+
 		overlayManager.add(overlay);
 		overlay.updateConfig();
 		reset();
@@ -201,6 +212,12 @@ public class RaidsThievingPlugin extends Plugin
 		{
 			log.debug("Found poison splat");
 			WorldPoint loc = WorldPoint.fromLocal(client, obj.getLocation());
+
+			if (chests.get(loc) == null)
+			{
+				return;
+			}
+
 			chests.get(loc).setPoison(true);
 		}
 	}
@@ -223,6 +240,7 @@ public class RaidsThievingPlugin extends Plugin
 	{
 		if (event.getGroup().equals("raidsthievingplugin"))
 		{
+			updateConfig();
 			overlay.updateConfig();
 		}
 	}
@@ -235,7 +253,7 @@ public class RaidsThievingPlugin extends Plugin
 		mapper = null;
 	}
 
-	public int numberOfEmptyChestsFound()
+	int numberOfEmptyChestsFound()
 	{
 		int total = 0;
 		for (ThievingChest chest : chests.values())
@@ -248,7 +266,6 @@ public class RaidsThievingPlugin extends Plugin
 		return total;
 	}
 
-
 	private boolean checkForBats()
 	{
 		for (ThievingChest chest : chests.values())
@@ -256,7 +273,7 @@ public class RaidsThievingPlugin extends Plugin
 			if (chest.isEmpty() && !chest.isPoison())
 			{
 				batsFound = true;
-				if (config.batFoundNotify())
+				if (this.batFoundNotify)
 				{
 					notifier.notify("Bats have been found!");
 				}
@@ -266,9 +283,16 @@ public class RaidsThievingPlugin extends Plugin
 		return false;
 	}
 
-	public int getChestId(WorldPoint worldPoint)
+	int getChestId(WorldPoint worldPoint)
 	{
 		return chests.get(worldPoint).getChestId();
+	}
+
+	private void updateConfig()
+	{
+		this.getPotentialBatColor = config.getPotentialBatColor();
+		this.getPoisonTrapColor = config.getPoisonTrapColor();
+		this.batFoundNotify = config.batFoundNotify();
 	}
 }
 

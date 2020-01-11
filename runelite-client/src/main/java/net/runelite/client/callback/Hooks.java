@@ -508,7 +508,7 @@ public class Hooks implements Callbacks
 
 	public static boolean drawMenu()
 	{
-		BeforeMenuRender event = BeforeMenuRender.INSTANCE;
+		BeforeMenuRender event = new BeforeMenuRender();
 		client.getCallbacks().post(event);
 		return event.isConsumed();
 	}

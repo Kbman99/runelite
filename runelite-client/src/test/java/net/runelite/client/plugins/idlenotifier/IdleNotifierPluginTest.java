@@ -114,12 +114,12 @@ public class IdleNotifierPluginTest
 		when(client.getLocalPlayer()).thenReturn(player);
 
 		// Mock config
-		when(config.logoutIdle()).thenReturn(true);
-		when(config.animationIdle()).thenReturn(true);
-		when(config.interactionIdle()).thenReturn(true);
-		when(config.getIdleNotificationDelay()).thenReturn(0);
-		when(config.getHitpointsThreshold()).thenReturn(42);
-		when(config.getPrayerThreshold()).thenReturn(42);
+		plugin.setLogoutIdle(true);
+		plugin.setAnimationIdle(true);
+		plugin.setInteractionIdle(true);
+		plugin.setGetIdleNotificationDelay(0);
+		plugin.setGetHitpointsThreshold(42);
+		plugin.setGetPrayerThreshold(42);
 
 		// Mock client
 		when(client.getGameState()).thenReturn(GameState.LOGGED_IN);
@@ -132,7 +132,7 @@ public class IdleNotifierPluginTest
 	public void checkAnimationIdle()
 	{
 		when(player.getAnimation()).thenReturn(AnimationID.WOODCUTTING_BRONZE);
-		AnimationChanged animationChanged = AnimationChanged.INSTANCE;
+		AnimationChanged animationChanged = new AnimationChanged();
 		animationChanged.setActor(player);
 		plugin.onAnimationChanged(animationChanged);
 		plugin.onGameTick(GameTick.INSTANCE);
@@ -146,7 +146,7 @@ public class IdleNotifierPluginTest
 	public void checkAnimationReset()
 	{
 		when(player.getAnimation()).thenReturn(AnimationID.WOODCUTTING_BRONZE);
-		AnimationChanged animationChanged = AnimationChanged.INSTANCE;
+		AnimationChanged animationChanged = new AnimationChanged();
 		animationChanged.setActor(player);
 		plugin.onAnimationChanged(animationChanged);
 		plugin.onGameTick(GameTick.INSTANCE);
@@ -163,14 +163,14 @@ public class IdleNotifierPluginTest
 	public void checkAnimationLogout()
 	{
 		when(player.getAnimation()).thenReturn(AnimationID.WOODCUTTING_BRONZE);
-		AnimationChanged animationChanged = AnimationChanged.INSTANCE;
+		AnimationChanged animationChanged = new AnimationChanged();
 		animationChanged.setActor(player);
 		plugin.onAnimationChanged(animationChanged);
 		plugin.onGameTick(GameTick.INSTANCE);
 
 		// Logout
 		when(client.getGameState()).thenReturn(GameState.LOGIN_SCREEN);
-		GameStateChanged gameStateChanged = GameStateChanged.INSTANCE;
+		GameStateChanged gameStateChanged = new GameStateChanged();
 		gameStateChanged.setGameState(GameState.LOGIN_SCREEN);
 		plugin.onGameStateChanged(gameStateChanged);
 
@@ -190,15 +190,10 @@ public class IdleNotifierPluginTest
 	public void checkCombatIdle()
 	{
 		when(player.getInteracting()).thenReturn(monster);
-		InteractingChanged event = InteractingChanged.INSTANCE;
-		event.setSource(player);
-		event.setTarget(monster);
-		plugin.onInteractingChanged(event);
+		plugin.onInteractingChanged(new InteractingChanged(player, monster));
 		plugin.onGameTick(GameTick.INSTANCE);
 		when(player.getInteracting()).thenReturn(null);
-		event.setSource(player);
-		event.setTarget(null);
-		plugin.onInteractingChanged(event);
+		plugin.onInteractingChanged(new InteractingChanged(player, null));
 		plugin.onGameTick(GameTick.INSTANCE);
 		verify(notifier).notify("[" + PLAYER_NAME + "] is now out of combat!");
 	}
@@ -207,20 +202,13 @@ public class IdleNotifierPluginTest
 	public void checkCombatReset()
 	{
 		when(player.getInteracting()).thenReturn(monster);
-		InteractingChanged event = InteractingChanged.INSTANCE;
-		event.setSource(player);
-		event.setTarget(monster);
-		plugin.onInteractingChanged(event);
+		plugin.onInteractingChanged(new InteractingChanged(player, monster));
 		plugin.onGameTick(GameTick.INSTANCE);
 		when(player.getInteracting()).thenReturn(randomEvent);
-		event.setSource(player);
-		event.setTarget(randomEvent);
-		plugin.onInteractingChanged(event);
+		plugin.onInteractingChanged(new InteractingChanged(player, randomEvent));
 		plugin.onGameTick(GameTick.INSTANCE);
 		when(player.getInteracting()).thenReturn(null);
-		event.setSource(player);
-		event.setTarget(null);
-		plugin.onInteractingChanged(event);
+		plugin.onInteractingChanged(new InteractingChanged(player, null));
 		plugin.onGameTick(GameTick.INSTANCE);
 		verify(notifier, times(0)).notify(any());
 	}
@@ -228,16 +216,13 @@ public class IdleNotifierPluginTest
 	@Test
 	public void checkCombatLogout()
 	{
-		InteractingChanged event = InteractingChanged.INSTANCE;
-		event.setSource(player);
-		event.setTarget(monster);
-		plugin.onInteractingChanged(event);
+		plugin.onInteractingChanged(new InteractingChanged(player, monster));
 		when(player.getInteracting()).thenReturn(monster);
 		plugin.onGameTick(GameTick.INSTANCE);
 
 		// Logout
 		when(client.getGameState()).thenReturn(GameState.LOGIN_SCREEN);
-		GameStateChanged gameStateChanged = GameStateChanged.INSTANCE;
+		GameStateChanged gameStateChanged = new GameStateChanged();
 		gameStateChanged.setGameState(GameState.LOGIN_SCREEN);
 		plugin.onGameStateChanged(gameStateChanged);
 
@@ -248,9 +233,7 @@ public class IdleNotifierPluginTest
 
 		// Tick
 		when(player.getInteracting()).thenReturn(null);
-		event.setSource(player);
-		event.setTarget(null);
-		plugin.onInteractingChanged(event);
+		plugin.onInteractingChanged(new InteractingChanged(player, null));
 		plugin.onGameTick(GameTick.INSTANCE);
 		verify(notifier, times(0)).notify(any());
 	}
@@ -262,7 +245,7 @@ public class IdleNotifierPluginTest
 		when(client.getMouseIdleTicks()).thenReturn(80_000);
 
 		// But player is being damaged (is in combat)
-		final HitsplatApplied hitsplatApplied = HitsplatApplied.INSTANCE;
+		final HitsplatApplied hitsplatApplied = new HitsplatApplied();
 		hitsplatApplied.setActor(player);
 		hitsplatApplied.setHitsplat(new Hitsplat(Hitsplat.HitsplatType.DAMAGE, 0, 0));
 		plugin.onHitsplatApplied(hitsplatApplied);
@@ -287,7 +270,7 @@ public class IdleNotifierPluginTest
 	@Test
 	public void testSpecRegen()
 	{
-		when(config.getSpecEnergyThreshold()).thenReturn(50);
+		plugin.setGetSpecEnergyThreshold(50);
 
 		when(client.getVar(Matchers.eq(VarPlayer.SPECIAL_ATTACK_PERCENT))).thenReturn(400); // 40%
 		plugin.onGameTick(GameTick.INSTANCE); // once to set lastSpecEnergy to 400

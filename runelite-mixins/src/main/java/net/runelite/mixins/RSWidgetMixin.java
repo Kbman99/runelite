@@ -408,7 +408,7 @@ public abstract class RSWidgetMixin implements RSWidget
 	@Override
 	public void broadcastHidden(boolean hidden)
 	{
-		WidgetHiddenChanged event = WidgetHiddenChanged.INSTANCE;
+		WidgetHiddenChanged event = new WidgetHiddenChanged();
 		event.setWidget(this);
 		event.setHidden(hidden);
 

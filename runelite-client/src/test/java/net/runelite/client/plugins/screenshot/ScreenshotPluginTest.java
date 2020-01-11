@@ -101,10 +101,10 @@ public class ScreenshotPluginTest
 	public void before()
 	{
 		Guice.createInjector(BoundFieldModule.of(this)).injectMembers(this);
-		when(screenshotConfig.screenshotRewards()).thenReturn(true);
-		when(screenshotConfig.screenshotLevels()).thenReturn(true);
-		when(screenshotConfig.screenshotValuableDrop()).thenReturn(true);
-		when(screenshotConfig.screenshotUntradeableDrop()).thenReturn(true);
+		screenshotPlugin.setScreenshotRewards(true);
+		screenshotPlugin.setScreenshotLevels(true);
+		screenshotPlugin.setScreenshotValuableDrop(true);
+		screenshotPlugin.setScreenshotUntradeableDrop(true);
 	}
 
 	@Test
@@ -175,7 +175,7 @@ public class ScreenshotPluginTest
 
 		assertEquals("Hitpoints(99)", screenshotPlugin.parseLevelUpWidget(LEVEL_UP_LEVEL));
 
-		WidgetLoaded event = WidgetLoaded.INSTANCE;
+		WidgetLoaded event = new WidgetLoaded();
 		event.setGroupId(LEVEL_UP_GROUP_ID);
 		screenshotPlugin.onWidgetLoaded(event);
 
@@ -198,7 +198,7 @@ public class ScreenshotPluginTest
 
 		assertEquals("Firemaking(9)", screenshotPlugin.parseLevelUpWidget(LEVEL_UP_LEVEL));
 
-		WidgetLoaded event = WidgetLoaded.INSTANCE;
+		WidgetLoaded event = new WidgetLoaded();
 		event.setGroupId(LEVEL_UP_GROUP_ID);
 		screenshotPlugin.onWidgetLoaded(event);
 
@@ -221,7 +221,7 @@ public class ScreenshotPluginTest
 
 		assertEquals("Attack(70)", screenshotPlugin.parseLevelUpWidget(LEVEL_UP_LEVEL));
 
-		WidgetLoaded event = WidgetLoaded.INSTANCE;
+		WidgetLoaded event = new WidgetLoaded();
 		event.setGroupId(LEVEL_UP_GROUP_ID);
 		screenshotPlugin.onWidgetLoaded(event);
 
@@ -244,7 +244,7 @@ public class ScreenshotPluginTest
 
 		assertEquals("Hunter(2)", screenshotPlugin.parseLevelUpWidget(DIALOG_SPRITE_TEXT));
 
-		WidgetLoaded event = WidgetLoaded.INSTANCE;
+		WidgetLoaded event = new WidgetLoaded();
 		event.setGroupId(DIALOG_SPRITE_GROUP_ID);
 		screenshotPlugin.onWidgetLoaded(event);
 
